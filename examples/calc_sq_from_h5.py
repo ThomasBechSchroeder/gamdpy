@@ -14,7 +14,7 @@ if not os.path.isfile(file_to_read):
 # Load existing data
 output = gp.tools.TrajectoryIO(file_to_read).get_h5()
 # Read number of particles N and dimensions from data
-nblocks, nconfs, _ , N, D = output['block'].shape
+nblocks, nconfs, N, D = output['block/positions'].shape
 
 # Set up the configuration object
 # Create configuration object
@@ -28,7 +28,7 @@ calc_sq.generate_q_vectors(q_max=18)
 
 # NOTE: the structure of the block is (outer_block, inner_steps, pos&img, npart, dimensions)
 #       the zero is to select the position array and discard images
-positions = output['block'][:,:,0,:,:]
+positions = output['block/positions'][:,:,:,:]
 positions = positions.reshape(nblocks*nconfs,N,D)
 
 # Loop over saved configurations

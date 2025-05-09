@@ -3,15 +3,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def calc_dynamics_(blocks, ptype, simbox, block0, conf_index0, block1, conf_index1, time_index,  msd, m4d, qvalues=None, Fs=None):
+def calc_dynamics_(positions, images, ptype, simbox, block0, conf_index0, block1, conf_index1, time_index,  msd, m4d, qvalues=None, Fs=None):
     """
     Calculate contribution to dynamical properties from conf_index1 in block1 using conf_index0 in block0
     as initial time, and add it at time_index in appropiate arrays.
 
     TODO: Allow more than one q-value per type
     """
-    dR = blocks[block1, conf_index1, 0, :, :] - blocks[block0, conf_index0, 0, :, :]
-    dR += (blocks[block1, conf_index1, 1, :, :] - blocks[block0, conf_index0, 1, :, :]) * simbox
+    dR = positions[block1, conf_index1, :, :] - positions[block0, conf_index0, :, :]
+    dR += (images[block1, conf_index1, :, :] - images[block0, conf_index0, :, :]) * simbox
     for i in range(np.max(ptype) + 1):
         dR_type = dR[ptype == i, :]
         dR_i_sq = np.sum( dR_type**2, axis=1)
@@ -30,8 +30,9 @@ def calc_dynamics(trajectory, first_block, qvalues=None):
     num_types = np.max(ptype) + 1
     if isinstance(qvalues, float):
         qvalues = np.ones(num_types)*qvalues
-    num_blocks, conf_per_block, _, N, D = trajectory['block'].shape
-    blocks = trajectory['block']  # If picking out dataset in inner loop: Very slow!
+    num_blocks, conf_per_block, N, D = trajectory['block/positions'].shape
+    blocks = trajectory['block/positions']  # If picking out dataset in inner loop: Very slow!
+    images = trajectory['block/images']
 
     #print(num_types, first_block, num_blocks, conf_per_block, _, N, D, qvalues)
     if first_block > num_blocks - 1:
@@ -50,7 +51,7 @@ def calc_dynamics(trajectory, first_block, qvalues=None):
     for block in range(first_block, num_blocks):
         for i in range(conf_per_block - 1):
             count[i] += 1
-            calc_dynamics_(blocks, ptype, simbox, block, i + 1, block, 0, i, msd, m4d, qvalues, Fs)
+            calc_dynamics_(blocks, images, ptype, simbox, block, i + 1, block, 0, i, msd, m4d, qvalues, Fs)
 
     # Compute times longer than blocks
     for block in range(first_block, num_blocks):
@@ -60,7 +61,7 @@ def calc_dynamics(trajectory, first_block, qvalues=None):
             # print(other_block, end=' ')
             if other_block < num_blocks:
                 count[index] += 1
-                calc_dynamics_(blocks, ptype, simbox, other_block, 0, block, 0, index, msd, m4d, qvalues, Fs)
+                calc_dynamics_(blocks, images, ptype, simbox, other_block, 0, block, 0, index, msd, m4d, qvalues, Fs)
 
     msd /= count
     m4d /= count
