@@ -15,8 +15,8 @@ class ConfigurationSaver(RuntimeAction):
     def __init__(self, include_simbox=False, verbose=False) -> None:
 
         self.include_simbox = include_simbox
-        self.num_vectors = 2  # 'r' and 'r_im' (for now!)
-        self.sid = {"r":0, "r_im":1}
+        #self.num_vectors = 2  # 'r' and 'r_im' (for now!)
+        #self.sid = {"r":0, "r_im":1}
 
     def setup(self, configuration, num_timeblocks: int, steps_per_timeblock: int, output, verbose=False) -> None:
         self.configuration = configuration
@@ -37,14 +37,21 @@ class ConfigurationSaver(RuntimeAction):
 
         if 'block' in output.keys():
             del output['block']
-        output.create_dataset("block", shape=(
-            self.num_timeblocks, self.conf_per_block, self.num_vectors, self.configuration.N, self.configuration.D),
-            chunks=(1, 1, self.num_vectors, self.configuration.N, self.configuration.D), dtype=np.float32)
-        output.attrs['vectors_names'] = list(self.sid.keys())
+        output.create_group('block')
+        output.create_dataset('block/positions', 
+                              shape=(self.num_timeblocks, self.conf_per_block, self.configuration.N, self.configuration.D),
+                              chunks=(1, 1, self.configuration.N, self.configuration.D), 
+                              dtype=np.float32)
+        output.create_dataset('block/images', 
+                              shape=(self.num_timeblocks, self.conf_per_block, self.configuration.N, self.configuration.D),
+                              chunks=(1, 1, self.configuration.N, self.configuration.D), 
+                              dtype=np.int32)
+        #output.attrs['vectors_names'] = list(self.sid.keys())
         if self.include_simbox:
-            if 'sim_box' in output.keys():
-                del output['sim_box']
-            output.create_dataset('sim_box', shape=(self.num_timeblocks, self.conf_per_block, self.configuration.simbox.len_sim_box_data))
+            if 'sim_box' in output['block'].keys():
+                del output['block/sim_box']
+            output.create_dataset('block/sim_box', 
+                                  shape=(self.num_timeblocks, self.conf_per_block, self.configuration.simbox.len_sim_box_data))
 
         flag = config.CUDA_LOW_OCCUPANCY_WARNINGS
         config.CUDA_LOW_OCCUPANCY_WARNINGS = False
@@ -83,9 +90,10 @@ class ConfigurationSaver(RuntimeAction):
         return zero_kernel[num_blocks, pb]
 
     def update_at_end_of_timeblock(self, block: int, output):
-        output['block'][block, :] = self.d_conf_array.copy_to_host()
+        output['block/positions'][block], output['block/images'][block] = self.d_conf_array.copy_to_host()
+        #output['block'][block, :] = self.d_conf_array.copy_to_host()
         if self.include_simbox:
-            output['sim_box'][block, :] = self.d_sim_box_output_array.copy_to_host()
+            output['block/sim_box'][block, :] = self.d_sim_box_output_array.copy_to_host()
         self.zero_kernel(self.d_conf_array)
 
     def get_poststep_kernel(self, configuration, compute_plan, verbose=False):
