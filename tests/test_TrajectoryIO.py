@@ -46,7 +46,7 @@ def test_TrajectoryIO():
     ## Test read from h5
     output = rp.tools.TrajectoryIO(f"LJ_r{density}_T{temperature}.h5").get_h5()
     isinstance(output.file, h5py.File)
-    nblocks, nconfs, _ , N, D = output['block'].shape
+    nblocks, nconfs, N, D = output['block/positions'].shape
     assert (N, D) == (1987, 3), "Error reading N and D in TrajectoryIO while reading from .h5"
     os.remove(f"LJ_r{density}_T{temperature}.h5")
 

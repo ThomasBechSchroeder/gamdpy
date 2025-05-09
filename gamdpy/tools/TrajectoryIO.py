@@ -224,17 +224,43 @@ class TrajectoryIO():
         fout = h5py.File(name, "w") 
         fout.attrs.update(self.h5.attrs)
         for key in self.h5.keys():
-            print(f"Writing dataset {key} to {name}")
-            if importlib.util.find_spec("hdf5plugin")!=None:
-                if self.compression_type == "gzip":
+            if isinstance(self.h5[key], h5py.Group):
+                print(f"Writing Group {key} to {name}")
+                fout.create_group(f"/{key}")
+                #print(self.h5.keys(), key, fout.keys())
+                for subkey in self.h5[key].keys():
+                    #print(self.h5[key].keys(), subkey, self.h5[key][subkey], fout[key].keys())
+                    #print(f"Writing dataset {key}/{subkey} to {name}")
+                    if importlib.util.find_spec("hdf5plugin")!=None:
+                        if self.compression_type == "gzip":
+                            fout[key].create_dataset(subkey, data=self.h5[key][subkey], chunks=True, 
+                                    compression=self.compression_type, compression_opts=self.compression_opts, shuffle=True)
+                        else:
+                            fout[key].create_dataset(subkey, data=self.h5[key][subkey], chunks=True, 
+                                    compression=self.compression_type, shuffle=True)
+                    elif self.compression_type == "gzip":
+                        fout[key].create_dataset(subkey, data=self.h5[key][subkey], chunks=True, 
+                                compression=self.compression_type, compression_opts=self.compression_opts, shuffle=True)
+                    else:
+                        fout[key].create_dataset(subkey, data=self.h5[key][subkey], chunks=True, 
+                                compression=self.compression_type)
+                    #print(f"Writing attributes {key}/{subkey} to {name}")
+                    fout[key][subkey].attrs.update(self.h5[key][subkey].attrs)
+                    #print(f"Done dataset {key}/{subkey} to {name}")
+                fout[key].attrs.update(self.h5[key].attrs)
+                #print(f"Done Group {key} to {name}")
+            else:
+                print(f"Writing dataset {key} to {name}")
+                if importlib.util.find_spec("hdf5plugin")!=None:
+                    if self.compression_type == "gzip":
+                        fout.create_dataset(key, data=self.h5[key], chunks=True, compression=self.compression_type, compression_opts=self.compression_opts, shuffle=True)
+                    else:
+                        fout.create_dataset(key, data=self.h5[key], chunks=True, compression=self.compression_type, shuffle=True)
+                elif self.compression_type == "gzip":
                     fout.create_dataset(key, data=self.h5[key], chunks=True, compression=self.compression_type, compression_opts=self.compression_opts, shuffle=True)
                 else:
-                    fout.create_dataset(key, data=self.h5[key], chunks=True, compression=self.compression_type, shuffle=True)
-            elif self.compression_type == "gzip":
-                fout.create_dataset(key, data=self.h5[key], chunks=True, compression=self.compression_type, compression_opts=self.compression_opts, shuffle=True)
-            else:
-                fout.create_dataset(key, data=self.h5[key], chunks=True, compression=self.compression_type)
-            fout[key].attrs.update(self.h5[key].attrs)
+                    fout.create_dataset(key, data=self.h5[key], chunks=True, compression=self.compression_type)
+                fout[key].attrs.update(self.h5[key].attrs)
 
         print(f"All written using {self.compression_type}")
         fout.close()
