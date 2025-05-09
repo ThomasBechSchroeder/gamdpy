@@ -1,0 +1,15 @@
+in tests/test_structure_factor.py problem at line 41 when doing this:
+>       for _ in sim.run_timeblocks():
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+gamdpy/simulation/Simulation.py:436: in run_timeblocks
+    runtime_action.update_at_end_of_timeblock(block, self.get_output(mode="a"))
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <gamdpy.runtime_actions.configuration_saver.ConfigurationSaver object at 0x7fca914e03a0>, block = 12, output = <HDF5 file "140507997929584.h5" (mode r+)>
+
+    def update_at_end_of_timeblock(self, block: int, output):
+        data = self.d_conf_array.copy_to_host()
+>       output['block/positions'][block], output['block/images'][block] = data[block][:]
+E       IndexError: index 12 is out of bounds for axis 0 with size 12
+
+gamdpy/runtime_actions/configuration_saver.py:94: IndexError
