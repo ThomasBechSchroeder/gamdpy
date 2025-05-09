@@ -53,7 +53,7 @@ def test_TrajectoryIO():
     ## Test read from rumd3
     # Test read from rumd3 TrajectoryFiles
     output = rp.tools.TrajectoryIO("examples/Data/NVT_N4000_T2.0_rho1.2_KABLJ_rumd3/TrajectoryFiles").get_h5()
-    nblocks, nconfs, _ , N, D = output['block'].shape
+    nblocks, nconfs, N, D = output['block/positions'].shape
     assert (N, D) == (4000, 3), "Error reading N and D in TrajectoryIO while reading from  examples/Data/NVT_N4000_T2.0_rho1.2_KABLJ_rumd3/TrajectoryFiles"
 
     # Test read from rumd3 TrajectoryFiles, trajectory only

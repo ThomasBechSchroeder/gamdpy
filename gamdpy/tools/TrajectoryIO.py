@@ -28,17 +28,16 @@ class TrajectoryIO():
 
     >>> import gamdpy as gp
     >>> import h5py
-    >>> output = gp.tools.TrajectoryIO("examples/Data/LJ_r0.973_T0.70_toread.h5")
+    >>> output = gp.tools.TrajectoryIO("examples/Data/LJ_r0.973_T0.70_toread.h5").get_h5()
     Found .h5 file (examples/Data/LJ_r0.973_T0.70_toread.h5), loading to rumdpy as output dictionary
-    >>> output = output.get_h5()
-    >>> nblocks, nconfs, _ , N, D = output['block'].shape
+    >>> nblocks, nconfs, N, D = output['block/positions'].shape
     >>> print(f"Output file examples/Data/LJ_r0.973_T0.70.h5 containts a simulation of {N} particles in {D} dimensions")
     Output file examples/Data/LJ_r0.973_T0.70.h5 containts a simulation of 2048 particles in 3 dimensions
     >>> print(f"The simulation output is divided into {nblocks} blocks, each of them with {nconfs} configurations")
     The simulation output is divided into 8 blocks, each of them with 13 configurations
     >>> output = gp.tools.TrajectoryIO("examples/Data/NVT_N4000_T2.0_rho1.2_KABLJ_rumd3/TrajectoryFiles").get_h5()   # Read from rumd3
     Found rumd3 TrajectoryFiles, loading to rumpdy as output dictionary
-    >>> nblocks, nconfs, _ , N, D = output['block'].shape
+    >>> nblocks, nconfs, N, D = output['block/positions'].shape
     >>> print(f"File examples/Data/NVT_N4000_T2.0_rho1.2_KABLJ_rumd3/TrajectoryFiles containts a simulation of {N} particles in {D} dimensions")
     File examples/Data/NVT_N4000_T2.0_rho1.2_KABLJ_rumd3/TrajectoryFiles containts a simulation of 4000 particles in 3 dimensions
     >>> print(f"The simulation output is divided into {nblocks} blocks, each of them with {nconfs} configurations")
@@ -170,13 +169,16 @@ class TrajectoryIO():
                 pos_array  = np.c_[tmp_data['x'].to_numpy(), tmp_data['y'].to_numpy(), tmp_data['z'].to_numpy()]
                 img_array  = np.c_[tmp_data['imx'].to_numpy(), tmp_data['imy'].to_numpy(), tmp_data['imz'].to_numpy()]
                 positions.append(pos_array.reshape((-1,npart,dim)))
-                images.append(pos_array.reshape((-1,npart,dim)))
+                images.append(img_array.reshape((-1,npart,dim)))
             # Saving data in output h5py
             output.attrs['dt'] =  timestep 
             output.attrs['simbox_initial'] = lengths 
-            output.attrs['vectors_names'] = ["r", "r_im"]
-            output.create_dataset("block", shape=(len(traj_files), 1+ntrajinblock, 2, npart, dim))
-            output['block'][:,:,0,:,:] = np.array(positions) 
+            #output.attrs['vectors_names'] = ["r", "r_im"]
+            output.create_group('block')
+            output['block'].create_dataset('positions', shape=(len(traj_files), 1+ntrajinblock, npart, dim), dtype=np.float32)
+            output['block/positions'][:,:,:,:] = np.array(positions) 
+            output['block'].create_dataset('images', shape=(len(traj_files), 1+ntrajinblock, npart, dim), dtype=np.int32)
+            output['block/images'][:,:,:,:] = np.array(images) 
             output.create_dataset("ptype", data=type_array[:npart], shape=(npart), dtype=np.int32)
 
         # Read energies 
