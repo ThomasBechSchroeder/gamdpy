@@ -1,4 +1,7 @@
 in tests/test_structure_factor.py problem at line 41 when doing this:
+        q_max: float = 16.0
+        calc_struct_fact = rp.CalculatorStructureFactor(configuration)
+        calc_struct_fact.generate_q_vectors(q_max=q_max)
 >       for _ in sim.run_timeblocks():
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 gamdpy/simulation/Simulation.py:436: in run_timeblocks
