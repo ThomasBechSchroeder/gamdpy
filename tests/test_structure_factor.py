@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import gamdpy as rp
+from object_lib import pairpot_LJ as pair_potential
 
 def test_structure_factor():
     # verbose = False
@@ -13,9 +14,9 @@ def test_structure_factor():
     configuration.make_lattice(rp.unit_cells.FCC, [8, 8, 8], rho=0.973)
     configuration['m'] = 1.0
     configuration.randomize_velocities(temperature=temperature * 2)
-    pair_func = rp.apply_shifted_force_cutoff(rp.LJ_12_6_sigma_epsilon)
-    sig, eps, cut = 1.0, 1.0, 2.5
-    pair_potential = rp.PairPotential(pair_func, params=[sig, eps, cut], max_num_nbs=1000)
+    #pair_func = rp.apply_shifted_force_cutoff(rp.LJ_12_6_sigma_epsilon)
+    #sig, eps, cut = 1.0, 1.0, 2.5
+    #pair_potential = rp.PairPotential(pair_func, params=[sig, eps, cut], max_num_nbs=1000)
     integrator = rp.integrators.NVT(temperature=temperature, tau=0.2, dt=0.005)
 
     runtime_actions = [rp.ConfigurationSaver(), 
