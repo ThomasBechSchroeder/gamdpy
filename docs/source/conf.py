@@ -31,6 +31,8 @@ extensions = [
     'sphinx.ext.napoleon',
 ]
 
+myst_nb_execution_mode = "off"  # include the notebooks as static content (avoid running on readthedocs.org)
+
 templates_path = ['_templates']
 exclude_patterns = []
 
