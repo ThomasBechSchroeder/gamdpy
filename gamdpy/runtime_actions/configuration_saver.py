@@ -90,8 +90,8 @@ class ConfigurationSaver(RuntimeAction):
         return zero_kernel[num_blocks, pb]
 
     def update_at_end_of_timeblock(self, block: int, output):
-        print(np.size(self.d_conf_array.copy_to_host(), axis=0))
-        output['block/positions'][block], output['block/images'][block] = self.d_conf_array.copy_to_host()[:]
+        data = self.d_conf_array.copy_to_host()
+        output['block/positions'][block], output['block/images'][block] = data[block][:]
         #output['block'][block, :] = self.d_conf_array.copy_to_host()
         if self.include_simbox:
             output['block/sim_box'][block, :] = self.d_sim_box_output_array.copy_to_host()
