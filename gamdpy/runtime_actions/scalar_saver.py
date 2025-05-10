@@ -62,12 +62,12 @@ class ScalarSaver(RuntimeAction):
 
         # Setup output
         shape = (self.num_timeblocks, self.scalar_saves_per_block, self.num_scalars)
-        if 'scalars' in output.keys():
-            del output['scalars']
-        output.create_dataset('scalars', shape=shape,
+        if 'scalar_saver' in output.keys():
+            del output['scalar_saver']
+        output.create_dataset('scalar_saver/scalars', shape=shape,
                 chunks=(1, self.scalar_saves_per_block, self.num_scalars), dtype=np.float32)
-        output.attrs['steps_between_output'] = self.steps_between_output
-        output.attrs['scalar_names'] = list(self.sid.keys())
+        output.attrs['scalar_saver/steps_between_output'] = self.steps_between_output
+        output.attrs['scalar_saver/scalar_names'] = list(self.sid.keys())
 
         flag = config.CUDA_LOW_OCCUPANCY_WARNINGS
         config.CUDA_LOW_OCCUPANCY_WARNINGS = False
@@ -97,7 +97,7 @@ class ScalarSaver(RuntimeAction):
         self.zero_kernel(self.d_output_array)
 
     def update_at_end_of_timeblock(self, block:int, output):
-        output['scalars'][block, :] = self.d_output_array.copy_to_host()
+        output['scalar_saver/scalars'][block, :] = self.d_output_array.copy_to_host()
 
     def get_prestep_kernel(self, configuration, compute_plan, verbose=False):
         pb, tp, gridsync = [compute_plan[key] for key in ['pb', 'tp', 'gridsync']]

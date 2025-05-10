@@ -20,7 +20,7 @@ filename = sys.argv[1] # get filename (without .h5)
 output = gp.tools.TrajectoryIO(filename+'.h5')
 output = output.get_h5()
 
-nblocks, nconfs, _ , N, D = output['block'].shape
+nblocks, nconfs, N, D = output['block/positions'].shape
 simbox = output.attrs['simbox_initial']
 volume = np.prod(simbox)
 rho = N/volume
@@ -38,7 +38,7 @@ print(np.mean(K>0))
 
 # Time
 dt = output.attrs['dt']
-time = np.arange(len(U)) * dt * output.attrs['steps_between_output']
+time = np.arange(len(U)) * dt * output.attrs['scalar_saver/steps_between_output']
 
 # Compute mean kinetic temperature
 dof = D * N - D  # degrees of freedom
