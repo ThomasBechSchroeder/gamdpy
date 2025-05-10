@@ -85,7 +85,7 @@ columns = ['U', 'W', 'K', 'lapU', 'Fsq', 'Vol']
 with h5py.File(filename, "r") as f:
     data = np.array(gp.extract_scalars(f, columns, first_block=1))
 df = pd.DataFrame(data.T, columns=columns)
-df['t'] = np.arange(len(df['U'])) * dt * sim.output.attrs["steps_between_output"]
+df['t'] = np.arange(len(df['U'])) * dt * sim.output.attrs["scalar_saver/steps_between_output"]
 gp.plot_scalars(df, configuration.N, configuration.D, figsize=(10, 8), block=False)
 
 mu = np.mean(df['U']) / configuration.N
