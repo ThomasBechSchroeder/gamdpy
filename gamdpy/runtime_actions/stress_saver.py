@@ -45,11 +45,11 @@ class StressSaver(RuntimeAction):
 
         # Setup output
         shape = (self.num_timeblocks, self.stress_saves_per_block, D, D)
-        if 'stress_tensor_times_volume' in output.keys():
-            del output['stress_tensor_times_volume']
-        output.create_dataset('stress_tensor_times_volume', shape=shape,
+        if 'stress_saver' in output.keys():
+            del output['stress_saver']
+        output.create_dataset('stress_saver/stress_tensor_times_volume', shape=shape,
                 chunks=(1, self.stress_saves_per_block, D, D), dtype=np.float32)
-        output.attrs['stress_steps_between_output'] = self.steps_between_output
+        output.attrs['stress_saver/steps_between_output'] = self.steps_between_output
 
         flag = config.CUDA_LOW_OCCUPANCY_WARNINGS
         config.CUDA_LOW_OCCUPANCY_WARNINGS = False
@@ -84,7 +84,7 @@ class StressSaver(RuntimeAction):
 
     def update_at_end_of_timeblock(self, block:int, output):
         volume = self.configuration.get_volume()
-        output['stress_tensor_times_volume'][block, :] = self.d_output_array.copy_to_host() / volume
+        output['stress_saver/stress_tensor_times_volume'][block, :] = self.d_output_array.copy_to_host() / volume
 
 
     def get_prestep_kernel(self, configuration, compute_plan):
@@ -174,7 +174,7 @@ def extract_stress_tensor(data, first_block=0, D=3):
         three-dimensional numpy array containing the extracted tensor data.
 
     """
-    stress_data = data['stress_tensor_times_volume']
+    stress_data = data['stress_saver/stress_tensor_times_volume']
     nblocks, per_block, _, _ = stress_data.shape
     final_rows = (nblocks-first_block) * per_block
     return stress_data[first_block:,:,:].reshape(final_rows, D, D)
