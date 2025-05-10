@@ -5,14 +5,13 @@ Gamdpy implements molecular dynamics on GPU's in Python, relying heavily on the 
 The gamdpy package being pure Python (letting numba do the heavy lifting of generating fast code) results in an extremely extendable package: simply by interjecting Python functions in the right places, 
 the (experienced) user can extend most aspect of the code, including new integrators, new pair-potentials, new properties to be calculated during simulation, new particle properties, ...  
 
-[Installation](installation.md)
+[The Users Guide (gamdpy.readthedocs.io)](https://gamdpy.readthedocs.io)
 
-[The users guide to gamdpy](https://dirac.ruc.dk/~urp/gamdpy/)
+[Installation](installation.md)
 
 [Examples](examples/README.md)
 
 [Benchmarks (preliminary)](benchmarks/README.md)
-
 
 ## Overall structure of the package
 
