@@ -77,7 +77,7 @@ print(f"Mean kinetic energy per particle: {np.mean(K) / N}")
 
 # Time
 dt = sim.integrator.dt
-time = np.arange(len(U)) * dt * sim.output.attrs["scalar_saver/steps_between_output"]
+time = np.arange(len(U)) * dt * sim.output['scalar_saver'].attrs["steps_between_output"]
 print(f"Total time of analysed trajectory: {time[-1]}")
 
 # Compute kinetic temperature
