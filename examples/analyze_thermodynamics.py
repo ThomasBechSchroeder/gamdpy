@@ -38,7 +38,7 @@ print(np.mean(K>0))
 
 # Time
 dt = output.attrs['dt']
-time = np.arange(len(U)) * dt * output.attrs['scalar_saver/steps_between_output']
+time = np.arange(len(U)) * dt * output['scalar_saver'].attrs['steps_between_output']
 
 # Compute mean kinetic temperature
 dof = D * N - D  # degrees of freedom
