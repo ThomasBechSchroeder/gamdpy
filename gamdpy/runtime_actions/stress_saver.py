@@ -47,9 +47,10 @@ class StressSaver(RuntimeAction):
         shape = (self.num_timeblocks, self.stress_saves_per_block, D, D)
         if 'stress_saver' in output.keys():
             del output['stress_saver']
+        grp = output.create_group('stress_saver')
         output.create_dataset('stress_saver/stress_tensor_times_volume', shape=shape,
                 chunks=(1, self.stress_saves_per_block, D, D), dtype=np.float32)
-        output.attrs['stress_saver/steps_between_output'] = self.steps_between_output
+        grp.attrs['steps_between_output'] = self.steps_between_output
 
         flag = config.CUDA_LOW_OCCUPANCY_WARNINGS
         config.CUDA_LOW_OCCUPANCY_WARNINGS = False

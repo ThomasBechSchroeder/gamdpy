@@ -16,9 +16,14 @@ import sys
 
 max_plot_points = 100_000
 
-filename = sys.argv[1] # get filename (without .h5)
-output = gp.tools.TrajectoryIO(filename+'.h5')
-output = output.get_h5()
+argv = sys.argv.copy()
+argv.pop(0)  # remove scriptname
+if argv:
+    filename = argv.pop(0) # get filename (.h5 added by script)
+else:
+    filename = 'Data/LJ_r0.973_T0.70_toread' # Used in testing
+
+output = gp.tools.TrajectoryIO(filename+'.h5').get_h5()
 
 nblocks, nconfs, N, D = output['block/positions'].shape
 simbox = output.attrs['simbox_initial']

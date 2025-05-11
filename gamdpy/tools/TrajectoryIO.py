@@ -34,7 +34,7 @@ class TrajectoryIO():
     >>> print(f"Output file examples/Data/LJ_r0.973_T0.70.h5 containts a simulation of {N} particles in {D} dimensions")
     Output file examples/Data/LJ_r0.973_T0.70.h5 containts a simulation of 2048 particles in 3 dimensions
     >>> print(f"The simulation output is divided into {nblocks} blocks, each of them with {nconfs} configurations")
-    The simulation output is divided into 8 blocks, each of them with 13 configurations
+    The simulation output is divided into 32 blocks, each of them with 12 configurations
     >>> output = gp.tools.TrajectoryIO("examples/Data/NVT_N4000_T2.0_rho1.2_KABLJ_rumd3/TrajectoryFiles").get_h5()   # Read from rumd3
     Found rumd3 TrajectoryFiles, loading to rumpdy as output dictionary
     >>> nblocks, nconfs, N, D = output['block/positions'].shape
