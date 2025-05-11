@@ -204,11 +204,12 @@ class TrajectoryIO():
                 tmp_data   = pd.read_csv(energies, skiprows=1, names=col_names, usecols = [i for i in range(len(col_names))], delimiter=" ")
                 all_energies.append(tmp_data.to_numpy())
             # Saving data in output h5py
+            grp = output.create_group('scalar_saver')
             if 'dt' in output.attrs.keys() and 'Dt' in meta_data: 
-                output.attrs['steps_between_output'] = float(save_interval)/float(output.attrs['dt'])
-            output.attrs['time_between_output'] = save_interval
-            output.attrs['scalar_names'] = list(col_names)
-            output.create_dataset('scalars', data=np.vstack(all_energies))
+                output['scalar_saver'].attrs['steps_between_output'] = float(save_interval)/float(output.attrs['dt'])
+            output['scalar_saver'].attrs['time_between_output'] = save_interval
+            output['scalar_saver'].attrs['scalar_names'] = list(col_names)
+            output.create_dataset('scalar_saver/scalars', data=np.vstack(all_energies))
 
         return output
 
