@@ -1,9 +1,9 @@
 def test_Simbox():
-    import gamdpy as rp
+    import gamdpy as gp
     import numpy as np
 
-    simbox = rp.Orthorhombic(D=3, lengths=np.array([3,4,5]))
-    assert isinstance(simbox, rp.Orthorhombic), "Problem with Simbox __init__"
+    simbox = gp.Orthorhombic(D=3, lengths=np.array([3,4,5]))
+    assert isinstance(simbox, gp.Orthorhombic), "Problem with Simbox __init__"
     assert np.all(simbox.lengths == np.array([3,4,5])), "Problem with Simbox.lengths"
 
     ## Test dist_sq_dr_function
@@ -51,18 +51,18 @@ def test_Simbox():
 
 def test_LeesEdwards():
     import pytest
-    import gamdpy as rp
+    import gamdpy as gp
     import numpy as np
 
     # Test 1D error 
     # https://stackoverflow.com/questions/23337471/how-do-i-properly-assert-that-an-exception-gets-raised-in-pytest
     with pytest.raises(ValueError) as e_info:
-        simbox = rp.LeesEdwards(D=1, lengths=np.array([3,4]), box_shift=1.0)
+        simbox = gp.LeesEdwards(D=1, lengths=np.array([3,4]), box_shift=1.0)
     assert e_info.type is ValueError
 
     # Test normal case
-    simbox = rp.LeesEdwards(D=3, lengths=np.array([3,4,5]), box_shift=1.0)
-    assert isinstance(simbox, rp.LeesEdwards), "Problem with simbox __init__"
+    simbox = gp.LeesEdwards(D=3, lengths=np.array([3,4,5]), box_shift=1.0)
+    assert isinstance(simbox, gp.LeesEdwards), "Problem with simbox __init__"
     assert np.all(simbox.lengths == np.array([3,4,5])), "Problem with simbox.lengths"
 
 if __name__ == '__main__':

@@ -1,5 +1,5 @@
 def test_topology():
-    import gamdpy as rp
+    import gamdpy as gp
     import numpy as np
     import random
 
@@ -15,14 +15,14 @@ def test_topology():
     
     random.shuffle(positions)
 
-    bonds = rp.bonds_from_positions(positions=positions, cut_off=cut_off, bond_type=0)
+    bonds = gp.bonds_from_positions(positions=positions, cut_off=cut_off, bond_type=0)
     assert len(bonds) == num_particles-1, f'Did not find the correct number of bonds:  {len(bonds)=} != {num_particles-1=}'
     # add test: duplicated bonds, distance
     
     bonds = [ [bond[1], bond[0], bond[2]]  if random.choice([False, True]) else bond for bond in bonds] # revert ~half bonds
     bonds_without_type = [ bond[0:2] for bond in bonds ]
 
-    angles = rp.angles_from_bonds(bonds=bonds, angle_type=0)
+    angles = gp.angles_from_bonds(bonds=bonds, angle_type=0)
     assert len(angles) == num_particles-2, f'Incorrect number of angles:  {len(angles)=} != {num_particles-2=}'
     for index, angle in enumerate(angles):
         assert angle not in angles[index+1:], f'Duplicated angle found: {angle=}, \n{angles[index+1:]=}'
@@ -42,7 +42,7 @@ def test_topology():
     angles = [ [angle[2], angle[1], angle[0], angle[3]]  if random.choice([False, True]) else angle for angle in angles] # revert ~half dihedrals
     angles_without_type = [ angle[0:3] for angle in angles ]
 
-    dihedrals = rp.dihedrals_from_angles(angles=angles, dihedral_type=0)
+    dihedrals = gp.dihedrals_from_angles(angles=angles, dihedral_type=0)
     assert len(dihedrals) == num_particles-3, f'Incorrect number of dihedrals:  {len(dihedrals)=} != {num_particles-3=}'
     for index, dihedral in enumerate(dihedrals):
         assert dihedral not in dihedrals[index+1:], f'Duplicated dihedrals found: {dihedral=}, \n{dihedrals[index+1:]=}'

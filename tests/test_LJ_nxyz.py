@@ -1,6 +1,6 @@
 import sys
 import numpy as np
-import gamdpy as rp
+import gamdpy as gp
 from numba import cuda, config
 import pandas as pd
 import pytest
@@ -10,15 +10,15 @@ from hypothesis import given, strategies as st, settings, Verbosity, example
 def LJ(nx, ny, nz, rho=0.8442, pb=None, tp=None, skin=None, gridsync=None, UtilizeNIII=None, cut=2.5, integrator='NVE', verbose=True):
     
     # Generate configuration with a FCC lattice
-    configuration = rp.Configuration(D=3, compute_flags={'Fsq':True, 'lapU':True})
-    configuration.make_lattice(rp.unit_cells.FCC, cells=[nx, ny, nz], rho=rho)
+    configuration = gp.Configuration(D=3, compute_flags={'Fsq':True, 'lapU':True})
+    configuration.make_lattice(gp.unit_cells.FCC, cells=[nx, ny, nz], rho=rho)
     configuration['m'] = 1.0
     configuration.randomize_velocities(temperature=1.44, seed=0)
     assert configuration.N==nx*ny*nz*4, f'Wrong number particles (FCC), {configuration.N} <> {nx*ny*nz*4}'
     assert configuration.D==3, f'Wrong dimension (FCC), {configuration.D} <> {3}'
 
     # Allow for overwritting of the default compute_plan
-    compute_plan = rp.get_default_compute_plan(configuration)
+    compute_plan = gp.get_default_compute_plan(configuration)
     if pb!=None:
         compute_plan['pb'] = pb
     if tp!=None:
@@ -34,29 +34,29 @@ def LJ(nx, ny, nz, rho=0.8442, pb=None, tp=None, skin=None, gridsync=None, Utili
         print('compute_plan: ', compute_plan)
    
     # Make the pair potential.
-    pairfunc = rp.apply_shifted_force_cutoff(rp.LJ_12_6_sigma_epsilon)
+    pairfunc = gp.apply_shifted_force_cutoff(gp.LJ_12_6_sigma_epsilon)
     sig, eps, cut = 1.0, 1.0, 2.5
-    pairpot = rp.PairPotential(pairfunc, params=[sig, eps, cut], max_num_nbs=1000)  
+    pairpot = gp.PairPotential(pairfunc, params=[sig, eps, cut], max_num_nbs=1000)  
 
     # Setup the integrator
     dt = 0.005
 
     if integrator=='NVE':
-        integrator = rp.integrators.NVE(dt=dt)
+        integrator = gp.integrators.NVE(dt=dt)
 
     if integrator=='NVT':
-        integrator = rp.integrators.NVT(temperature=0.70, tau=0.2, dt=dt)
+        integrator = gp.integrators.NVT(temperature=0.70, tau=0.2, dt=dt)
         
     if integrator=='NVT_Langevin':
-        integrator = rp.integrators.NVT_Langevin(temperature=0.70, alpha=0.1, dt=dt, seed=213)
+        integrator = gp.integrators.NVT_Langevin(temperature=0.70, alpha=0.1, dt=dt, seed=213)
 
-    runtime_actions = [rp.MomentumReset(100), 
-                   rp.ConfigurationSaver(), 
-                   rp.ScalarSaver(8, {'Fsq':True, 'lapU':True, 'stresses':False}), ]
+    runtime_actions = [gp.MomentumReset(100), 
+                   gp.ConfigurationSaver(), 
+                   gp.ScalarSaver(8, {'Fsq':True, 'lapU':True, 'stresses':False}), ]
 
 
     # Setup the Simulation
-    sim = rp.Simulation(configuration, pairpot, integrator, runtime_actions,
+    sim = gp.Simulation(configuration, pairpot, integrator, runtime_actions,
                         num_timeblocks=2, steps_per_timeblock=1024 * 4,
                         storage='memory', verbose=False)
 
@@ -66,7 +66,7 @@ def LJ(nx, ny, nz, rho=0.8442, pb=None, tp=None, skin=None, gridsync=None, Utili
 
     # Make conversion to dataframe a method at some point...
     columns = ['U', 'W', 'lapU', 'Fsq', 'K']
-    data = np.array(rp.extract_scalars(sim.output, columns, first_block=1))
+    data = np.array(gp.extract_scalars(sim.output, columns, first_block=1))
     df = pd.DataFrame(data.T, columns=columns)
     return df
 

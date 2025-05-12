@@ -2,32 +2,32 @@
 
 """
 
-import gamdpy as rp
+import gamdpy as gp
 import numpy as np
 
 # Setup configuration: FCC Lattice
 rho = 0.973
-configuration = rp.Configuration(D=3, compute_flags={'stresses':True})
-configuration.make_lattice(rp.unit_cells.FCC, cells=[8, 8, 8], rho=rho)
+configuration = gp.Configuration(D=3, compute_flags={'stresses':True})
+configuration.make_lattice(gp.unit_cells.FCC, cells=[8, 8, 8], rho=rho)
 configuration['m'] = 1.0
 configuration.randomize_velocities(temperature=0.8 * 2)
 
 # Setup pair potential: Single component 12-6 Lennard-Jones
-pairfunc = rp.apply_shifted_force_cutoff(rp.LJ_12_6_sigma_epsilon)
+pairfunc = gp.apply_shifted_force_cutoff(gp.LJ_12_6_sigma_epsilon)
 sig, eps, cut = 1.0, 1.0, 2.5
-pairpot = rp.PairPotential(pairfunc, params=[sig, eps, cut], max_num_nbs=1000)
+pairpot = gp.PairPotential(pairfunc, params=[sig, eps, cut], max_num_nbs=1000)
 
 # Setup integrator: NVT
-integrator = rp.integrators.NVT(temperature=0.70, tau=0.2, dt=0.005)
+integrator = gp.integrators.NVT(temperature=0.70, tau=0.2, dt=0.005)
 
 num_timeblocks = 4
 
-runtime_actions = [rp.MomentumReset(100), 
-                   rp.ConfigurationSaver(), 
-                   rp.ScalarSaver(32, {'stresses':True}), ]
+runtime_actions = [gp.MomentumReset(100), 
+                   gp.ConfigurationSaver(), 
+                   gp.ScalarSaver(32, {'stresses':True}), ]
 
 # Setup Simulation. Total number of timesteps: num_blocks * steps_per_block
-sim = rp.Simulation(configuration, pairpot, integrator, runtime_actions,
+sim = gp.Simulation(configuration, pairpot, integrator, runtime_actions,
                     num_timeblocks=num_timeblocks, steps_per_timeblock=128,
                     storage='memory',)
 
