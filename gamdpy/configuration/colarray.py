@@ -59,46 +59,62 @@ class colarray():
         return colarray(self.column_names, self.shape, self.dtype, self.array.copy())
 
 
-def save(file, colarray):
-    """
-    Save a colarray to disk.
-    >>> ca = colarray(('r', 'v', 'f'), size=(1000,2))
-    >>> save('test_colarray', ca)
-    """
-    np.save(f'{file}.npy', colarray.array)
-    with open(f'{file}.col', 'w') as f:    # Use pickle / json
-        f.write(str(len(colarray.column_names)) + '\n')
-        for key in colarray.column_names:
-            f.write(key + '\n')
-    return
+    def save(self, filename):
+        """
+        Save a colarray to disk.
+        >>> ca = colarray(('r', 'v', 'f'), size=(1000,2))
+        >>> ca.save('my_colarray')
+        >>> # Remove the files used for storage of the colarray:
+        >>> colarray.remove_files('my_colarray')
+        """
+        np.save(f'{filename}.npy', self.array)
+        with open(f'{filename}.col', 'w') as f:    # Use pickle / json
+            f.write(str(len(self.column_names)) + '\n')
+            for key in self.column_names:
+                f.write(key + '\n')
+        return
 
 
-def load(file):
-    """
-    Load a colarray from disk.
-    >>> ca = colarray(('r', 'v', 'f'), size=(1000,2))
-    >>> ca['f'] = np.random.uniform(size=(1000,2))    
-    >>> save('test_colarray', ca)
-    >>> ca2 = load('test_colarray')
-    >>> for col in ca.column_names:
-    ...     print(np.all(ca2[col]==ca[col]))
-    True
-    True
-    True
+    def load(filename):
+        """
+        Load a colarray from disk.
+        >>> ca = colarray(('r', 'v', 'f'), size=(1000,2))
+        >>> ca['f'] = np.random.uniform(size=(1000,2))    
+        >>> ca.save('my_colarray')
+        >>> ca2 = colarray.load('my_colarray')
+        >>> for col in ca.column_names:
+        ...     print(np.all(ca2[col]==ca[col]))
+        True
+        True
+        True
+
+        Remove the files used for storage of the colarray:
+        >>> colarray.remove_files('my_colarray')
+        
+        The file(s) needs to be present:
+        >>> ca2 = colarray.load('my_colarray')
+        Traceback (most recent call last):
+            ...
+        FileNotFoundError: [Errno 2] No such file or directory: 'my_colarray.col'
+        """
+        
+        with open(f'{filename}.col', 'r') as f:
+            num_columns = int(f.readline())
+            column_names = []
+            for i in range(num_columns):
+                column_names.append(f.readline()[:-1]) # removing '\n'
+        array = np.load(f'{filename}.npy')
+        return colarray(column_names, array.shape[1:], array=array)
     
-    The file(s) needs to be present:
-    >>> ca2 = load('test_colarray_not_there')
-    Traceback (most recent call last):
-        ...
-    FileNotFoundError: [Errno 2] No such file or directory: 'test_colarray_not_there.col'
-    """
-    
-    with open(f'{file}.col', 'r') as f:
-        num_columns = int(f.readline())
-        column_names = []
-        for i in range(num_columns):
-            column_names.append(f.readline()[:-1]) # removing '\n'
-    array = np.load(f'{file}.npy')
-    return colarray(column_names, array.shape[1:], array=array)
-
+    def remove_files(filename):
+        """
+        Remove files storing a colarray
+        >>> ca = colarray(('r', 'v', 'f'), size=(1000,2))
+        >>> ca.save('my_colarray')
+        >>> colarray.remove_files('my_colarray')
+        """
+        
+        import os
+        os.remove(f'{filename}.col') 
+        os.remove(f'{filename}.npy')
 
