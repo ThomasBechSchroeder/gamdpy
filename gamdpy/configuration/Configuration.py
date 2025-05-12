@@ -420,8 +420,8 @@ class Configuration:
         output[group_name].create_dataset('v', data=self['v'], dtype=np.float32)
         output[group_name].create_dataset('f', data=self['f'], dtype=np.float32)
         # Saving vectors all together
-        #output[group_name].create_dataset('vectors', data=self.vectors, dtype=np.float32) <-- This doesn't work
-        #output[f"{group_name}/vectors"].attrs['vector_columns'] = self.vector_columns
+        output[group_name].create_dataset('vectors', data=np.hstack([self['r'], self['v'], self['f']]), dtype=np.float32) #<-- This doesn't work
+        output[f"{group_name}/vectors"].attrs['vector_columns'] = self.vector_columns
         # Saving other things
         output[group_name].create_dataset('ptype', data=self.ptype, dtype=np.int32)
         output[group_name].create_dataset('m', data=self['m'], dtype=np.float32)
