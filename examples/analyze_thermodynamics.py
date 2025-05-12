@@ -18,10 +18,13 @@ max_plot_points = 100_000
 
 argv = sys.argv.copy()
 argv.pop(0)  # remove scriptname
-if argv:
-    filename = argv.pop(0) # get filename (.h5 added by script)
+if __name__ == "__main__":
+    if argv:
+        filename = argv.pop(0) # get filename (.h5 added by script)
+    else:
+        filename = 'Data/LJ_r0.973_T0.70_toread' # Used in testing
 else:
-    filename = 'Data/LJ_r0.973_T0.70_toread' # Used in testing
+    filename = 'Data/LJ_r0.973_T0.70_toread'
 
 output = gp.tools.TrajectoryIO(filename+'.h5').get_h5()
 
@@ -39,7 +42,7 @@ mW = np.mean(W)
 mK = np.mean(K)
 
 # Hack to find parts of data not valid
-print(np.mean(K>0))
+#print(np.mean(K>0))
 
 # Time
 dt = output.attrs['dt']
@@ -60,11 +63,11 @@ R = np.dot(dW,dU)/(np.dot(dW,dW)*np.dot(dU,dU))**0.5
 
 # Plot 
 plotindex = range(len(U))
-print(len(plotindex))
+#print(len(plotindex))
 if len(U)>max_plot_points:
     step = int(len(U)/max_plot_points+1)
     plotindex = plotindex[::step]
-print(len(plotindex))
+#print(len(plotindex))
 
 title = f'N={N},  rho={rho:.3f},  Tkin={np.mean(T_kin):.3f},  P={np.mean(P):.3f},  R={R:.3f},  gamma={gamma:.3f}'
 
@@ -95,4 +98,5 @@ axs[2].axhline(mK / N, color='k', linestyle='--')
 axs[2].legend(loc=     'upper right')
 
 fig.savefig(filename+'_thermodynamics.pdf')
-plt.show(block=True)
+if __name__ == "__main__":
+    plt.show(block=True)

@@ -76,7 +76,7 @@ class Test_examples:
         self.make_one("analyze_structure", ["Data/LJ_r0.973_T0.70_toread_rdf.pdf","Data/LJ_r0.973_T0.70_toread_rdf.pkl"])
 
     def test_ASD(self):
-        self.make_one("ASD")
+        self.make_one("ASD", ["Data/ASD_rho1.863_T0.465.h5"])
 
     def test_NVU_RT_kob_andersen(self):
         self.make_one("NVU_RT_kob_andersen")
@@ -100,7 +100,7 @@ class Test_examples:
         self.make_one("widoms_particle_insertion")
 
     def test_LJchain(self):
-        self.make_one("LJchain")
+        self.make_one("LJchain", ["Data/LJchain10_Rho1.00_T0.700.h5"])
 
     def test_write_to_lammps(self):
         self.make_one("write_to_lammps", ["dump.initial", "dump.lammps"])
