@@ -111,22 +111,22 @@ class StressSaver(RuntimeAction):
             steps_between_output, output_array = runtime_action_params # Needs to be compatible with get_params above
             if step%steps_between_output==0:
                 save_index = step//steps_between_output
-            
-                global_id, my_t = cuda.grid(2)
-                if global_id < num_part and my_t == 0:
-                    my_m = scalars[global_id][m_id]
-                    for k in range(D):
-                        cuda.atomic.add(output_array, (save_index, 0, k), vectors[sx_id][global_id][k] -
-                                        my_m * vectors[v_id][global_id][0]*vectors[v_id][global_id][k])
+                if save_index < output_array.shape[0]:
+                    global_id, my_t = cuda.grid(2)
+                    if global_id < num_part and my_t == 0:
+                        my_m = scalars[global_id][m_id]
+                        for k in range(D):
+                            cuda.atomic.add(output_array, (save_index, 0, k), vectors[sx_id][global_id][k] -
+                                            my_m * vectors[v_id][global_id][0]*vectors[v_id][global_id][k])
 
-                        cuda.atomic.add(output_array, (save_index, 1, k), vectors[sy_id][global_id][k] -
-                                                        my_m * vectors[v_id][global_id][1]*vectors[v_id][global_id][k])
-                        if D > 2:
-                            cuda.atomic.add(output_array, (save_index, 2, k), vectors[sz_id][global_id][k] -
-                                                           my_m * vectors[v_id][global_id][2]*vectors[v_id][global_id][k])
-                        if D > 3:
-                            cuda.atomic.add(output_array, (save_index, 3, k), vectors[sw_id][global_id][k] -
-                                                           my_m * vectors[v_id][global_id][3]*vectors[v_id][global_id][k])
+                            cuda.atomic.add(output_array, (save_index, 1, k), vectors[sy_id][global_id][k] -
+                                            my_m * vectors[v_id][global_id][1]*vectors[v_id][global_id][k])
+                            if D > 2:
+                                cuda.atomic.add(output_array, (save_index, 2, k), vectors[sz_id][global_id][k] -
+                                                my_m * vectors[v_id][global_id][2]*vectors[v_id][global_id][k])
+                            if D > 3:
+                                cuda.atomic.add(output_array, (save_index, 3, k), vectors[sw_id][global_id][k] -
+                                                my_m * vectors[v_id][global_id][3]*vectors[v_id][global_id][k])
             return
 
         kernel = cuda.jit(device=gridsync)(kernel)
