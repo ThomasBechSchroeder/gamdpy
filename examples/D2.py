@@ -46,4 +46,5 @@ plt.plot(x_vals, y_vals, 'k--', label='Box')
 plt.axis('equal')
 plt.xlabel(r'$x$')
 plt.ylabel(r'$y$')
-plt.show()
+if __name__ == "__main__":
+    plt.show()

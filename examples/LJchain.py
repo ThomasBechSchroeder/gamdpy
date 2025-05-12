@@ -112,7 +112,8 @@ axs[2].grid(linestyle='--', alpha=0.5)
 axs[0].loglog(dynamics['times'], dynamics['msd'], 'o--')
 axs[1].semilogx(dynamics['times'], dynamics['alpha2'], 'o--')
 axs[2].semilogx(dynamics['times'], dynamics['Fs'], 'o--')
-plt.show(block=False)
+if __name__ == "__main__":
+    plt.show(block=False)
 
 rdf = calc_rdf.read()
 rdf['rdf'] = np.mean(rdf['rdf'], axis=0)
@@ -122,4 +123,5 @@ axs.set_xlabel('Distance')
 axs.grid(linestyle='--', alpha=0.5)
 axs.plot(rdf['distances'], rdf['rdf'], '-')
 axs.set_xlim((0.5, 3.5))
-plt.show(block=True)
+if __name__ == "__main__":
+    plt.show(block=True)

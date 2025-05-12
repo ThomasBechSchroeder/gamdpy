@@ -108,7 +108,8 @@ plt.plot(r, umm_numerical, '--', label='u\'\'(r), numerical')
 plt.xlabel('r')
 plt.ylabel('u, s, u\'\'')
 plt.legend()
-plt.show()
+if __name__ == "__main__":
+    plt.show()
 
 # Setup configuration: FCC Lattice
 configuration = gp.Configuration(D=3)

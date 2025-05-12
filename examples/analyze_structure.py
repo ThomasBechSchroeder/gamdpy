@@ -65,5 +65,6 @@ plt.xlabel('Distance')
 plt.ylabel('Radial Distribution Function')
 plt.savefig(filename+'_rdf.pdf')
 print(f"Wrote: {filename+'_rdf.pdf'}")
-plt.show()
+if __name__ == "__main__":
+    plt.show()
 

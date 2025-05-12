@@ -1,6 +1,5 @@
 import numpy as np
 
-
 def test_potential_functions() -> None:
     import gamdpy as gp
     import numba
@@ -29,8 +28,8 @@ def test_potential_functions() -> None:
     assert callable(gp.make_IPL_n(12)), "Problem with gp.make_IPL_n"
     from sympy.abc import r,s,e
     potLJ = 4*e*((s/r)**(12)-(s/r)**6)
-    potLJ_gp = gp.make_potential_function_from_sympy(potLJ, [s, e])
-    assert potLJ_gp(1, [2,3]) == gp.LJ_12_6_sigma_epsilon(1, [2, 3]), "Problem with gp.make_potential_function_from_sympy"
+    potLJ_gp = gp.make_potential_function_from_sympy(potLJ, (s, e))
+    assert potLJ_gp(1, (2,3)) == gp.LJ_12_6_sigma_epsilon(1, [2, 3]), "Problem with gp.make_potential_function_from_sympy"
 
     # Test SAAP potential
     number_of_params = 8

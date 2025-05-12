@@ -102,7 +102,8 @@ plt.axhline(np.mean(U) / N, color='k', linestyle='--', label='Mean')
 plt.xlabel('Time')
 plt.ylabel('Potential energy')
 plt.legend()
-plt.show()
+if __name__ == "__main__":
+    plt.show()
 
 
 ########################################
@@ -140,6 +141,7 @@ plt.xlim(1, None)
 plt.ylim(0, None)
 plt.xlabel('Number of blocks')
 plt.ylabel('Estimated error (95% confidence interval)')
-plt.show()
+if __name__ == "__main__":
+    plt.show()
 
 print(f'Potential energy per particle {np.mean(U) / N:.4f} ± {error:.4f} (95% confidence interval)')

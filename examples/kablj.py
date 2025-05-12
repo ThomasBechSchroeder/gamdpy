@@ -108,7 +108,8 @@ if rho==1.200 and temperature==0.800:
        print(f'Excess heat capacity: {cvex3:.3f}')
        print(f'Virial                {mw3:.4f}')
 
-gp.plot_scalars(df, configuration.N,  configuration.D, figsize=(10,8), block=False)
+if __name__ == "__main__":
+    gp.plot_scalars(df, configuration.N,  configuration.D, figsize=(10,8), block=False)
 
 dyn = gp.tools.calc_dynamics(sim.output, first_block=0, qvalues=[7.5, 5.5])
 fig, axs = plt.subplots(1, 1, figsize=(6,4))
@@ -122,7 +123,8 @@ if os.path.isfile(rumd3filename):
      axs.loglog(msd3[:21,0], msd3[:21,1:], '--', label=['A (rumd3)', 'B (rumd3)'])
 
 axs.legend()
-plt.show(block=True)
+if __name__ == "__main__":
+    plt.show(block=True)
 
 if rho==1.200 and temperature==0.800:
      print('\nTesting complience with Rumd3:')

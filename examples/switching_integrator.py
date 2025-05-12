@@ -76,4 +76,5 @@ plt.plot(U1, '.-', label='Integrator1, Equilibration')
 plt.plot(U2, '.-', label='Integrator1, Production')
 plt.plot(U3, '.-', label='Integrator2, Production')
 plt.legend()
-plt.show()
+if __name__ == "__main__":
+    plt.show()

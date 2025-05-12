@@ -57,7 +57,8 @@ def plot_scalars_old(df, N, D, figsize, block=True):
         axs[1, 1].set_ylabel('W/N')
         axs[1, 1].legend()
 
-    plt.show(block=block)
+    if __name__ == "__main__":
+        plt.show(block=block)
 
     return
 
@@ -114,7 +115,8 @@ def plot_scalars(df, N, D, figsize, block=True):
         axs[1, 1].set_ylabel('W/N')
         axs[1, 1].legend()
 
-    plt.show(block=block)
+    if __name__ == "__main__":
+        plt.show(block=block)
 
     return
 

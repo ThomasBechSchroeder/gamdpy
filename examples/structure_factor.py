@@ -71,5 +71,6 @@ plt.xlabel(r'Length of wave-vector, $|q|$ ($\sigma^{-1}$)')
 plt.ylabel(r'Static structure factor, $S(|q|)$')
 plt.ylim(1e-2, 10)
 plt.xlim(0, max(q))
-plt.show()
+if __name__ == "__main__":
+    plt.show()
 

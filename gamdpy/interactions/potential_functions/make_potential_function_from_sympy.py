@@ -37,7 +37,7 @@ def make_potential_function_from_sympy(ufunc, param_names) -> callable:
 
     # LC: There is a problem with lambdify and lists:
     # https://numba.readthedocs.io/en/stable/reference/deprecation.html#deprecation-of-reflection-for-list-and-set-types
-    # Tried to fix it but there is a problem with param_names being a list of sympy Symbols
+    # Making param_names a tuple seems to fix the warning
     u_lam = numba.njit(lambdify([r, param_names], ufunc, 'numpy'))  # Jitted python functions
     s_lam = numba.njit(lambdify([r, param_names], sfunc, 'numpy'))
     umm_lam = numba.njit(lambdify([r, param_names], ummfunc, 'numpy'))
