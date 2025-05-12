@@ -367,6 +367,67 @@ class Configuration:
         self.vectors['r'] *= scale_factor
         self.simbox.lengths *= scale_factor
 
+    def save(self, output: h5py.File, group_name: str, mode="w") -> None:
+        """ Write a configuration to a HDF5 file
+    
+        Parameters
+        ----------
+
+        configuration : gamdpy.Configuration
+            a gamdpy configuration object
+
+        output : h5py.File
+            h5 file
+
+        group_name : str
+            name of the group which will be created in the h5 and in which
+            the configuration will be saved
+
+        mode: str
+            default value is "w" and corresponds to replacing existing dataset
+
+        Example
+        -------
+
+        >>> import os
+        >>> import gamdpy as gp
+        >>> conf = gp.Configuration(D=3)
+        >>> conf.make_positions(N=10, rho=1.0)
+        >>> conf.save(output=h5py.File("final.h5", "w"), group_name="configuration", mode="w")
+        >>> os.remove("final.h5")       # Removes file (for doctests)
+
+        """
+
+        # Creating group group_name in h5 root
+        if group_name in output.keys() and mode=="w":
+            print(f"{group_name} already present in h5 root, replacing it")
+            del group_name
+            output.create_group(group_name)
+        # Checks if group group_name exists in case mode="append"
+        elif group_name not in output.keys() and mode=="a":
+            print(f"{group_name} is not a group in h5 root, cannot append")
+        elif group_name not in output.keys() and mode=="w":
+            output.create_group(group_name)
+        else:
+            raise ValueError("Unexpected combination of input in save method of Configuration")
+
+        # Save attributes of group group_name
+#        output[group_name].attrs['simbox'] = self.simbox.lengths
+
+        # Saving vectors separately
+        output[group_name].create_dataset('r', data=self['r'], dtype=np.float32)
+        output[f"{group_name}/r"].attrs['simbox'] = self.simbox.lengths
+        output[group_name].create_dataset('v', data=self['v'], dtype=np.float32)
+        output[group_name].create_dataset('f', data=self['f'], dtype=np.float32)
+        # Saving vectors all together
+        #output[group_name].create_dataset('vectors', data=self.vectors, dtype=np.float32) <-- This doesn't work
+        #output[f"{group_name}/vectors"].attrs['vector_columns'] = self.vector_columns
+        # Saving other things
+        output[group_name].create_dataset('ptype', data=self.ptype, dtype=np.int32)
+        output[group_name].create_dataset('m', data=self['m'], dtype=np.float32)
+        output[group_name].create_dataset('r_im', data=self.r_im, dtype=np.int32)
+        output[group_name].create_dataset('scalars', data=self.scalars, dtype=np.float32)
+        output[f"{group_name}/scalars"].attrs['scalar_columns'] = self.scalar_columns
 
 # Helper functions
 
