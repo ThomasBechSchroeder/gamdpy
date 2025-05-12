@@ -390,11 +390,17 @@ class Configuration:
         -------
 
         >>> import os
+        >>> import h5py
         >>> import gamdpy as gp
         >>> conf = gp.Configuration(D=3)
         >>> conf.make_positions(N=10, rho=1.0)
         >>> conf.save(output=h5py.File("final.h5", "w"), group_name="configuration", mode="w")
         >>> os.remove("final.h5")       # Removes file (for doctests)
+        >>> with h5py.File("manyconfs.h5", "a") as fout: 
+        ...     conf.save(output=fout, group_name="restarts/restart0000", mode="w")
+        ...     conf.save(output=fout, group_name="restarts/restart0001", mode="w")
+        ...     conf.save(output=fout, group_name="restarts/restart0002", mode="w")
+        >>> os.remove("manyconfs.h5")       # Removes file (for doctests)
 
         """
 
