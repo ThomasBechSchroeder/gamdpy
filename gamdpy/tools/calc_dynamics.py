@@ -30,9 +30,9 @@ def calc_dynamics(trajectory, first_block, qvalues=None):
     num_types = np.max(ptype) + 1
     if isinstance(qvalues, float):
         qvalues = np.ones(num_types)*qvalues
-    num_blocks, conf_per_block, N, D = trajectory['block/positions'].shape
-    blocks = trajectory['block/positions']  # If picking out dataset in inner loop: Very slow!
-    images = trajectory['block/images']
+    num_blocks, conf_per_block, N, D = trajectory['trajectory_saver/positions'].shape
+    blocks = trajectory['trajectory_saver/positions']  # If picking out dataset in inner loop: Very slow!
+    images = trajectory['trajectory_saver/images']
 
     #print(num_types, first_block, num_blocks, conf_per_block, _, N, D, qvalues)
     if first_block > num_blocks - 1:

@@ -35,22 +35,22 @@ class ConfigurationSaver(RuntimeAction):
         if verbose:
             print(f'Storing results in memory. Expected footprint {self.num_timeblocks * self.conf_per_block * self.num_vectors * self.configuration.N * self.configuration.D * 4 / 1024 / 1024:.2f} MB.')
 
-        if 'block' in output.keys():
-            del output['block']
-        output.create_group('block')
-        output.create_dataset('block/positions', 
+        if 'trajectory_saver' in output.keys():
+            del output['trajectory_saver']
+        output.create_group('trajectory_saver')
+        output.create_dataset('trajectory_saver/positions', 
                               shape=(self.num_timeblocks, self.conf_per_block, self.configuration.N, self.configuration.D),
                               chunks=(1, 1, self.configuration.N, self.configuration.D), 
                               dtype=np.float32)
-        output.create_dataset('block/images', 
+        output.create_dataset('trajectory_saver/images', 
                               shape=(self.num_timeblocks, self.conf_per_block, self.configuration.N, self.configuration.D),
                               chunks=(1, 1, self.configuration.N, self.configuration.D), 
                               dtype=np.int32)
         #output.attrs['vectors_names'] = list(self.sid.keys())
         if self.include_simbox:
-            if 'sim_box' in output['block'].keys():
-                del output['block/sim_box']
-            output.create_dataset('block/sim_box', 
+            if 'sim_box' in output['trajectory_saver'].keys():
+                del output['trajectory_saver/sim_box']
+            output.create_dataset('trajectory_saver/sim_box', 
                                   shape=(self.num_timeblocks, self.conf_per_block, self.configuration.simbox.len_sim_box_data))
 
         flag = config.CUDA_LOW_OCCUPANCY_WARNINGS
@@ -92,10 +92,10 @@ class ConfigurationSaver(RuntimeAction):
     def update_at_end_of_timeblock(self, block: int, output):
         data = self.d_conf_array.copy_to_host()
         # note that d_conf_array has dimensions (self.conf_per_block, 2, self.configuration.N, self.configuration.D)
-        output['block/positions'][block], output['block/images'][block] = data[:, 0], data[:, 1]
-        #output['block'][block, :] = self.d_conf_array.copy_to_host()
+        output['trajectory_saver/positions'][block], output['trajectory_saver/images'][block] = data[:, 0], data[:, 1]
+        #output['trajectory_saver'][block, :] = self.d_conf_array.copy_to_host()
         if self.include_simbox:
-            output['block/sim_box'][block, :] = self.d_sim_box_output_array.copy_to_host()
+            output['trajectory_saver/sim_box'][block, :] = self.d_sim_box_output_array.copy_to_host()
         self.zero_kernel(self.d_conf_array)
 
     def get_poststep_kernel(self, configuration, compute_plan, verbose=False):

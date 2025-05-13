@@ -30,14 +30,14 @@ class TrajectoryIO():
     >>> import h5py
     >>> output = gp.tools.TrajectoryIO("examples/Data/LJ_r0.973_T0.70_toread.h5").get_h5()
     Found .h5 file (examples/Data/LJ_r0.973_T0.70_toread.h5), loading to rumdpy as output dictionary
-    >>> nblocks, nconfs, N, D = output['block/positions'].shape
+    >>> nblocks, nconfs, N, D = output['trajectory_saver/positions'].shape
     >>> print(f"Output file examples/Data/LJ_r0.973_T0.70.h5 containts a simulation of {N} particles in {D} dimensions")
     Output file examples/Data/LJ_r0.973_T0.70.h5 containts a simulation of 2048 particles in 3 dimensions
     >>> print(f"The simulation output is divided into {nblocks} blocks, each of them with {nconfs} configurations")
     The simulation output is divided into 32 blocks, each of them with 12 configurations
     >>> output = gp.tools.TrajectoryIO("examples/Data/NVT_N4000_T2.0_rho1.2_KABLJ_rumd3/TrajectoryFiles").get_h5()   # Read from rumd3
     Found rumd3 TrajectoryFiles, loading to rumpdy as output dictionary
-    >>> nblocks, nconfs, N, D = output['block/positions'].shape
+    >>> nblocks, nconfs, N, D = output['trajectory_saver/positions'].shape
     >>> print(f"File examples/Data/NVT_N4000_T2.0_rho1.2_KABLJ_rumd3/TrajectoryFiles containts a simulation of {N} particles in {D} dimensions")
     File examples/Data/NVT_N4000_T2.0_rho1.2_KABLJ_rumd3/TrajectoryFiles containts a simulation of 4000 particles in 3 dimensions
     >>> print(f"The simulation output is divided into {nblocks} blocks, each of them with {nconfs} configurations")
@@ -174,11 +174,11 @@ class TrajectoryIO():
             output.attrs['dt'] =  timestep 
             output.attrs['simbox_initial'] = lengths 
             #output.attrs['vectors_names'] = ["r", "r_im"]
-            output.create_group('block')
-            output['block'].create_dataset('positions', shape=(len(traj_files), 1+ntrajinblock, npart, dim), dtype=np.float32)
-            output['block/positions'][:,:,:,:] = np.array(positions) 
-            output['block'].create_dataset('images', shape=(len(traj_files), 1+ntrajinblock, npart, dim), dtype=np.int32)
-            output['block/images'][:,:,:,:] = np.array(images) 
+            output.create_group('trajectory_saver')
+            output['trajectory_saver'].create_dataset('positions', shape=(len(traj_files), 1+ntrajinblock, npart, dim), dtype=np.float32)
+            output['trajectory_saver/positions'][:,:,:,:] = np.array(positions) 
+            output['trajectory_saver'].create_dataset('images', shape=(len(traj_files), 1+ntrajinblock, npart, dim), dtype=np.int32)
+            output['trajectory_saver/images'][:,:,:,:] = np.array(images) 
             output.create_dataset("ptype", data=type_array[:npart], shape=(npart), dtype=np.int32)
 
         # Read energies 

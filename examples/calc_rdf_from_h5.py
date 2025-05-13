@@ -14,7 +14,7 @@ if not os.path.isfile(file_to_read):
 # Load existing data
 output = gp.tools.TrajectoryIO(file_to_read).get_h5()
 # Read number of particles N and dimensions from data
-nblocks, nconfs, N, D = output['block/positions'].shape
+nblocks, nconfs, N, D = output['trajectory_saver/positions'].shape
 
 # Create configuration object
 configuration = gp.Configuration(D=D, N=N)
@@ -25,7 +25,7 @@ calc_rdf = gp.CalculatorRadialDistribution(configuration, bins=1000)
 
 # NOTE: the structure of the block is (outer_block, inner_steps, pos&img, npart, dimensions)
 #       the zero is to select the position array and discard images
-positions = output['block/positions'][:,:,:,:]
+positions = output['trajectory_saver/positions'][:,:,:,:]
 positions = positions.reshape(nblocks*nconfs,N,D)
 # Loop over saved configurations
 for pos in positions[nconfs-1::nconfs]:

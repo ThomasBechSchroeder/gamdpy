@@ -28,7 +28,7 @@ else:
 
 output = gp.tools.TrajectoryIO(filename+'.h5').get_h5()
 
-nblocks, nconfs, N, D = output['block/positions'].shape
+nblocks, nconfs, N, D = output['trajectory_saver/positions'].shape
 simbox = output.attrs['simbox_initial']
 volume = np.prod(simbox)
 rho = N/volume

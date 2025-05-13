@@ -46,14 +46,14 @@ def test_TrajectoryIO():
     ## Test read from h5
     output = gp.tools.TrajectoryIO(f"LJ_r{density}_T{temperature}.h5").get_h5()
     isinstance(output.file, h5py.File)
-    nblocks, nconfs, N, D = output['block/positions'].shape
+    nblocks, nconfs, N, D = output['trajectory_saver/positions'].shape
     assert (N, D) == (1987, 3), "Error reading N and D in TrajectoryIO while reading from .h5"
     os.remove(f"LJ_r{density}_T{temperature}.h5")
 
     ## Test read from rumd3
     # Test read from rumd3 TrajectoryFiles
     output = gp.tools.TrajectoryIO("examples/Data/NVT_N4000_T2.0_rho1.2_KABLJ_rumd3/TrajectoryFiles").get_h5()
-    nblocks, nconfs, N, D = output['block/positions'].shape
+    nblocks, nconfs, N, D = output['trajectory_saver/positions'].shape
     assert (N, D) == (4000, 3), "Error reading N and D in TrajectoryIO while reading from  examples/Data/NVT_N4000_T2.0_rho1.2_KABLJ_rumd3/TrajectoryFiles"
 
     # Test read from rumd3 TrajectoryFiles, trajectory only
