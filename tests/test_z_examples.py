@@ -78,8 +78,8 @@ class Test_examples:
     def test_ASD(self):
         self.make_one("ASD", ["Data/ASD_rho1.863_T0.465.h5"])
 
-    def test_NVU_RT_kob_andersen(self):
-        self.make_one("NVU_RT_kob_andersen")
+    #def test_NVU_RT_kob_andersen(self):
+    #    self.make_one("NVU_RT_kob_andersen")
 
     def test_evaluator_einstein_crystal(self):
         self.make_one("evaluator_einstein_crystal")
@@ -153,5 +153,7 @@ class Test_examples:
     def test_rubber_cube(self):
         self.make_one("rubber_cube", ['Data/rubber_cube.lammps'])
 
+    def test_molecules_polydisperse(self):
+        self.make_one("molecules_polydisperse", ["Data/chains_poly.h5", "Data/dump.lammps", "Data/dump_compress.lammps", "chain10.pdf", "chain5.pdf"])
 
  

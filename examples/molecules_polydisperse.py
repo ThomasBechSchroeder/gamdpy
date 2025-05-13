@@ -41,9 +41,8 @@ print("num_mols_each_type")
 print(num_mols_each_type)
 
 filename = 'Data/chains_poly'
-num_timeblocks = 300
-steps_per_timeblock = 1 * 1024 # 8 * 1024 to show reliable pattern formation
-
+num_timeblocks = 128
+steps_per_timeblock = 1 * 1024
 
 molecule_dicts = []
 
@@ -146,7 +145,8 @@ initial_rho = configuration.N / configuration.get_volume()
 for block in sim.run_timeblocks():
     volume = configuration.get_volume()
     N = configuration.N
-    print(sim.status(per_particle=True), f'rho= {N/volume:.3}', end='\t')
+    current_rho = N/volume
+    print(sim.status(per_particle=True), f'rho= {current_rho:.3}', end='\t')
     print(f'P= {(N*temperature + np.sum(configuration["W"]))/volume:.3}') # pV = NkT + W
     with open(dump_filename, 'a') as f:
         print(gp.configuration_to_lammps(sim.configuration, timestep=sim.steps_per_block*(block+1)), file=f)
@@ -154,6 +154,8 @@ for block in sim.run_timeblocks():
     # Scale configuration to get closer to final density, rho
     if block<sim.num_blocks/2:
         desired_rho = (block+1)/(sim.num_blocks/2)*(rho - initial_rho) + initial_rho
+        if desired_rho > 1.2*current_rho:
+            desired_rho = 1.2*current_rho 
         configuration.atomic_scale(density=desired_rho)
         configuration.copy_to_device() # Since we altered configuration, we need to copy it back to device
 print(sim.summary()) 
