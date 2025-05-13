@@ -18,7 +18,7 @@ nblocks, nconfs, N, D = output['trajectory_saver/positions'].shape
 
 # Create configuration object
 configuration = gp.Configuration(D=D, N=N)
-configuration.simbox = gp.Orthorhombic(D, output.attrs['simbox_initial'])
+configuration.simbox = gp.Orthorhombic(D, output['initial_configuration'].attrs['simbox_data'])
 configuration.ptype = output['initial_configuration/ptype']
 configuration.copy_to_device()
 # Call the rdf calculator

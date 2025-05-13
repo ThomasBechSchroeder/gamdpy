@@ -26,7 +26,7 @@ def calc_dynamics(trajectory, first_block, qvalues=None):
     ptype = trajectory['initial_configuration/ptype'][:].copy()
     attributes = trajectory.attrs
     
-    simbox = attributes['simbox_initial'].copy()
+    simbox = trajectory['initial_configuration'].attrs['simbox_data'].copy()
     num_types = np.max(ptype) + 1
     if isinstance(qvalues, float):
         qvalues = np.ones(num_types)*qvalues

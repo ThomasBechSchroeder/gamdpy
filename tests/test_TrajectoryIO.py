@@ -1,5 +1,7 @@
 """ Test the class TrajectoryIO. """
 
+import pytest
+@pytest.mark.gamdpy_cpu
 def test_TrajectoryIO():
     import os
     import pytest

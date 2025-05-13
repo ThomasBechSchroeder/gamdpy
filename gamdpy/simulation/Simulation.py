@@ -128,7 +128,7 @@ class Simulation():
             print("Simulation data will not be saved")
         # Save setup info
         self.memory.attrs['dt'] = self.dt
-        self.memory.attrs['simbox_initial'] = self.configuration.simbox.lengths
+        #self.memory.attrs['simbox_initial'] = self.configuration.simbox.lengths #Should be in initial_configuration
         #if 'ptype' in self.memory.keys(): Moved to initial_configuration h5 group
         #    del self.memory['ptype']
         #self.memory.create_dataset("ptype", data=configuration.ptype, shape=(self.configuration.N), dtype=np.int32)
@@ -140,7 +140,10 @@ class Simulation():
                     script_content = file.read()
                 self.memory.attrs['script_content'] = script_content
 
+        # Saving starting configuration
+        #print("Starting configuration saved in group initial_configuration")
         self.configuration.save(output=self.memory, group_name="initial_configuration", mode="w", include_topology=True)
+        #print(f"groups: {self.memory.keys()}\tdataset {self.memory['initial_configuration'].keys()}")
 
         self.runtime_actions = runtime_actions
 
@@ -396,9 +399,6 @@ class Simulation():
         self.last_num_blocks = num_timeblocks
         assert (num_timeblocks <= self.num_blocks)  # Could be made OK with more blocks
 
-        #self.configuration.save(output=self.output, group_name="initial_configuration", mode="w", include_topology=True)
-        #self.configuration.save(output=self.memory, group_name="initial_configuration", mode="w", include_topology=True)
-
         self.configuration.copy_to_device()
         self.vectors_list = []
         self.scalars_list = []
@@ -438,6 +438,8 @@ class Simulation():
 
             for runtime_action in self.runtime_actions:
                 runtime_action.update_at_end_of_timeblock(block, self.get_output(mode="a"))
+
+            self.configuration.save(output=self.get_output(mode="a"), group_name=f"/restarts/restart{block:04d}", mode="w", include_topology=True)
 
             if self.storage[-3:] == '.h5':
                 self.output.close()

@@ -404,16 +404,21 @@ class Configuration:
 
         """
 
+        # Sanity:
+        #print(f"output {isinstance(output, h5py.File)} {output}")
+        #print(f"group_name {isinstance(group_name, str)} {group_name}")
         # Creating group group_name in h5 root
         if group_name in output.keys() and mode=="w":
             print(f"{group_name} already present in h5 root, replacing it")
-            del group_name
+            del output[f'{group_name}']
             output.create_group(group_name)
         # Checks if group group_name exists in case mode="append"
         elif group_name not in output.keys() and mode=="a":
-            print(f"{group_name} is not a group in h5 root, cannot append")
+            output.create_group(group_name)
         elif group_name not in output.keys() and mode=="w":
             output.create_group(group_name)
+        elif group_name in output.keys() and mode=="a":
+            print(f"append data to {group_name} in h5 root")
         else:
             raise ValueError("Unexpected combination of input in save method of Configuration")
 
@@ -425,11 +430,12 @@ class Configuration:
         #output[f"{group_name}/r"].attrs['simbox'] = self.simbox.lengths
         #output[group_name].create_dataset('v', data=self['v'], dtype=np.float32)
         #output[group_name].create_dataset('f', data=self['f'], dtype=np.float32)
+
         # Saving vectors all together
-        #output[group_name].create_dataset('vectors', data=np.hstack([self['r'], self['v'], self['f']]), dtype=np.float32) 
-        
-        output[group_name].create_dataset('vectors', data=self.vectors.array, dtype=np.float32) # More future proof than the above
+        #output[group_name].create_dataset('vectors', data=np.hstack([self['r'], self['v'], self['f']]), dtype=np.float32)
+        output[group_name].create_dataset('vectors', data=self.vectors.array, dtype=np.float32)
         output[f"{group_name}/vectors"].attrs['vector_columns'] = self.vector_columns
+
         # Saving other things
         output[group_name].create_dataset('ptype', data=self.ptype, dtype=np.int32)
         #output[group_name].create_dataset('m', data=self['m'], dtype=np.float32) # included in scalars

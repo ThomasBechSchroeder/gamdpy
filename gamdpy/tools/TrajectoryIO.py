@@ -229,11 +229,19 @@ class TrajectoryIO():
         if importlib.util.find_spec("hdf5plugin")!=None:
             import hdf5plugin
         fout = h5py.File(name, "w") 
-        fout.attrs.update(self.h5.attrs)
+        #fout.attrs.update(self.h5.attrs)
+        print(self.h5.keys())
+        for key in self.h5.keys():
+            fout.copy(source=self.h5[key], dest="/")
+            print(f"{key} {fout.keys()}")
+        fout.close()
+        return
         for key in self.h5.keys():
             if isinstance(self.h5[key], h5py.Group):
                 print(f"Writing Group {key} to {name}")
                 fout.create_group(f"/{key}")
+                fout.copy(self.h5[key], f"/{key}")
+                continue
                 #print(self.h5.keys(), key, fout.keys())
                 for subkey in self.h5[key].keys():
                     if isinstance(self.h5[key][subkey], h5py.Group):
@@ -241,6 +249,7 @@ class TrajectoryIO():
                         #print(f"Writing dataset {key}/{subkey} to {name}")
                         fout.create_group(f"/{key}/{subkey}")
                         for subsubkey in self.h5[key][subkey].keys():
+                            print(key, subkey, subsubkey)
                             if importlib.util.find_spec("hdf5plugin")!=None:
                                 if self.compression_type == "gzip":
                                     fout[f"{key}/{subkey}"].create_dataset(subsubkey, data=self.h5[f"{key}/{subkey}"][subsubkey], chunks=True, 

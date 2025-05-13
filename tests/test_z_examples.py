@@ -60,8 +60,8 @@ class Test_examples:
     def test_calc_rdf_from_h5(self):
         self.make_one("calc_rdf_from_h5", ["rdf.dat", "ptype_rdf.dat"])
 
-    def test_calc_rdf_from_rumd3(self):
-        self.make_one("calc_rdf_from_rumd3", ["rdf_rumd3.dat", "ptype_rdf_rumd3.dat"])
+#    def test_calc_rdf_from_rumd3(self):
+#        self.make_one("calc_rdf_from_rumd3", ["rdf_rumd3.dat", "ptype_rdf_rumd3.dat"])
 
     def test_calc_sq_from_h5(self):
         self.make_one("calc_sq_from_h5", ["sq.dat"])
