@@ -23,7 +23,7 @@ def calc_dynamics_(positions, images, ptype, simbox, block0, conf_index0, block1
 
 
 def calc_dynamics(trajectory, first_block, qvalues=None):
-    ptype = trajectory['ptype'][:].copy()
+    ptype = trajectory['initial_configuration/ptype'][:].copy()
     attributes = trajectory.attrs
     
     simbox = attributes['simbox_initial'].copy()

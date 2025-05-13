@@ -17,9 +17,10 @@ nblocks, nconfs, N, D = output['trajectory_saver/positions'].shape
 # Set up the configuration object
 configuration = gp.Configuration(D=D, N=N)
 configuration.simbox = gp.Orthorhombic(D, output.attrs['simbox_initial'])
+configuration.ptype = output['initial_configuration/ptype']
 configuration.copy_to_device()
 # Call the rdf calculator
-calc_rdf = gp.CalculatorRadialDistribution(configuration, bins=1000, ptype=output['ptype'])
+calc_rdf = gp.CalculatorRadialDistribution(configuration, bins=1000, ptype=output['initial_configuration/ptype'])
 
 # NOTE: the structure of the block is (outer_block, inner_steps, pos&img, npart, dimensions)
 #       the zero is to select the position array and discard images

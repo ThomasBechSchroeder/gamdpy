@@ -129,9 +129,9 @@ class Simulation():
         # Save setup info
         self.memory.attrs['dt'] = self.dt
         self.memory.attrs['simbox_initial'] = self.configuration.simbox.lengths
-        if 'ptype' in self.memory.keys():
-            del self.memory['ptype']
-        self.memory.create_dataset("ptype", data=configuration.ptype, shape=(self.configuration.N), dtype=np.int32)
+        #if 'ptype' in self.memory.keys(): Moved to initial_configuration h5 group
+        #    del self.memory['ptype']
+        #self.memory.create_dataset("ptype", data=configuration.ptype, shape=(self.configuration.N), dtype=np.int32)
         if 'script_name' not in self.memory.keys():
             script_name = sys.argv[0]
             self.memory.attrs['script_name'] = script_name

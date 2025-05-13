@@ -33,7 +33,7 @@ simbox = output.attrs['simbox_initial']
 volume = np.prod(simbox)
 rho = N/volume
 
-# Extract potential energy (U), virial (W), and kinetic energy (K)
+# Extract potential energy (U), virial (W), and kinetic energy (K)python
 # first_block can be used to skip the initial "equilibration".
 U, W, K = gp.extract_scalars(output, ['U', 'W', 'K'], first_block=0)
 

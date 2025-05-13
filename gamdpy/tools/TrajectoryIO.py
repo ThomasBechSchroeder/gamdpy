@@ -178,8 +178,11 @@ class TrajectoryIO():
             output['trajectory_saver'].create_dataset('positions', shape=(len(traj_files), 1+ntrajinblock, npart, dim), dtype=np.float32)
             output['trajectory_saver/positions'][:,:,:,:] = np.array(positions) 
             output['trajectory_saver'].create_dataset('images', shape=(len(traj_files), 1+ntrajinblock, npart, dim), dtype=np.int32)
-            output['trajectory_saver/images'][:,:,:,:] = np.array(images) 
-            output.create_dataset("ptype", data=type_array[:npart], shape=(npart), dtype=np.int32)
+            output['trajectory_saver/images'][:,:,:,:] = np.array(images)
+
+            #output.create_dataset("ptype", data=type_array[:npart], shape=(npart), dtype=np.int32)
+            output.create_group('initial_configuration')
+            output['initial_configuration'].create_dataset("ptype", data=type_array[:npart], shape=(npart), dtype=np.int32)
 
         # Read energies 
         if energy:
