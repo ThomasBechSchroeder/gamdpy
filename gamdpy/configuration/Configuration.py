@@ -444,7 +444,7 @@ class Configuration:
         # save topology, depending on flag
         if include_topology:
             output[group_name].create_group('topology')
-            self.topology.save_molecules(output[f'{group_name}/topology'])
+            self.topology.save(output[f'{group_name}/topology'])
 
 
 # Helper functions
