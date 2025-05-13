@@ -367,7 +367,7 @@ class Configuration:
         self.vectors['r'] *= scale_factor
         self.simbox.lengths *= scale_factor
 
-    def save(self, output: h5py.File, group_name: str, mode="w") -> None:
+    def save(self, output: h5py.File, group_name: str, mode="w", include_topology=False) -> None:
         """ Write a configuration to a HDF5 file
     
         Parameters
@@ -426,14 +426,25 @@ class Configuration:
         output[group_name].create_dataset('v', data=self['v'], dtype=np.float32)
         output[group_name].create_dataset('f', data=self['f'], dtype=np.float32)
         # Saving vectors all together
-        output[group_name].create_dataset('vectors', data=np.hstack([self['r'], self['v'], self['f']]), dtype=np.float32) #<-- This doesn't work
+        #output[group_name].create_dataset('vectors', data=np.hstack([self['r'], self['v'], self['f']]), dtype=np.float32) 
+        output[group_name].create_dataset('vectors', data=self.vectors.array, dtype=np.float32) # More future proof than the above
         output[f"{group_name}/vectors"].attrs['vector_columns'] = self.vector_columns
         # Saving other things
         output[group_name].create_dataset('ptype', data=self.ptype, dtype=np.int32)
-        output[group_name].create_dataset('m', data=self['m'], dtype=np.float32)
+        #output[group_name].create_dataset('m', data=self['m'], dtype=np.float32) # included in scalars
         output[group_name].create_dataset('r_im', data=self.r_im, dtype=np.int32)
         output[group_name].create_dataset('scalars', data=self.scalars, dtype=np.float32)
         output[f"{group_name}/scalars"].attrs['scalar_columns'] = self.scalar_columns
+
+        # save simulation box
+        output[group_name].attrs['simbox_name'] = self.simbox.get_name()
+        output[group_name].attrs['simbox_data'] = self.simbox.lengths
+
+        # save topology, depending on flag
+        if include_topology:
+            output[group_name].create_group('topology')
+            self.topology.save_molecules(output[f'{group_name}/topology'])
+
 
 # Helper functions
 

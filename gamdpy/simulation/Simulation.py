@@ -140,6 +140,7 @@ class Simulation():
                     script_content = file.read()
                 self.memory.attrs['script_content'] = script_content
 
+        self.configuration.save(output=self.memory, group_name="initial_configuration", mode="w", include_topology=True)
 
         self.runtime_actions = runtime_actions
 
@@ -394,6 +395,9 @@ class Simulation():
             num_timeblocks = self.num_blocks
         self.last_num_blocks = num_timeblocks
         assert (num_timeblocks <= self.num_blocks)  # Could be made OK with more blocks
+
+        #self.configuration.save(output=self.output, group_name="initial_configuration", mode="w", include_topology=True)
+        #self.configuration.save(output=self.memory, group_name="initial_configuration", mode="w", include_topology=True)
 
         self.configuration.copy_to_device()
         self.vectors_list = []
