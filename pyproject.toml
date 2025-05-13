@@ -16,8 +16,8 @@ maintainers = [
   { name="Thomas Schrøder", email="tbs@ruc.dk" }
 ]
 description = "GPU Accelerated Molecular Dynamics in Python "
-readme = "README.md"
-requires-python = ">=3.8"
+readme = "READMEpypi.md"
+requires-python = ">=3.10"
 dependencies = [
     "hypothesis",
     "matplotlib",
@@ -26,10 +26,12 @@ dependencies = [
     "pandas",
     "h5py",
 ]
+license = "MIT AND (Apache-2.0 OR BSD-2-Clause)"
+license-files = ["LICENSE*"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
-    "Development Status :: 1 - Planning",
+    "Development Status :: 4 - Beta",
     "Operating System :: OS Independent",
     "Environment :: GPU",
     "Framework :: Jupyter",
