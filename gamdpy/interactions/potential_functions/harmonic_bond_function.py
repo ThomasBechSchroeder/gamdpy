@@ -32,7 +32,7 @@ def harmonic_bond_function(dist: float, params: np.ndarray) -> tuple:
     See Also
     --------
 
-    rumdpy.Bonds
+    gamdpy.Bonds
 
     """
     length = params[0]

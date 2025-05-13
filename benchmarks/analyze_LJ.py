@@ -56,7 +56,7 @@ axs[0].set_title('LJ benchmark, NVE, rho=0.8442, single prec.')
 colors = ['red', 'blue', 'green']
 
 bdf = pd.read_csv('Data/benchmark_LJ_RTX_2080_Ti_bead65_AT.csv')
-axs[0].loglog(bdf['N'], bdf['TPS_AT'], 'o-', color=colors[0], label='Rumdpy')
+axs[0].loglog(bdf['N'], bdf['TPS_AT'], 'o-', color=colors[0], label='gamdpy')
 bdf = pd.read_csv('Data/benchmark_LJ_RTX_2080_Ti_i43_AT.csv')
 axs[0].loglog(bdf['N'], bdf['TPS_AT'], 'o--', color=colors[0], alpha=0.6)
 rumd36 = np.loadtxt('Data/Rumd36_LJ_RTX_2080_Ti.dat')
@@ -78,7 +78,7 @@ axs[0].text(1e3, 1e2, txt, fontsize=11)
 
 
 bdf = pd.read_csv('Data/benchmark_LJ_RTX_4070_AT.csv')
-axs[1].loglog(bdf['N'], bdf['TPS_AT'], 'o-', color=colors[0], label='Rumdpy')
+axs[1].loglog(bdf['N'], bdf['TPS_AT'], 'o-', color=colors[0], label='gamdpy')
 rumd36 = np.loadtxt('Data/Rumd36_LJ_RTX_4070.dat')
 axs[1].loglog(rumd36[:,0], rumd36[:, 1], 'o-', color=colors[1], label='Rumd3.6')
 lammps = np.loadtxt('Data/Lammps_Rtx4070_gpu_cuda_single_mpi.dat')
@@ -100,7 +100,7 @@ for i in range(6, lammps.shape[0]):
 
 
 bdf = pd.read_csv('Data/benchmark_LJ_RTX_4090_AT.csv')
-axs[2].loglog(bdf['N'], bdf['TPS'], 'o-', color=colors[0], label='Rumdpy')
+axs[2].loglog(bdf['N'], bdf['TPS'], 'o-', color=colors[0], label='gamdpy')
 rumd36 = np.loadtxt('Data/Rumd36_LJ_RTX_4090.dat')
 axs[2].loglog(rumd36[:,0], rumd36[:, 1], 'o-', color=colors[1], label='Rumd3.6')
 lammps = np.loadtxt('Data/Lammps_Rtx4090_gpu_cuda_single_mpi.dat')

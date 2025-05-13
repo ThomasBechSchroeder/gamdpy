@@ -1,5 +1,5 @@
 """ 
-Benchmark rumdpy using the lammps LJ benchmark
+Benchmark gamdpy using the lammps LJ benchmark
 Command line options:
 
 - Nsquared : Use O(N^2) for neighbor-list update (Default)
@@ -13,7 +13,7 @@ Command line options:
 
 import glob
 import sys
-# from rumdpy.integrators import nve, nvt_nh, nvt_langevin  # OLD CODE
+# from gamdpy.integrators import nve, nvt_nh, nvt_langevin  # OLD CODE
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -21,7 +21,7 @@ import pandas as pd
 import numba
 from numba import cuda, config
 
-import rumdpy as gp
+import gamdpy as gp
 import pickle
 
 

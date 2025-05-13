@@ -174,8 +174,8 @@ git push -u origin your_branch
 
 Difference in a single file between branches. Can use hash instead of master / branch
 ```sh
-git diff origin branch -- rumdpy/Simulation.py
-git diff hash1 hash2 -- rumdpy/Simulation.py
+git diff origin branch -- gamdpy/Simulation.py
+git diff hash1 hash2 -- gamdpy/Simulation.py
 ```
 List the files that are different in two branches
 ```sh

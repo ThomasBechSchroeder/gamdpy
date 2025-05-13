@@ -4,7 +4,7 @@ import math
 import sys
 from numba import cuda
 
-# rumdpy
+# gamdpy
 import gamdpy as gp
 
 # For type annotation

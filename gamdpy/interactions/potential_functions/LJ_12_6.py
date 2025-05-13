@@ -3,7 +3,7 @@ import numba
 def LJ_12_6(dist, params):  
     """ The 12-6 Lennard-Jones potential
 
-    See :func:`rumdpy.apply_shifted_potential_cutoff` for a usage example.
+    See :func:`gamdpy.apply_shifted_potential_cutoff` for a usage example.
 
     .. math::
 

@@ -7,7 +7,7 @@ def plot_molecule(top, positions, particle_types, filename="molecule.pdf", block
 
     Parameters
     ----------
-    top : rumdpy topology object
+    top : gamdpy topology object
 
     positions : list or numpy array with positions of all atoms
 

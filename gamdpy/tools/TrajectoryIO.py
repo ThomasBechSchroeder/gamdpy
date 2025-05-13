@@ -1,5 +1,5 @@
 # This class is used for loading the output of a simulation as a dictionary following the formatting of sim.output or save sim.output to file
-# Can be also used to convert between output formats (rumd3 -> rumdpy supported so far)
+# Can be also used to convert between output formats (rumd3 -> gamdpy supported so far)
 
 import sys
 import os
@@ -21,7 +21,7 @@ class TrajectoryIO():
     ----------
 
     name : str
-        Name of the file or folder to read output from. Can be a rumdpy .h5 output or a rumd3 TrajectoryFiles folder.
+        Name of the file or folder to read output from. Can be a gamdpy .h5 output or a rumd3 TrajectoryFiles folder.
 
     Examples
     --------
@@ -29,7 +29,7 @@ class TrajectoryIO():
     >>> import gamdpy as gp
     >>> import h5py
     >>> output = gp.tools.TrajectoryIO("examples/Data/LJ_r0.973_T0.70_toread.h5").get_h5()
-    Found .h5 file (examples/Data/LJ_r0.973_T0.70_toread.h5), loading to rumdpy as output dictionary
+    Found .h5 file (examples/Data/LJ_r0.973_T0.70_toread.h5), loading to gamdpy as output dictionary
     >>> nblocks, nconfs, N, D = output['trajectory_saver/positions'].shape
     >>> print(f"Output file examples/Data/LJ_r0.973_T0.70.h5 containts a simulation of {N} particles in {D} dimensions")
     Output file examples/Data/LJ_r0.973_T0.70.h5 containts a simulation of 2048 particles in 3 dimensions
@@ -52,8 +52,8 @@ class TrajectoryIO():
         if name[-3:]==".h5":
             modification_time = os.path.getmtime(name)
             readable_time = time.ctime(modification_time)
-            #print(f"Found .h5 file ({name}, {readable_time}), loading to rumdpy as output dictionary")
-            print(f"Found .h5 file ({name}), loading to rumdpy as output dictionary") # Cant handle timestamp in doctest
+            #print(f"Found .h5 file ({name}, {readable_time}), loading to gamdpy as output dictionary")
+            print(f"Found .h5 file ({name}), loading to gamdpy as output dictionary") # Cant handle timestamp in doctest
             self.h5 = self.load_h5(name)
         elif "TrajectoryFiles" in name:
             try: 
@@ -93,7 +93,7 @@ class TrajectoryIO():
     # Load from TrajectoryFiles (std rumd3 output)
     # It assumes trajectories are spaced in log2
     def load_rumd3(self, name:str) -> h5py.File:
-        """ Reads a rumd3 TrajectoryFiles folder and convert it into rumdpy .h5 output. This function returns a memory .h5"""
+        """ Reads a rumd3 TrajectoryFiles folder and convert it into gamdpy .h5 output. This function returns a memory .h5"""
         import os, gzip, glob
         import pandas as pd
 

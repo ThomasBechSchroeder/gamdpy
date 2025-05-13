@@ -1,6 +1,6 @@
-""" The rumdpy main module """
-# Objects which are imported here will be in the main namespace and can be called are rumdpy.object
-# Objects which are imported in the __init__.py of subpackages are called as rumdpy.subpackage.object
+""" The gamdpy main module """
+# Objects which are imported here will be in the main namespace and can be called are gamdpy.object
+# Objects which are imported in the __init__.py of subpackages are called as gamdpy.subpackage.object
 
 # Import from configuration subpackage
 # The configuration subpackage contains details about the configuration (positions, energies, etc)

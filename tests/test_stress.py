@@ -1,4 +1,4 @@
-""" Example of a Simulation using rumdpy, including the stress tensor (configurational part only).
+""" Example of a Simulation using gamdpy, including the stress tensor (configurational part only).
 
 """
 

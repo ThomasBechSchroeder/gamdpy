@@ -36,14 +36,14 @@ class CalculatorStructureFactor:
 
         S({\\bf q}) = |\\rho_{\\bf q}|^2.
 
-    The method :meth:`~rumdpy.calculators.CalculatorStructureFactor.update`
+    The method :meth:`~gamdpy.calculators.CalculatorStructureFactor.update`
     updates the structure factor with the current configuration.
-    The method :meth:`~rumdpy.calculators.CalculatorStructureFactor.read` returns the structure factor for the q vectors in the q_direction.
+    The method :meth:`~gamdpy.calculators.CalculatorStructureFactor.read` returns the structure factor for the q vectors in the q_direction.
 
     Parameters
     ----------
 
-    configuration : rumdpy.Configuration
+    configuration : gamdpy.Configuration
         The configuration object to calculate the structure factor for.
 
     q_max : float or None
@@ -65,7 +65,7 @@ class CalculatorStructureFactor:
     See also
     --------
 
-    :class:`~rumdpy.CalculatorRadialDistribution`
+    :class:`~gamdpy.CalculatorRadialDistribution`
 
     """
 

@@ -1,4 +1,4 @@
-""" Example of a Simulation using rumdpy, using explicit blocks.
+""" Example of a Simulation using gamdpy, using explicit blocks.
 
 Simulation of a Lennard-Jones crystal in the NVT ensemble followed by shearing with SLLOD 
 and Lees-Edwards boundary conditions

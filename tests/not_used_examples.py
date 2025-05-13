@@ -20,7 +20,7 @@ def not_examples(path_to_examples='examples'):
     matplotlib.get_backend()
     os.environ['MPLBACKEND'] = 'Agg' # Reduced warnings from 94 to 62
     os.environ['NUMBA_CUDA_LOW_OCCUPANCY_WARNINGS'] = '0' # Reduced warnings from 62 to 59
-    os.environ['RUMDPY_SAVE_OUTPUT_EXAMPLES'] = '0' # used to avoid file creation when running pytest
+    os.environ['gamdpy_SAVE_OUTPUT_EXAMPLES'] = '0' # used to avoid file creation when running pytest
     matplotlib.use('Agg')  # Static backend that does not halt on plt.show()
     # List of scripts to exclude
 
@@ -33,7 +33,7 @@ def not_examples(path_to_examples='examples'):
     exclude_files = [
         'test_shear.py',
         # FileNotFoundError: [Errno 2] Unable to synchronously open file (unable to open file: name = 'LJ_cooled_0.70.h5', errno = 2, error message = 'No such file or directory', flags = 0, o_flags = 0)
-        'LJchain_wall.py',  # ImportError: cannot import name 'nvt_nh' from 'rumdpy.integrators'
+        'LJchain_wall.py',  # ImportError: cannot import name 'nvt_nh' from 'gamdpy.integrators'
         'minimal_cpu.py',
         ## The following are test in their own scripts
         'structure_factor.py',
@@ -79,7 +79,7 @@ def not_examples(path_to_examples='examples'):
     finally:
         os.chdir(original_cwd)
         plt.close('all')
-    del os.environ['RUMDPY_SAVE_OUTPUT_EXAMPLES']
+    del os.environ['gamdpy_SAVE_OUTPUT_EXAMPLES']
 
 
 #if __name__ == '__main__':

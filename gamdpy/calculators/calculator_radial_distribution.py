@@ -15,7 +15,7 @@ class CalculatorRadialDistribution():
     Parameters
     ----------
 
-    configuration : rumdpy.Configuration
+    configuration : gamdpy.Configuration
         The configuration object for which the radial distribution function is calculated.
 
     bins : int

@@ -94,18 +94,18 @@ def main(argv: list = None) -> None:
     import sys
     import h5py
 
-    help_message = """rumdpy: calc_dynamics
+    help_message = """gamdpy: calc_dynamics
 
 Calculate and show the mean square displacement (MSD)
 
-Usage: python -m rumdpy.tools.calc_dynamics [options] <input filename> [<input filename> ...]
+Usage: python -m gamdpy.tools.calc_dynamics [options] <input filename> [<input filename> ...]
 
 Options:
     -h, --help      Print this help message and exit.
     -f <int>        First block to use. Default is 0.
     -o <filename>   Output filename. Default is no output.
 
-Example: python -m rumdpy.tools.calc_dynamics -f 4 -o msd.pdf LJ*.h5
+Example: python -m gamdpy.tools.calc_dynamics -f 4 -o msd.pdf LJ*.h5
     """
 
     if argv is None:

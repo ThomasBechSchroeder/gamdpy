@@ -22,10 +22,10 @@ class CalculatorWidomInsertion:
     Parameters
     ----------
 
-    configuration : rumdpy.Configuration
+    configuration : gamdpy.Configuration
         The configuration object representing the system.
 
-    pair_potential : rumdpy.PairPotential
+    pair_potential : gamdpy.PairPotential
         The pair potential object representing the interaction between particles.
 
     temperature : float
