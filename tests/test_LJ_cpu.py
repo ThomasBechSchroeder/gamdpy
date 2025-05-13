@@ -85,7 +85,7 @@ def test_cpu(nconf='1', integrator_type='NVE', potential='KABLJ'):
     else:
         steps_in_kernel_test = 1
 
-    runtime_actions = [gp.ConfigurationSaver(), 
+    runtime_actions = [gp.TrajectorySaver(), 
                     gp.ScalarSaver(), 
                     gp.MomentumReset(100)]
     

@@ -23,7 +23,7 @@ integrator = gp.integrators.NVT(temperature=0.70, tau=0.2, dt=0.005)
 num_timeblocks = 4
 
 runtime_actions = [gp.MomentumReset(100), 
-                   gp.ConfigurationSaver(), 
+                   gp.TrajectorySaver(), 
                    gp.ScalarSaver(32, {'stresses':True}), ]
 
 # Setup Simulation. Total number of timesteps: num_blocks * steps_per_block

@@ -52,7 +52,7 @@ def test_JIT():
               for pairpot in [pairpot2, ]:
                      ev = gp.Evaluator(configuration, pairpot)
                      for integrator in integrators:     
-                            runtime_actions = [gp.ConfigurationSaver(), 
+                            runtime_actions = [gp.TrajectorySaver(), 
                                                  gp.ScalarSaver(), 
                                                  gp.MomentumReset(100)]
 

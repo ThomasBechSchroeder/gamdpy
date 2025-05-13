@@ -126,7 +126,7 @@ pair_pot = gp.PairPotential(pair_func, params=[sig, eps, cut], max_num_nbs=1000)
 integrator = gp.integrators.NVE(dt=0.005)
 
 runtime_actions = [gp.MomentumReset(100),
-                   gp.ConfigurationSaver(),
+                   gp.TrajectorySaver(),
                    gp.ScalarSaver(), ]
 
 # Setup Simulation.

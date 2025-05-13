@@ -46,7 +46,7 @@ An interaction is responsible for keeping any internal datastructures up to date
 ### 4. Runtime actions
 Classes implementing actions on the configuration which are not related to the interactions or the integration of the equation of motion.
 These classes include momentum reset and savers.
-- class ConfigurationSaver
+- class TrajectorySaver
 - class ScalarSaver
 - class MomentumReset
 

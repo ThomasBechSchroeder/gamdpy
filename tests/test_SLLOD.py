@@ -55,7 +55,7 @@ def test_SLLOD(run_NVT=False):
     configuration.set_kinetic_temperature(temperature, ndofs=configuration.N*3-4) # remove one DOF due to constraint on total KE
 
     runtime_actions = [gp.MomentumReset(100), 
-                   gp.ConfigurationSaver(include_simbox=True), 
+                   gp.TrajectorySaver(include_simbox=True), 
                    gp.ScalarSaver(sc_output, {'stresses':True}), ]
 
     # Setup Simulation. Total number of timesteps: num_blocks * steps_per_block

@@ -31,7 +31,7 @@ integrator = gp.integrators.NPT_Atomic(temperature=target_temperature,
                                        dt=0.001)
 
 # Setup runtime actions, i.e. actions performed during simulation of timeblocks
-runtime_actions = [gp.ConfigurationSaver(), 
+runtime_actions = [gp.TrajectorySaver(), 
                    gp.ScalarSaver(32), 
                    gp.MomentumReset(100)]
 

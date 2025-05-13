@@ -39,7 +39,7 @@ sig, eps, cut = 1.0, 1.0, 2.5
 pair_pot = gp.PairPotential(pair_func, params=[sig, eps, cut], max_num_nbs=1000)
 
 # Setup runtime actions, i.e. actions performed during simulation of timeblocks
-runtime_actions = [gp.ConfigurationSaver(),
+runtime_actions = [gp.TrajectorySaver(),
                    gp.ScalarSaver(32),
                    gp.MomentumReset(100)]
 

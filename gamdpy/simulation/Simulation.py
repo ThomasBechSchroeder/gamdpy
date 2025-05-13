@@ -36,7 +36,7 @@ class Simulation():
         The integrator to use for the simulation.
 
     runtime_actions : list of runtime actions
-        Runtime actions such as ScalarSaver, ConfigurationSaver or MomentumReset
+        Runtime actions such as ScalarSaver, TrajectorySaver or MomentumReset
 
     num_steps : int
         Number of steps to run the simulation. If 0, num_timeblocks and steps_per_timeblock should be set.

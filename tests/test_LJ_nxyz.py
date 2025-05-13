@@ -51,7 +51,7 @@ def LJ(nx, ny, nz, rho=0.8442, pb=None, tp=None, skin=None, gridsync=None, Utili
         integrator = gp.integrators.NVT_Langevin(temperature=0.70, alpha=0.1, dt=dt, seed=213)
 
     runtime_actions = [gp.MomentumReset(100), 
-                   gp.ConfigurationSaver(), 
+                   gp.TrajectorySaver(), 
                    gp.ScalarSaver(8, {'Fsq':True, 'lapU':True, 'stresses':False}), ]
 
 

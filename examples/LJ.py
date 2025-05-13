@@ -54,7 +54,7 @@ compute_plan = gp.get_default_compute_plan(configuration)
 print(compute_plan)
 
 runtime_actions = [gp.MomentumReset(100),
-                   gp.ConfigurationSaver(),
+                   gp.TrajectorySaver(),
                    gp.ScalarSaver(32, {'Fsq':True, 'lapU':True}), ]
 
 

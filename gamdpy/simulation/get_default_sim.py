@@ -31,7 +31,7 @@ def get_default_sim():
     integrator = rp.integrators.NVT(temperature=temperature, tau=0.2, dt=0.005)
 
     # Setup runtime actions, i.e. actions performed during simulation of timeblocks
-    runtime_actions = [rp.ConfigurationSaver(), 
+    runtime_actions = [rp.TrajectorySaver(), 
                    rp.ScalarSaver(), 
                    rp.MomentumReset(100)]
 

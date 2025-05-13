@@ -53,7 +53,7 @@ def test_planar_interactions() -> None:
     configuration.randomize_velocities(temperature=T)
     compute_plan = gp.get_default_compute_plan(configuration)
     integrator = gp.integrators.NVE(dt=0.01)
-    runtime_actions = [gp.ConfigurationSaver(),
+    runtime_actions = [gp.TrajectorySaver(),
                        gp.ScalarSaver(steps_between_output=1)]
     sim = gp.Simulation(configuration, [planar, ], integrator, runtime_actions,
                         num_timeblocks=2, steps_per_timeblock=16,

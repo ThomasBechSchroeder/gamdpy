@@ -18,7 +18,7 @@ pair_potential = gp.PairPotential(pair_func, params=[2.0, 1.0], max_num_nbs=8192
 integrator = gp.integrators.NVT(temperature=temperature, tau=0.08, dt=0.001)
 
 runtime_actions = [gp.MomentumReset(100),
-                   gp.ConfigurationSaver(),
+                   gp.TrajectorySaver(),
                    gp.ScalarSaver(32)]
 
 sim = gp.Simulation(configuration, pair_potential, integrator, runtime_actions,

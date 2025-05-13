@@ -25,7 +25,7 @@ pair_pot = gp.PairPotential(pair_func, params=[1.0, 1.0, 2.5], max_num_nbs=1000)
 integrator = gp.integrators.NVT(temperature=0.7, tau=0.2, dt=0.005)
 
 # Setup runtime actions, i.e. actions performed during simulation of timeblocks
-runtime_actions = [gp.ConfigurationSaver(),
+runtime_actions = [gp.TrajectorySaver(),
                    gp.ScalarSaver(16),
                    gp.MomentumReset(100)]
 

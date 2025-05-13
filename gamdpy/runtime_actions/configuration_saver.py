@@ -6,7 +6,7 @@ from numba import cuda, config
 from .runtime_action import RuntimeAction
 
 
-class ConfigurationSaver(RuntimeAction):
+class TrajectorySaver(RuntimeAction):
     """ 
     Runtime action for saving configurations during timeblock.
     Does logarithmic saving.
