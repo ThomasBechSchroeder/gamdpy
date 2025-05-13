@@ -37,7 +37,7 @@ def test_TrajectoryIO():
     sim.run(verbose=False)
     sim.run(verbose=False)
 
-    ## Save output to -h5 file
+    ## Save output to .h5 file
     output = gp.tools.TrajectoryIO()
     assert output.h5 == None, "Error with no input initialization"
     output.h5 = sim.output
