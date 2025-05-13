@@ -44,10 +44,6 @@ filename = 'Data/chains_poly'
 num_timeblocks = 300
 steps_per_timeblock = 1 * 1024 # 8 * 1024 to show reliable pattern formation
 
-positions = []
-particle_types = []
-masses = []
-topologies = []
 
 molecule_dicts = []
 
@@ -68,10 +64,6 @@ for index, cl in enumerate(chain_lengths):
     top_this_mol.dihedrals = gp.dihedrals_from_angles(top_this_mol.angles, dihedral_type=0)
     top_this_mol.molecules[f'MyMolecule{cl}'] = gp.molecules_from_bonds(top_this_mol.bonds)
 
-    positions.append(pos_this_mol)
-    particle_types.append(types_this_mol)
-    masses.append(masses_this_mol)
-    topologies.append(top_this_mol)
 
     dict_this_mol = {"positions" : pos_this_mol,
                      "particle_types" : types_this_mol,
@@ -94,9 +86,6 @@ for index, cl in enumerate(chain_lengths):
     gp.plot_molecule(top_this_mol, pos_this_mol, types_this_mol, filename=f"chain{cl}.pdf", block=False)
 
 
-
-#configuration = gp.duplicate_molecule(top, positions, particle_types, masses, cells=(6, 6, 6), safety_distance=2.0)
-#configuration = gp.replicate_molecules(topologies, positions, particle_types, masses, num_mols_each_type, safety_distance=3.0)
 configuration = gp.replicate_molecules2(molecule_dicts, num_mols_each_type, safety_distance=3.0)
 configuration.randomize_velocities(temperature=temperature)
 

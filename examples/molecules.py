@@ -40,6 +40,12 @@ top.angles = gp.angles_from_bonds(top.bonds, angle_type=0)
 top.dihedrals = gp.dihedrals_from_angles(top.angles, dihedral_type=0)
 top.molecules['MyMolecule'] = gp.molecules_from_bonds(top.bonds)
 
+
+dict_this_mol = {"positions" : positions,
+                 "particle_types" : particle_types,
+                 "masses" : masses,
+                 "topology" : top}
+
 print('Initial Positions:')
 for position in positions:
     print('\t\t', position)
@@ -53,9 +59,7 @@ print()
 # Use block=True to visualize the molecule before running the simulation
 gp.plot_molecule(top, positions, particle_types, filename="molecule.pdf", block=False)
 
-#configuration = gp.duplicate_molecule(top, positions, particle_types, masses, cells=(6, 6, 6), safety_distance=2.0)
-configuration = gp.replicate_molecules([top], [positions], [particle_types], [masses], [216], safety_distance=2.0, compute_flags={"stresses":True})
-
+configuration = gp.replicate_molecules2([dict_this_mol], [216], safety_distance=2.0, compute_flags={"stresses":True})
 
 configuration.randomize_velocities(temperature=temperature)
 
