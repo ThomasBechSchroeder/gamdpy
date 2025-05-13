@@ -1,6 +1,6 @@
 import numpy as np
 import numba
-import gamdpy as rp
+import gamdpy as gp
 from numba import cuda
 import math
 from .integrator import Integrator

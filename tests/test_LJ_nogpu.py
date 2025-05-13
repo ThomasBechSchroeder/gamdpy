@@ -41,19 +41,19 @@ class Test(unittest.TestCase):
         #temperature = 0.7 # Not used for NVE
         #pressure = 1.2 # Not used for NV*
 
-        #integrator1 = rp.integrators.NVE(dt=dt)
-        #integrator2 = rp.integrators.NVT(temperature=temperature, tau=0.2, dt=dt)
-        #integrator3 = rp.integrators.NVT_Langevin(temperature=temperature, alpha=0.2, dt=dt, seed=2023)
-        #integrator4 = rp.integrators.NPT_Langevin(temperature=temperature, pressure=pressure, 
+        #integrator1 = gp.integrators.NVE(dt=dt)
+        #integrator2 = gp.integrators.NVT(temperature=temperature, tau=0.2, dt=dt)
+        #integrator3 = gp.integrators.NVT_Langevin(temperature=temperature, alpha=0.2, dt=dt, seed=2023)
+        #integrator4 = gp.integrators.NPT_Langevin(temperature=temperature, pressure=pressure, 
         #                                        alpha=0.1, alpha_baro=0.0001, mass_baro=0.0001, 
         #                                        volume_velocity=0.0, barostatModeISO = True , boxFlucCoord = 2,
         #                                        dt=dt, seed=2023)
 
         #for configuration in [configuration1, configuration2, configuration3]:
         #    for pairpot in [pairpot1, pairpot2]:
-        #        ev = rp.Evaluater(configuration, pairpot)
+        #        ev = gp.Evaluater(configuration, pairpot)
         #        for integrator in [integrator1, integrator2, integrator3, integrator4]:
-        #            sim = rp.Simulation(configuration, pairpot, integrator,
+        #            sim = gp.Simulation(configuration, pairpot, integrator,
         #                                steps_between_momentum_reset=100,
         #                                num_blocks=64, steps_per_block=1024, storage='memory')
 

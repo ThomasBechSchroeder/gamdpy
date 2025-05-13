@@ -1,7 +1,7 @@
 import numpy as np
 import numba
 from numba import cuda
-import gamdpy as rp
+import gamdpy as gp
 from .integrator import Integrator
 
 class NVT(Integrator):
@@ -30,14 +30,14 @@ class NVT(Integrator):
         self.thermostat_state = np.zeros(2, dtype=np.float32)           # Right time to allocate and copy to device?
         self.d_thermostat_state = cuda.to_device(self.thermostat_state) # - or in get_params
 
-    def get_params(self, configuration: rp.Configuration, interactions_params: tuple, verbose=False) -> tuple:
+    def get_params(self, configuration: gp.Configuration, interactions_params: tuple, verbose=False) -> tuple:
         dt = np.float32(self.dt)
         omega2 = np.float32(4.0 * np.pi * np.pi / self.tau / self.tau)
         degrees = configuration.N * configuration.D - configuration.D
         return (dt, omega2, degrees, self.d_thermostat_state)   # Needs to be compatible with unpacking in
                                                                 # step() and update_thermostat_state() below.
 
-    def get_kernel(self, configuration: rp.Configuration, compute_plan: dict, compute_flags: dict, interactions_kernel, verbose=False):
+    def get_kernel(self, configuration: gp.Configuration, compute_plan: dict, compute_flags: dict, interactions_kernel, verbose=False):
 
         # Unpack parameters from configuration and compute_plan
         D, num_part = configuration.D, configuration.N
@@ -48,7 +48,7 @@ class NVT(Integrator):
         if callable(self.temperature):
             temperature_function = self.temperature
         else:
-            temperature_function = rp.make_function_constant(value=float(self.temperature))
+            temperature_function = gp.make_function_constant(value=float(self.temperature))
 
         if verbose:
             print(f'Generating NVT kernel for {num_part} particles in {D} dimensions:')

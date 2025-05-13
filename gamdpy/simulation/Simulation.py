@@ -5,7 +5,7 @@ import sys
 from numba import cuda
 
 # rumdpy
-import gamdpy as rp
+import gamdpy as gp
 
 # For type annotation
 from gamdpy.integrators import Integrator
@@ -70,7 +70,7 @@ class Simulation():
 
     """
 
-    def __init__(self, configuration: rp.Configuration, 
+    def __init__(self, configuration: gp.Configuration, 
                  interactions: Interaction|list[Interaction], 
                  integrator: Integrator,
                  runtime_actions: list[RuntimeAction],
@@ -82,7 +82,7 @@ class Simulation():
 
         self.configuration = configuration
         if compute_plan == None:
-            self.compute_plan = rp.get_default_compute_plan(self.configuration)
+            self.compute_plan = gp.get_default_compute_plan(self.configuration)
         else:
             self.compute_plan = compute_plan
 
@@ -152,7 +152,7 @@ class Simulation():
                 else:
                     compute_flags = runtime_action.get_compute_flags()
 
-        self.compute_flags = rp.get_default_compute_flags() # configuration.compute_flags
+        self.compute_flags = gp.get_default_compute_flags() # configuration.compute_flags
         if compute_flags is not None:
             # only keys present in the default are processed
             for k in compute_flags:
@@ -226,14 +226,14 @@ class Simulation():
 
     def get_kernels_and_params(self, verbose=False):
         # Interactions
-        self.interactions_kernel, self.interactions_params = rp.add_interactions_list(self.configuration,
+        self.interactions_kernel, self.interactions_params = gp.add_interactions_list(self.configuration,
                                                                                       self.interactions,
                                                                                       compute_plan=self.compute_plan,
                                                                                       compute_flags=self.compute_flags)
 
         # Runtime actions
         if self.runtime_actions:
-            self.runtime_actions_prestep_kernel, self.runtime_actions_poststep_kernel, self.runtime_actions_params = rp.add_runtime_actions_list(self.configuration,
+            self.runtime_actions_prestep_kernel, self.runtime_actions_poststep_kernel, self.runtime_actions_params = gp.add_runtime_actions_list(self.configuration,
                                                                                                     self.runtime_actions,
                                                                                                     compute_plan=self.compute_plan)
         else:
@@ -249,14 +249,14 @@ class Simulation():
 
     def update_params(self, verbose=False):
         # Interactions
-        _, self.interactions_params = rp.add_interactions_list(self.configuration,
+        _, self.interactions_params = gp.add_interactions_list(self.configuration,
                                                                 self.interactions,
                                                                 compute_plan=self.compute_plan,
                                                                 compute_flags=self.compute_flags)
 
         # Runtime actions
         if self.runtime_actions:
-            _, _, self.runtime_actions_params = rp.add_runtime_actions_list(self.configuration,
+            _, _, self.runtime_actions_params = gp.add_runtime_actions_list(self.configuration,
                                                                                                     self.runtime_actions,
                                                                                                     compute_plan=self.compute_plan)
         else:
@@ -559,7 +559,7 @@ class Simulation():
         
         skin_times = []
         total_min_time = 1e9
-        optimal_compute_plan = rp.get_default_compute_plan(self.configuration) # Overwritten below
+        optimal_compute_plan = gp.get_default_compute_plan(self.configuration) # Overwritten below
 
         for nblist in nblists:
             self.compute_plan['nblist'] = nblist

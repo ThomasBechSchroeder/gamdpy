@@ -12,7 +12,7 @@ def test_JIT():
        configuration1.make_lattice(gp.unit_cells.FCC, cells=[8, 8, 8], rho=0.8442)
        configuration1['m'] = 1.0
        configuration1.randomize_velocities(temperature=1.44)
-       #configuration2 = rp.Configuration(D=3)
+       #configuration2 = gp.Configuration(D=3)
        #configuration2.make_lattice(rp.unit_cells.FCC, cells=[5, 5, 13], rho=1.2000)
        #configuration2['m'] = 1.0
        #configuration2.randomize_velocities(temperature=0.44)
@@ -22,9 +22,9 @@ def test_JIT():
        configuration3.randomize_velocities(temperature=2.44)
 
        # Make pair potentials
-       # pairfunc = rp.apply_shifted_force_cutoff(rp.LJ_12_6_sigma_epsilon)
+       # pairfunc = gp.apply_shifted_force_cutoff(rp.LJ_12_6_sigma_epsilon)
        #sig, eps, cut = 1.0, 1.0, 2.5
-       #pairpot1 = rp.PairPotential(pairfunc, params=[sig, eps, cut], max_num_nbs=1000)
+       #pairpot1 = gp.PairPotential(pairfunc, params=[sig, eps, cut], max_num_nbs=1000)
 
        pairfunc = gp.apply_shifted_potential_cutoff(gp.LJ_12_6_sigma_epsilon)
        sig = [[1.00, 0.80],

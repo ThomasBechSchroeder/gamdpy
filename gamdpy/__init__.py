@@ -43,8 +43,8 @@ from .calculators import CalculatorRadialDistribution, CalculatorStructureFactor
 # Import from tools subpackage
 # To make type checking work (e.g. pylance): 
 from .tools import TrajectoryIO, calc_dynamics, save_configuration
-# Side effect rp.calc_dynamics does also work! Same problem for integrators
-# TrajectoryIO, save_configuration and calc_dynamics are not directly imported and are called via rp.tools.*
+# Side effect gp.calc_dynamics does also work! Same problem for integrators
+# TrajectoryIO, save_configuration and calc_dynamics are not directly imported and are called via gp.tools.*
 
 # Tools/Evaluator are runtime actions with do not interact with the kernel
 from .tools.Evaluator import Evaluator

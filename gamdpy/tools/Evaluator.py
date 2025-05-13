@@ -6,7 +6,7 @@ from numba import cuda
 from ..simulation.get_default_compute_flags import get_default_compute_flags
 
 # gamdpy
-import gamdpy as rp
+import gamdpy as gp
 
 class Evaluator:
     """ Evaluates interactions between particles in a configuration.
@@ -35,7 +35,7 @@ class Evaluator:
         self.configuration = configuration
 
         if compute_plan==None:
-            self.compute_plan = rp.get_default_compute_plan(self.configuration)
+            self.compute_plan = gp.get_default_compute_plan(self.configuration)
         else:
             self.compute_plan = compute_plan
 
@@ -47,7 +47,7 @@ class Evaluator:
         else:
             self.interactions = [interactions, ]
 
-        self.interactions_kernel, self.interactions_params = rp.add_interactions_list(
+        self.interactions_kernel, self.interactions_params = gp.add_interactions_list(
             self.configuration,
             self.interactions,
             compute_plan=self.compute_plan,

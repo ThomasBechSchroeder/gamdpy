@@ -2,7 +2,7 @@ import itertools
 
 import numpy as np
 
-import gamdpy as rp
+import gamdpy as gp
 import numba
 
 
@@ -72,7 +72,7 @@ class CalculatorStructureFactor:
     BACKENDS = ['CPU multi core', 'CPU single core', 'GPU']
 
     def __init__(self, 
-                 configuration: rp.Configuration, 
+                 configuration: gp.Configuration, 
                  n_vectors: np.ndarray = None,
                  atomic_form_factors: np.ndarray = None,
                  backend='CPU multi core') -> None:

@@ -21,7 +21,7 @@ import pandas as pd
 import numba
 from numba import cuda, config
 
-import rumdpy as rp
+import rumdpy as gp
 import pickle
 
 
@@ -32,17 +32,17 @@ def setup_lennard_jones_system(nx, ny, nz, rho=0.8442, cut=2.5, verbose=False):
 
     # Generate configuration with a FCC lattice
     # Setup configuration: FCC Lattice
-    c1 = rp.Configuration(D=3)
+    c1 = gp.Configuration(D=3)
     c1.make_lattice(rp.unit_cells.FCC, cells=[nx, ny, nz], rho=rho)
     c1['m'] = 1.0
     c1.randomize_velocities(temperature=1.44)
-    #  c1 = rp.make_configuration_fcc(nx=nx,  ny=ny,  nz=nz,  rho=rho, T=1.44)
+    #  c1 = gp.make_configuration_fcc(nx=nx,  ny=ny,  nz=nz,  rho=rho, T=1.44)
 
     # Setup pair potential.
-    #pair_func = rp.apply_shifted_force_cutoff(rp.LJ_12_6_sigma_epsilon)
-    pair_func = rp.apply_shifted_potential_cutoff(rp.LJ_12_6_sigma_epsilon)
+    #pair_func = gp.apply_shifted_force_cutoff(rp.LJ_12_6_sigma_epsilon)
+    pair_func = gp.apply_shifted_potential_cutoff(rp.LJ_12_6_sigma_epsilon)
     sig, eps, cut = 1.0, 1.0, 2.5
-    pair_pot = rp.PairPotential(pair_func, params=[sig, eps, cut], max_num_nbs=500)
+    pair_pot = gp.PairPotential(pair_func, params=[sig, eps, cut], max_num_nbs=500)
 
     return c1, pair_pot
 
@@ -57,14 +57,14 @@ def run_benchmark(c1, pair_pot, compute_plan, steps, integrator='NVE', autotune=
     dt = 0.005
 
     if integrator == 'NVE':
-        integrator = rp.integrators.NVE(dt=dt)
+        integrator = gp.integrators.NVE(dt=dt)
     if integrator == 'NVT':
-        integrator = rp.integrators.NVT(temperature=0.70, tau=0.2, dt=dt)
+        integrator = gp.integrators.NVT(temperature=0.70, tau=0.2, dt=dt)
     if integrator == 'NVT_Langevin':
-        integrator = rp.integrators.NVT_Langevin(temperature=0.70, alpha=0.2, dt=dt, seed=213)
+        integrator = gp.integrators.NVT_Langevin(temperature=0.70, alpha=0.2, dt=dt, seed=213)
     
     # Setup Simulation. Total number of timesteps: num_blocks * steps_per_block
-    sim = rp.Simulation(c1, pair_pot, integrator, [rp.MomentumReset(100), ],
+    sim = gp.Simulation(c1, pair_pot, integrator, [rp.MomentumReset(100), ],
                         num_timeblocks=1, steps_per_timeblock=steps,
                         compute_plan=compute_plan, storage='memory', verbose=False)
     
@@ -125,7 +125,7 @@ def main(integrator, nblist, identifier, autotune):
         time_in_sec = 0
         while time_in_sec < target_time_in_sec:  
             steps = int(magic_number / c1.N)
-            compute_plan = rp.get_default_compute_plan(c1)
+            compute_plan = gp.get_default_compute_plan(c1)
             tps, time_in_sec, steps, compute_plan = run_benchmark(c1, LJ_func, compute_plan, steps, integrator=integrator, verbose=False)
             magic_number *= (2*target_time_in_sec) / time_in_sec  # Aim for 2*target_time (Assuming O(N) scaling)
         Ns.append(c1.N)

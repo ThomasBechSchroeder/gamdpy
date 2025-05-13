@@ -29,9 +29,9 @@ class CalculatorRadialDistribution():
     Example
     -------
 
-    >>> import gamdpy as rp
-    >>> sim = rp.get_default_sim()
-    >>> calc_rdf = rp.CalculatorRadialDistribution(sim.configuration, bins=1000)
+    >>> import gamdpy as gp
+    >>> sim = gp.get_default_sim()
+    >>> calc_rdf = gp.CalculatorRadialDistribution(sim.configuration, bins=1000)
     >>> for _ in sim.run_timeblocks():
     ...     calc_rdf.update()      # Current configuration to rdf
     >>> rdf_data = calc_rdf.read() # Read the rdf data as a dictionary

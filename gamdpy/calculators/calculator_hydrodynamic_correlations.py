@@ -1,5 +1,5 @@
 import numpy as np 
-import gamdpy as rp 
+import gamdpy as gp 
 from numba import jit
 import math
 import cmath
