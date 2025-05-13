@@ -76,7 +76,7 @@ integrator = gp.integrators.NVE(dt=0.005)
 compute_plan = gp.get_default_compute_plan(configuration)
 
 # Setup runtime actions, i.e. actions performed during simulation of timeblocks
-runtime_actions = [gp.ConfigurationSaver(),
+runtime_actions = [gp.TrajectorySaver(),
                    gp.ScalarSaver()]
 
 # Setup Simulation. Total number of time steps: num_blocks * steps_per_block

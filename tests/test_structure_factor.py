@@ -1,7 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-import gamdpy as rp
+import gamdpy as gp
+from object_lib import pairpot_LJ as pair_potential
 
 def test_structure_factor():
     # verbose = False
@@ -9,20 +10,18 @@ def test_structure_factor():
 
     # Setup simulation of single-component Lennard-Jones liquid
     temperature = 2.0
-    configuration = rp.Configuration(D=3)
-    configuration.make_lattice(rp.unit_cells.FCC, [8, 8, 8], rho=0.973)
+    configuration = gp.Configuration(D=3)
+    configuration.make_lattice(gp.unit_cells.FCC, [8, 8, 8], rho=0.973)
     configuration['m'] = 1.0
     configuration.randomize_velocities(temperature=temperature * 2)
-    pair_func = rp.apply_shifted_force_cutoff(rp.LJ_12_6_sigma_epsilon)
-    sig, eps, cut = 1.0, 1.0, 2.5
-    pair_potential = rp.PairPotential(pair_func, params=[sig, eps, cut], max_num_nbs=1000)
-    integrator = rp.integrators.NVT(temperature=temperature, tau=0.2, dt=0.005)
 
-    runtime_actions = [rp.ConfigurationSaver(), 
-                   rp.ScalarSaver(), 
-                   rp.MomentumReset(100)]
+    integrator = gp.integrators.NVT(temperature=temperature, tau=0.2, dt=0.005)
 
-    sim = rp.Simulation(configuration, pair_potential, integrator, runtime_actions,
+    runtime_actions = [ gp.TrajectorySaver(),
+                        gp.ScalarSaver(), 
+                        gp.MomentumReset(100)]
+
+    sim = gp.Simulation(configuration, pair_potential, integrator, runtime_actions,
                         steps_per_timeblock=1024, num_timeblocks=16, 
                         storage='memory')
 
@@ -36,7 +35,7 @@ def test_structure_factor():
     #     print('Calculating structure factor in production run ...')
 
     q_max: float = 16.0
-    calc_struct_fact = rp.CalculatorStructureFactor(configuration)
+    calc_struct_fact = gp.CalculatorStructureFactor(configuration)
     calc_struct_fact.generate_q_vectors(q_max=q_max)
     for _ in sim.run_timeblocks():
         calc_struct_fact.update()
@@ -135,18 +134,18 @@ def test_structure_factor():
 def test_structure_factor_backends():
     # Test structure factor calculation with different backends
     backends = ['CPU multi core', 'CPU single core']
-    sim = rp.get_default_sim()
+    sim = gp.get_default_sim()
     for backend in backends:
         print(f'Testing backend: {backend}')
         
         # Test direct 
         n_vectors = [[5,6,7], [0, 0, 1], [2, -2, -5]]
-        calc_struct_fact = rp.CalculatorStructureFactor(sim.configuration, backend=backend, n_vectors=n_vectors)
+        calc_struct_fact = gp.CalculatorStructureFactor(sim.configuration, backend=backend, n_vectors=n_vectors)
         calc_struct_fact.update()
         struc_fact = calc_struct_fact.read(bins=8)
 
         # Test generated q_vectors
-        calc_struct_fact = rp.CalculatorStructureFactor(sim.configuration, backend=backend)
+        calc_struct_fact = gp.CalculatorStructureFactor(sim.configuration, backend=backend)
         calc_struct_fact.generate_q_vectors(q_max=10.0)
         calc_struct_fact.update()
         struc_fact = calc_struct_fact.read(bins=128)
@@ -155,20 +154,20 @@ def test_atomic_form_factors():
         D = 3
         rho = 1.0
         number_of_particles = 10_000
-        conf = rp.Configuration(D=D)
+        conf = gp.Configuration(D=D)
         conf.make_positions(N=number_of_particles, rho=rho)
         conf['m'] = 1.0
 
         n_vectors = np.array([[5,6,7], [0, 0, 1], [2, -2, -5]])
         atomic_form_factors = np.random.random(number_of_particles)
 
-        calc_single = rp.CalculatorStructureFactor(conf, n_vectors, atomic_form_factors, 'CPU single core')
+        calc_single = gp.CalculatorStructureFactor(conf, n_vectors, atomic_form_factors, 'CPU single core')
         number_of_updates = 4
         for _ in range(number_of_updates):
             conf['r'] = (np.random.rand(number_of_particles, D)-0.5) * conf.simbox.lengths  # Ideal gas configuration
             conf.copy_to_device()
             calc_single.update()
-        calc_multi = rp.CalculatorStructureFactor(conf, n_vectors, atomic_form_factors, 'CPU multi core')
+        calc_multi = gp.CalculatorStructureFactor(conf, n_vectors, atomic_form_factors, 'CPU multi core')
         for _ in range(number_of_updates):
             conf['r'] = (np.random.rand(number_of_particles, D)-0.5) * conf.simbox.lengths  # Ideal gas configuration
             conf.copy_to_device()
@@ -178,7 +177,7 @@ def test_structure_factor_gpu():
     D = 3
     rho = 1.0
     number_of_particles = 10_000
-    conf = rp.Configuration(D=D)
+    conf = gp.Configuration(D=D)
     conf.make_positions(N=number_of_particles, rho=rho)
     conf['m'] = 1.0
 
@@ -186,7 +185,7 @@ def test_structure_factor_gpu():
     conf['r'] = (np.random.rand(number_of_particles, D)-0.5) * conf.simbox.lengths
 
     # Test direct
-    calc_struct_fact = rp.CalculatorStructureFactor(conf, backend='GPU')
+    calc_struct_fact = gp.CalculatorStructureFactor(conf, backend='GPU')
     calc_struct_fact.generate_q_vectors(q_max=10.0)
     print(f'{calc_struct_fact.q_vectors.shape = }')
     calc_struct_fact.update()

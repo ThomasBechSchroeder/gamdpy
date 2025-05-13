@@ -45,7 +45,7 @@ An interaction is responsible for keeping any internal datastructures up to date
 ### 4. Runtime actions
 Classes implementing actions on the configuration which are not related to the interactions or the integration of the equation of motion.
 These classes include momentum reset and savers.
-- class ConfigurationSaver
+- class TrajectorySaver
 - class ScalarSaver
 - class MomentumReset
 
@@ -173,8 +173,8 @@ git push -u origin your_branch
 
 Difference in a single file between branches. Can use hash instead of master / branch
 ```sh
-git diff origin branch -- rumdpy/Simulation.py
-git diff hash1 hash2 -- rumdpy/Simulation.py
+git diff origin branch -- gamdpy/Simulation.py
+git diff hash1 hash2 -- gamdpy/Simulation.py
 ```
 List the files that are different in two branches
 ```sh

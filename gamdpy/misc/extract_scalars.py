@@ -35,7 +35,7 @@ def extract_scalars(data, column_list, first_block=0, D=3):
     # Indices hardcoded for now (see scalar_calculator above)
     column_indices = {}
     try:
-        scalar_names = data.attrs['scalar_names']
+        scalar_names = data['scalar_saver'].attrs['scalar_names']
     except KeyError:
         # try the old label
         print("Data file uses old format (meta data labelled 'scalars_names' rather than 'scalar_names'); at some point suport for this format will be removed.")
@@ -46,6 +46,6 @@ def extract_scalars(data, column_list, first_block=0, D=3):
 
     output_list = []
     for column in column_list:
-        output_list.append(data['scalars'][first_block:,:,column_indices[column]].flatten())
+        output_list.append(data['scalar_saver/scalars'][first_block:,:,column_indices[column]].flatten())
     return tuple(output_list)
 

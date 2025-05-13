@@ -29,7 +29,7 @@ temperature = gp.make_function_ramp(value0=Tinitial, x0=0.25*running_time, value
 integrator = gp.integrators.NVT(temperature=temperature, tau=0.2, dt=dt)
 
 runtime_actions = [gp.MomentumReset(100),
-                   gp.ConfigurationSaver(),
+                   gp.TrajectorySaver(),
                    gp.ScalarSaver(32, {'Fsq':True, 'lapU':True}), ]
 
 

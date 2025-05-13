@@ -101,7 +101,7 @@ gravity = gp.interactions.Planar(
 
 # Setup simulation
 integrator = gp.integrators.NVE(dt=0.01)
-runtime_actions = [gp.ConfigurationSaver(),
+runtime_actions = [gp.TrajectorySaver(),
                    gp.ScalarSaver(steps_between_output=1)]
 interactions = [bonds, walls, gravity]
 sim = gp.Simulation(configuration, interactions, integrator, runtime_actions,

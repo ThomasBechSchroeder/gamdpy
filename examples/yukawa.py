@@ -108,7 +108,8 @@ plt.plot(r, umm_numerical, '--', label='u\'\'(r), numerical')
 plt.xlabel('r')
 plt.ylabel('u, s, u\'\'')
 plt.legend()
-plt.show()
+if __name__ == "__main__":
+    plt.show()
 
 # Setup configuration: FCC Lattice
 configuration = gp.Configuration(D=3)
@@ -125,7 +126,7 @@ pair_pot = gp.PairPotential(pair_func, params=[sig, eps, cut], max_num_nbs=1000)
 integrator = gp.integrators.NVE(dt=0.005)
 
 runtime_actions = [gp.MomentumReset(100),
-                   gp.ConfigurationSaver(),
+                   gp.TrajectorySaver(),
                    gp.ScalarSaver(), ]
 
 # Setup Simulation.

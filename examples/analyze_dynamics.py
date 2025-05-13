@@ -12,8 +12,11 @@ import pickle
 
 argv = sys.argv.copy()
 argv.pop(0)  # remove scriptname
-if argv:
-    filename = argv.pop(0) # get filename (.h5 added by script)
+if __name__ == "__main__":
+    if argv:
+        filename = argv.pop(0) # get filename (.h5 added by script)
+    else:
+        filename = 'Data/LJ_r0.973_T0.70_toread' # Used in testing
 else:
     filename = 'Data/LJ_r0.973_T0.70_toread' # Used in testing
 
@@ -50,5 +53,6 @@ axs[2].legend()
 fig.savefig(filename+'_dynamics.pdf')
 print(f"Wrote: {filename+'_dynamics.pdf'}")
 
-plt.show(block=True)
+if __name__ == "__main__":
+    plt.show(block=True)
 

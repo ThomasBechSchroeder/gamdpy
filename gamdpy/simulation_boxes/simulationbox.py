@@ -13,6 +13,10 @@ class SimulationBox(ABC):
         pass
 
     @abstractmethod
+    def get_name(self):
+        pass
+
+    @abstractmethod
     def copy_to_device(self):
         pass
 

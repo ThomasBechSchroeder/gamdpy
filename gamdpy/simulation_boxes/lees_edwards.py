@@ -37,6 +37,9 @@ class LeesEdwards(SimulationBox):
 
         return
 
+    def get_name(self):
+        return "LeesEdwards"
+
     def copy_to_device(self):
         # Here it assumed this is being done for the first time
 

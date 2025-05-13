@@ -33,7 +33,7 @@ def get_default_compute_plan(configuration):
         if device.compute_capability in cc_cores_per_SM_dict:
             cc_cores_per_SM = cc_cores_per_SM_dict[device.compute_capability]
         else:
-            print('RUMDPY WARNING: Could not find cc_cores_per_SM for this compute_capability. Guessing: 128')
+            print('gamdpy WARNING: Could not find cc_cores_per_SM for this compute_capability. Guessing: 128')
             cc_cores_per_SM = 128
         num_SM = device.MULTIPROCESSOR_COUNT
         num_cc_cores = cc_cores_per_SM * num_SM

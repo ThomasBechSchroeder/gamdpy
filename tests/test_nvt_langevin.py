@@ -7,7 +7,7 @@ def test_step_langevin(verbose=False, plot_figures=False) -> None:
     import time
 
 
-    import gamdpy as rp
+    import gamdpy as gp
 
     # State-point
     temperature = 1.2
@@ -19,28 +19,28 @@ def test_step_langevin(verbose=False, plot_figures=False) -> None:
     expected_potential_energy = expected_total_energy - expected_kinetic_energy
 
     # Setup configuration (give temperature kick to particles to get closer to equilibrium)
-    configuration = rp.Configuration(D=3, compute_flags={'W':True, 'K':True})
-    configuration.make_lattice(rp.unit_cells.FCC, cells=[7, 7, 7], rho=density)
+    configuration = gp.Configuration(D=3, compute_flags={'W':True, 'K':True})
+    configuration.make_lattice(gp.unit_cells.FCC, cells=[7, 7, 7], rho=density)
     configuration['m'] = 1.0
     configuration.randomize_velocities(temperature=2 * temperature, seed=0)
 
     # Setup pair potential.
-    pairfunc = rp.apply_shifted_potential_cutoff(rp.LJ_12_6_sigma_epsilon)
+    pairfunc = gp.apply_shifted_potential_cutoff(gp.LJ_12_6_sigma_epsilon)
     sig, eps, cut = 1.0, 1.0, 2.5
-    pairpot = rp.PairPotential(pairfunc, params=[sig, eps, cut], max_num_nbs=1000)
+    pairpot = gp.PairPotential(pairfunc, params=[sig, eps, cut], max_num_nbs=1000)
 
     # Setup integrator
     dt = 0.005
     alpha = 0.1
-    integrator = rp.integrators.NVT_Langevin(temperature, alpha=alpha, dt=dt, seed=0)
+    integrator = gp.integrators.NVT_Langevin(temperature, alpha=alpha, dt=dt, seed=0)
 
-    runtime_actions = [rp.MomentumReset(100), 
-                   rp.ScalarSaver(32, {'W':True, 'K':True}), ]
+    runtime_actions = [gp.MomentumReset(100), 
+                   gp.ScalarSaver(32, {'W':True, 'K':True}), ]
     
     # Setup the Simulation
     num_blocks = 32
     steps_per_block = 512
-    sim = rp.Simulation(configuration, pairpot, integrator, runtime_actions,
+    sim = gp.Simulation(configuration, pairpot, integrator, runtime_actions,
                         num_timeblocks=num_blocks, steps_per_timeblock=steps_per_block,
                         storage='memory')
 
@@ -51,7 +51,7 @@ def test_step_langevin(verbose=False, plot_figures=False) -> None:
 
     # Convert scalars to dataframe
     columns = ['U', 'W', 'K']
-    data = np.array(rp.extract_scalars(sim.output, columns, first_block=1))
+    data = np.array(gp.extract_scalars(sim.output, columns, first_block=1))
     df = pd.DataFrame(data.T/configuration.N, columns=columns) 
 
     # Compute summary statistics

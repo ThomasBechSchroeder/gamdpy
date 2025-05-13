@@ -4,8 +4,8 @@ import math
 import sys
 from numba import cuda
 
-# rumdpy
-import gamdpy as rp
+# gamdpy
+import gamdpy as gp
 
 # For type annotation
 from gamdpy.integrators import Integrator
@@ -36,7 +36,7 @@ class Simulation():
         The integrator to use for the simulation.
 
     runtime_actions : list of runtime actions
-        Runtime actions such as ScalarSaver, ConfigurationSaver or MomentumReset
+        Runtime actions such as ScalarSaver, TrajectorySaver or MomentumReset
 
     num_steps : int
         Number of steps to run the simulation. If 0, num_timeblocks and steps_per_timeblock should be set.
@@ -70,7 +70,7 @@ class Simulation():
 
     """
 
-    def __init__(self, configuration: rp.Configuration, 
+    def __init__(self, configuration: gp.Configuration, 
                  interactions: Interaction|list[Interaction], 
                  integrator: Integrator,
                  runtime_actions: list[RuntimeAction],
@@ -82,7 +82,7 @@ class Simulation():
 
         self.configuration = configuration
         if compute_plan == None:
-            self.compute_plan = rp.get_default_compute_plan(self.configuration)
+            self.compute_plan = gp.get_default_compute_plan(self.configuration)
         else:
             self.compute_plan = compute_plan
 
@@ -128,10 +128,10 @@ class Simulation():
             print("Simulation data will not be saved")
         # Save setup info
         self.memory.attrs['dt'] = self.dt
-        self.memory.attrs['simbox_initial'] = self.configuration.simbox.lengths
-        if 'ptype' in self.memory.keys():
-            del self.memory['ptype']
-        self.memory.create_dataset("ptype", data=configuration.ptype, shape=(self.configuration.N), dtype=np.int32)
+        #self.memory.attrs['simbox_initial'] = self.configuration.simbox.lengths #Should be in initial_configuration
+        #if 'ptype' in self.memory.keys(): Moved to initial_configuration h5 group
+        #    del self.memory['ptype']
+        #self.memory.create_dataset("ptype", data=configuration.ptype, shape=(self.configuration.N), dtype=np.int32)
         if 'script_name' not in self.memory.keys():
             script_name = sys.argv[0]
             self.memory.attrs['script_name'] = script_name
@@ -140,6 +140,10 @@ class Simulation():
                     script_content = file.read()
                 self.memory.attrs['script_content'] = script_content
 
+        # Saving starting configuration
+        #print("Starting configuration saved in group initial_configuration")
+        self.configuration.save(output=self.memory, group_name="initial_configuration", mode="w", include_topology=True)
+        #print(f"groups: {self.memory.keys()}\tdataset {self.memory['initial_configuration'].keys()}")
 
         self.runtime_actions = runtime_actions
 
@@ -151,7 +155,7 @@ class Simulation():
                 else:
                     compute_flags = runtime_action.get_compute_flags()
 
-        self.compute_flags = rp.get_default_compute_flags() # configuration.compute_flags
+        self.compute_flags = gp.get_default_compute_flags() # configuration.compute_flags
         if compute_flags is not None:
             # only keys present in the default are processed
             for k in compute_flags:
@@ -225,14 +229,14 @@ class Simulation():
 
     def get_kernels_and_params(self, verbose=False):
         # Interactions
-        self.interactions_kernel, self.interactions_params = rp.add_interactions_list(self.configuration,
+        self.interactions_kernel, self.interactions_params = gp.add_interactions_list(self.configuration,
                                                                                       self.interactions,
                                                                                       compute_plan=self.compute_plan,
                                                                                       compute_flags=self.compute_flags)
 
         # Runtime actions
         if self.runtime_actions:
-            self.runtime_actions_prestep_kernel, self.runtime_actions_poststep_kernel, self.runtime_actions_params = rp.add_runtime_actions_list(self.configuration,
+            self.runtime_actions_prestep_kernel, self.runtime_actions_poststep_kernel, self.runtime_actions_params = gp.add_runtime_actions_list(self.configuration,
                                                                                                     self.runtime_actions,
                                                                                                     compute_plan=self.compute_plan)
         else:
@@ -248,14 +252,14 @@ class Simulation():
 
     def update_params(self, verbose=False):
         # Interactions
-        _, self.interactions_params = rp.add_interactions_list(self.configuration,
+        _, self.interactions_params = gp.add_interactions_list(self.configuration,
                                                                 self.interactions,
                                                                 compute_plan=self.compute_plan,
                                                                 compute_flags=self.compute_flags)
 
         # Runtime actions
         if self.runtime_actions:
-            _, _, self.runtime_actions_params = rp.add_runtime_actions_list(self.configuration,
+            _, _, self.runtime_actions_params = gp.add_runtime_actions_list(self.configuration,
                                                                                                     self.runtime_actions,
                                                                                                     compute_plan=self.compute_plan)
         else:
@@ -435,6 +439,8 @@ class Simulation():
             for runtime_action in self.runtime_actions:
                 runtime_action.update_at_end_of_timeblock(block, self.get_output(mode="a"))
 
+            self.configuration.save(output=self.get_output(mode="a"), group_name=f"/restarts/restart{block:04d}", mode="w", include_topology=True)
+
             if self.storage[-3:] == '.h5':
                 self.output.close()
 
@@ -555,7 +561,7 @@ class Simulation():
         
         skin_times = []
         total_min_time = 1e9
-        optimal_compute_plan = rp.get_default_compute_plan(self.configuration) # Overwritten below
+        optimal_compute_plan = gp.get_default_compute_plan(self.configuration) # Overwritten below
 
         for nblist in nblists:
             self.compute_plan['nblist'] = nblist

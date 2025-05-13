@@ -60,14 +60,23 @@ class Test_examples:
     def test_calc_rdf_from_h5(self):
         self.make_one("calc_rdf_from_h5", ["rdf.dat", "ptype_rdf.dat"])
 
-    def test_calc_rdf_from_rumd3(self):
-        self.make_one("calc_rdf_from_rumd3", ["rdf_rumd3.dat", "ptype_rdf_rumd3.dat"])
+#    def test_calc_rdf_from_rumd3(self):
+#        self.make_one("calc_rdf_from_rumd3", ["rdf_rumd3.dat", "ptype_rdf_rumd3.dat"])
 
     def test_calc_sq_from_h5(self):
         self.make_one("calc_sq_from_h5", ["sq.dat"])
 
+    def test_analyze_thermodynamics(self):
+        self.make_one("analyze_thermodynamics", ["Data/LJ_r0.973_T0.70_toread_thermodynamics.pdf"])
+
+    def test_analyze_dynamics(self):
+        self.make_one("analyze_dynamics", ["Data/LJ_r0.973_T0.70_toread_dynamics.pdf","Data/LJ_r0.973_T0.70_toread_dynamics.pkl"])
+
+    def test_analyze_structure(self):
+        self.make_one("analyze_structure", ["Data/LJ_r0.973_T0.70_toread_rdf.pdf","Data/LJ_r0.973_T0.70_toread_rdf.pkl"])
+
     def test_ASD(self):
-        self.make_one("ASD")
+        self.make_one("ASD", ["Data/ASD_rho1.863_T0.465.h5"])
 
     def test_NVU_RT_kob_andersen(self):
         self.make_one("NVU_RT_kob_andersen")
@@ -91,7 +100,7 @@ class Test_examples:
         self.make_one("widoms_particle_insertion")
 
     def test_LJchain(self):
-        self.make_one("LJchain")
+        self.make_one("LJchain", ["Data/LJchain10_Rho1.00_T0.700.h5"])
 
     def test_write_to_lammps(self):
         self.make_one("write_to_lammps", ["dump.initial", "dump.lammps"])

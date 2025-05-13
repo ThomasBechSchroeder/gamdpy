@@ -22,10 +22,10 @@ class CalculatorWidomInsertion:
     Parameters
     ----------
 
-    configuration : rumdpy.Configuration
+    configuration : gamdpy.Configuration
         The configuration object representing the system.
 
-    pair_potential : rumdpy.PairPotential
+    pair_potential : gamdpy.PairPotential
         The pair potential object representing the interaction between particles.
 
     temperature : float
@@ -47,12 +47,12 @@ class CalculatorWidomInsertion:
     Example
     -------
     >>> import numpy as np
-    >>> import gamdpy as rp
-    >>> sim = rp.get_default_sim()  # Replace with your own equbriliated simulation
+    >>> import gamdpy as gp
+    >>> sim = gp.get_default_sim()  # Replace with your own equbriliated simulation
     >>> pair_pot = sim.interactions[0]
     >>> num_ghost_particles = 500_000
     >>> ghost_positions = np.random.rand(num_ghost_particles, sim.configuration.D) * sim.configuration.simbox.lengths
-    >>> calc_widom = rp.CalculatorWidomInsertion(sim.configuration, pair_pot, sim.integrator.temperature, ghost_positions)
+    >>> calc_widom = gp.CalculatorWidomInsertion(sim.configuration, pair_pot, sim.integrator.temperature, ghost_positions)
     >>> for block in sim.run_timeblocks():
     ...     calc_widom.update()
     >>> calc_widom_data = calc_widom.read()  # Dictionary with chemical potential and more

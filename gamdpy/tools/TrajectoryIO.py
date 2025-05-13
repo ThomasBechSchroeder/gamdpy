@@ -1,5 +1,5 @@
 # This class is used for loading the output of a simulation as a dictionary following the formatting of sim.output or save sim.output to file
-# Can be also used to convert between output formats (rumd3 -> rumdpy supported so far)
+# Can be also used to convert between output formats (rumd3 -> gamdpy supported so far)
 
 import sys
 import os
@@ -21,24 +21,23 @@ class TrajectoryIO():
     ----------
 
     name : str
-        Name of the file or folder to read output from. Can be a rumdpy .h5 output or a rumd3 TrajectoryFiles folder.
+        Name of the file or folder to read output from. Can be a gamdpy .h5 output or a rumd3 TrajectoryFiles folder.
 
     Examples
     --------
 
     >>> import gamdpy as gp
     >>> import h5py
-    >>> output = gp.tools.TrajectoryIO("examples/Data/LJ_r0.973_T0.70_toread.h5")
-    Found .h5 file (examples/Data/LJ_r0.973_T0.70_toread.h5), loading to rumdpy as output dictionary
-    >>> output = output.get_h5()
-    >>> nblocks, nconfs, _ , N, D = output['block'].shape
+    >>> output = gp.tools.TrajectoryIO("examples/Data/LJ_r0.973_T0.70_toread.h5").get_h5()
+    Found .h5 file (examples/Data/LJ_r0.973_T0.70_toread.h5), loading to gamdpy as output dictionary
+    >>> nblocks, nconfs, N, D = output['trajectory_saver/positions'].shape
     >>> print(f"Output file examples/Data/LJ_r0.973_T0.70.h5 containts a simulation of {N} particles in {D} dimensions")
     Output file examples/Data/LJ_r0.973_T0.70.h5 containts a simulation of 2048 particles in 3 dimensions
     >>> print(f"The simulation output is divided into {nblocks} blocks, each of them with {nconfs} configurations")
-    The simulation output is divided into 8 blocks, each of them with 13 configurations
+    The simulation output is divided into 32 blocks, each of them with 12 configurations
     >>> output = gp.tools.TrajectoryIO("examples/Data/NVT_N4000_T2.0_rho1.2_KABLJ_rumd3/TrajectoryFiles").get_h5()   # Read from rumd3
     Found rumd3 TrajectoryFiles, loading to rumpdy as output dictionary
-    >>> nblocks, nconfs, _ , N, D = output['block'].shape
+    >>> nblocks, nconfs, N, D = output['trajectory_saver/positions'].shape
     >>> print(f"File examples/Data/NVT_N4000_T2.0_rho1.2_KABLJ_rumd3/TrajectoryFiles containts a simulation of {N} particles in {D} dimensions")
     File examples/Data/NVT_N4000_T2.0_rho1.2_KABLJ_rumd3/TrajectoryFiles containts a simulation of 4000 particles in 3 dimensions
     >>> print(f"The simulation output is divided into {nblocks} blocks, each of them with {nconfs} configurations")
@@ -53,8 +52,8 @@ class TrajectoryIO():
         if name[-3:]==".h5":
             modification_time = os.path.getmtime(name)
             readable_time = time.ctime(modification_time)
-            #print(f"Found .h5 file ({name}, {readable_time}), loading to rumdpy as output dictionary")
-            print(f"Found .h5 file ({name}), loading to rumdpy as output dictionary") # Cant handle timestamp in doctest
+            #print(f"Found .h5 file ({name}, {readable_time}), loading to gamdpy as output dictionary")
+            print(f"Found .h5 file ({name}), loading to gamdpy as output dictionary") # Cant handle timestamp in doctest
             self.h5 = self.load_h5(name)
         elif "TrajectoryFiles" in name:
             try: 
@@ -94,7 +93,7 @@ class TrajectoryIO():
     # Load from TrajectoryFiles (std rumd3 output)
     # It assumes trajectories are spaced in log2
     def load_rumd3(self, name:str) -> h5py.File:
-        """ Reads a rumd3 TrajectoryFiles folder and convert it into rumdpy .h5 output. This function returns a memory .h5"""
+        """ Reads a rumd3 TrajectoryFiles folder and convert it into gamdpy .h5 output. This function returns a memory .h5"""
         import os, gzip, glob
         import pandas as pd
 
@@ -170,14 +169,20 @@ class TrajectoryIO():
                 pos_array  = np.c_[tmp_data['x'].to_numpy(), tmp_data['y'].to_numpy(), tmp_data['z'].to_numpy()]
                 img_array  = np.c_[tmp_data['imx'].to_numpy(), tmp_data['imy'].to_numpy(), tmp_data['imz'].to_numpy()]
                 positions.append(pos_array.reshape((-1,npart,dim)))
-                images.append(pos_array.reshape((-1,npart,dim)))
+                images.append(img_array.reshape((-1,npart,dim)))
             # Saving data in output h5py
             output.attrs['dt'] =  timestep 
             output.attrs['simbox_initial'] = lengths 
-            output.attrs['vectors_names'] = ["r", "r_im"]
-            output.create_dataset("block", shape=(len(traj_files), 1+ntrajinblock, 2, npart, dim))
-            output['block'][:,:,0,:,:] = np.array(positions) 
-            output.create_dataset("ptype", data=type_array[:npart], shape=(npart), dtype=np.int32)
+            #output.attrs['vectors_names'] = ["r", "r_im"]
+            output.create_group('trajectory_saver')
+            output['trajectory_saver'].create_dataset('positions', shape=(len(traj_files), 1+ntrajinblock, npart, dim), dtype=np.float32)
+            output['trajectory_saver/positions'][:,:,:,:] = np.array(positions) 
+            output['trajectory_saver'].create_dataset('images', shape=(len(traj_files), 1+ntrajinblock, npart, dim), dtype=np.int32)
+            output['trajectory_saver/images'][:,:,:,:] = np.array(images)
+
+            #output.create_dataset("ptype", data=type_array[:npart], shape=(npart), dtype=np.int32)
+            output.create_group('initial_configuration')
+            output['initial_configuration'].create_dataset("ptype", data=type_array[:npart], shape=(npart), dtype=np.int32)
 
         # Read energies 
         if energy:
@@ -202,11 +207,12 @@ class TrajectoryIO():
                 tmp_data   = pd.read_csv(energies, skiprows=1, names=col_names, usecols = [i for i in range(len(col_names))], delimiter=" ")
                 all_energies.append(tmp_data.to_numpy())
             # Saving data in output h5py
+            grp = output.create_group('scalar_saver')
             if 'dt' in output.attrs.keys() and 'Dt' in meta_data: 
-                output.attrs['steps_between_output'] = float(save_interval)/float(output.attrs['dt'])
-            output.attrs['time_between_output'] = save_interval
-            output.attrs['scalar_names'] = list(col_names)
-            output.create_dataset('scalars', data=np.vstack(all_energies))
+                output['scalar_saver'].attrs['steps_between_output'] = float(save_interval)/float(output.attrs['dt'])
+            output['scalar_saver'].attrs['time_between_output'] = save_interval
+            output['scalar_saver'].attrs['scalar_names'] = list(col_names)
+            output.create_dataset('scalar_saver/scalars', data=np.vstack(all_energies))
 
         return output
 
@@ -217,24 +223,84 @@ class TrajectoryIO():
         By default output is compressed. This can be avoided setting self.compression_type = "gzip" and self.compression_opts=0 .
         """
 
+        # LC: This monster needs to be re-structured
         import h5py
         import importlib.util
         if importlib.util.find_spec("hdf5plugin")!=None:
             import hdf5plugin
         fout = h5py.File(name, "w") 
-        fout.attrs.update(self.h5.attrs)
+        #fout.attrs.update(self.h5.attrs)
+        print(self.h5.keys())
         for key in self.h5.keys():
-            print(f"Writing dataset {key} to {name}")
-            if importlib.util.find_spec("hdf5plugin")!=None:
-                if self.compression_type == "gzip":
+            fout.copy(source=self.h5[key], dest="/")
+            print(f"{key} {fout.keys()}")
+        fout.close()
+        return
+        for key in self.h5.keys():
+            if isinstance(self.h5[key], h5py.Group):
+                print(f"Writing Group {key} to {name}")
+                fout.create_group(f"/{key}")
+                fout.copy(self.h5[key], f"/{key}")
+                continue
+                #print(self.h5.keys(), key, fout.keys())
+                for subkey in self.h5[key].keys():
+                    if isinstance(self.h5[key][subkey], h5py.Group):
+                        #print(self.h5[key].keys(), subkey, self.h5[key][subkey], fout[key].keys())
+                        #print(f"Writing dataset {key}/{subkey} to {name}")
+                        fout.create_group(f"/{key}/{subkey}")
+                        for subsubkey in self.h5[key][subkey].keys():
+                            print(key, subkey, subsubkey)
+                            if importlib.util.find_spec("hdf5plugin")!=None:
+                                if self.compression_type == "gzip":
+                                    fout[f"{key}/{subkey}"].create_dataset(subsubkey, data=self.h5[f"{key}/{subkey}"][subsubkey], chunks=True, 
+                                            compression=self.compression_type, compression_opts=self.compression_opts, shuffle=True)
+                                else:
+                                    fout[f"{key}/{subkey}"].create_dataset(subsubkey, data=self.h5[f"{key}/{subkey}"][subsubkey], chunks=True, 
+                                            compression=self.compression_type, shuffle=True)
+                            elif self.compression_type == "gzip":
+                                fout[f"{key}/{subkey}"].create_dataset(subsubkey, data=self.h5[f"{key}/{subkey}"][subsubkey], chunks=True, 
+                                        compression=self.compression_type, compression_opts=self.compression_opts, shuffle=True)
+                            else:
+                                fout[f"{key}/{subkey}"].create_dataset(subsubkey, data=self.h5[f"{key}/{subkey}"][subsubkey], chunks=True, 
+                                        compression=self.compression_type)
+                            #print(f"Writing attributes {key}/{subkey} to {name}")
+                            fout[f"{key}/{subkey}"][subsubkey].attrs.update(self.h5[key][subkey].attrs)
+                            #print(f"Done dataset {key}/{subkey} to {name}")
+                    else:
+                        #print(self.h5[key].keys(), subkey, self.h5[key][subkey], fout[key].keys())
+                        #print(f"Writing dataset {key}/{subkey} to {name}")
+                        if importlib.util.find_spec("hdf5plugin")!=None:
+                            if self.compression_type == "gzip":
+                                fout[key].create_dataset(subkey, data=self.h5[key][subkey], chunks=True,
+                                        compression=self.compression_type, compression_opts=self.compression_opts, shuffle=True)
+                            else:
+                                fout[key].create_dataset(subkey, data=self.h5[key][subkey], chunks=True,
+                                        compression=self.compression_type, shuffle=True)
+                        elif self.compression_type == "gzip":
+                            fout[key].create_dataset(subkey, data=self.h5[key][subkey], chunks=True,
+                                    compression=self.compression_type, compression_opts=self.compression_opts, shuffle=True)
+                        else:
+                            fout[key].create_dataset(subkey, data=self.h5[key][subkey], chunks=True,
+                                    compression=self.compression_type)
+                        #print(f"Writing attributes {key}/{subkey} to {name}")
+                        fout[key][subkey].attrs.update(self.h5[key][subkey].attrs)
+                        #print(f"Done dataset {key}/{subkey} to {name}")
+                fout[key].attrs.update(self.h5[key].attrs)
+                #print(f"Done Group {key} to {name}")
+            elif isinstance(self.h5[key], h5py.Dataset):
+                print(f"Writing dataset {key} to {name}")
+                if importlib.util.find_spec("hdf5plugin")!=None:
+                    if self.compression_type == "gzip":
+                        fout.create_dataset(key, data=self.h5[key], chunks=True, compression=self.compression_type, compression_opts=self.compression_opts, shuffle=True)
+                    else:
+                        fout.create_dataset(key, data=self.h5[key], chunks=True, compression=self.compression_type, shuffle=True)
+                elif self.compression_type == "gzip":
                     fout.create_dataset(key, data=self.h5[key], chunks=True, compression=self.compression_type, compression_opts=self.compression_opts, shuffle=True)
                 else:
-                    fout.create_dataset(key, data=self.h5[key], chunks=True, compression=self.compression_type, shuffle=True)
-            elif self.compression_type == "gzip":
-                fout.create_dataset(key, data=self.h5[key], chunks=True, compression=self.compression_type, compression_opts=self.compression_opts, shuffle=True)
+                    fout.create_dataset(key, data=self.h5[key], chunks=True, compression=self.compression_type)
+                fout[key].attrs.update(self.h5[key].attrs)
             else:
-                fout.create_dataset(key, data=self.h5[key], chunks=True, compression=self.compression_type)
-            fout[key].attrs.update(self.h5[key].attrs)
+                print("Problem")
 
         print(f"All written using {self.compression_type}")
         fout.close()

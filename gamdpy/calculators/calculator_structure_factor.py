@@ -2,7 +2,7 @@ import itertools
 
 import numpy as np
 
-import gamdpy as rp
+import gamdpy as gp
 import numba
 
 
@@ -36,14 +36,14 @@ class CalculatorStructureFactor:
 
         S({\\bf q}) = |\\rho_{\\bf q}|^2.
 
-    The method :meth:`~rumdpy.calculators.CalculatorStructureFactor.update`
+    The method :meth:`~gamdpy.calculators.CalculatorStructureFactor.update`
     updates the structure factor with the current configuration.
-    The method :meth:`~rumdpy.calculators.CalculatorStructureFactor.read` returns the structure factor for the q vectors in the q_direction.
+    The method :meth:`~gamdpy.calculators.CalculatorStructureFactor.read` returns the structure factor for the q vectors in the q_direction.
 
     Parameters
     ----------
 
-    configuration : rumdpy.Configuration
+    configuration : gamdpy.Configuration
         The configuration object to calculate the structure factor for.
 
     q_max : float or None
@@ -65,14 +65,14 @@ class CalculatorStructureFactor:
     See also
     --------
 
-    :class:`~rumdpy.CalculatorRadialDistribution`
+    :class:`~gamdpy.CalculatorRadialDistribution`
 
     """
 
     BACKENDS = ['CPU multi core', 'CPU single core', 'GPU']
 
     def __init__(self, 
-                 configuration: rp.Configuration, 
+                 configuration: gp.Configuration, 
                  n_vectors: np.ndarray = None,
                  atomic_form_factors: np.ndarray = None,
                  backend='CPU multi core') -> None:

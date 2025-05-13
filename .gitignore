@@ -11,7 +11,7 @@ examples/Data/*.pkl
 venv
 docs/build
 *libcudadevrt.a
-examples/rumdpy
-tests/rumdpy
-tests_ci/rumdpy
+examples/gamdpy
+tests/gamdpy
+tests_ci/gamdpy
 .coverage

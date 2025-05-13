@@ -28,6 +28,9 @@ class Orthorhombic():
         self.len_sim_box_data = D # not true for other Simbox classes
         return
 
+    def get_name(self):
+        return "Orthorhombic"
+
     def make_device_copy(self):
         """ Creates a new device copy of the simbox data and returns it to the caller.
         To be used by neighbor list for recording the box state at time of last rebuild"""

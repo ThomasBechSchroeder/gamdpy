@@ -1,5 +1,5 @@
 # This class is used for loading and saving configurations 
-# Can be also used to convert between output formats (rumd3 -> rumdpy supported so far)
+# Can be also used to convert between output formats (rumd3 -> gamdpy supported so far)
 import sys
 import numpy as np
 import os

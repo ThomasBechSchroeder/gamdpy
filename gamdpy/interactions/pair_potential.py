@@ -3,7 +3,7 @@ import numba
 import math
 from numba import cuda
 import matplotlib.pyplot as plt
-import gamdpy as rp
+import gamdpy as gp
 from .interaction import Interaction
 
 class PairPotential(Interaction):
@@ -81,22 +81,22 @@ class PairPotential(Interaction):
             raise RuntimeError(f'Neighbor-list is invalid. Try allocating space for more neighbors (max_num_nbs in PairPot object). Allocated size: {self.max_num_nbs}, but {nbflag[1]+1} neighbours found. {nbflag=}.')
         return True
 
-    def get_params(self, configuration: rp.Configuration, compute_plan: dict, verbose=False) -> tuple:
+    def get_params(self, configuration: gp.Configuration, compute_plan: dict, verbose=False) -> tuple:
         
         self.params, max_cut = self.convert_user_params()
         self.d_params = cuda.to_device(self.params)
 
         if compute_plan['nblist'] == 'N squared':
-            self.nblist = rp.NbList2(configuration, self.exclusions, self.max_num_nbs)
+            self.nblist = gp.NbList2(configuration, self.exclusions, self.max_num_nbs)
         elif compute_plan['nblist'] == 'linked lists':
-            self.nblist = rp.NbListLinkedLists(configuration, self.exclusions, self.max_num_nbs)
+            self.nblist = gp.NbListLinkedLists(configuration, self.exclusions, self.max_num_nbs)
         else:
             raise ValueError(f"No lblist called: {compute_plan['nblist']}. Use either 'N squared' or 'linked lists'")
         nblist_params = self.nblist.get_params(max_cut, compute_plan, verbose)
 
         return (self.d_params, self.nblist.d_nblist, nblist_params)
 
-    def get_kernel(self, configuration: rp.Configuration, compute_plan: dict, compute_flags: dict[str,bool], verbose=False):
+    def get_kernel(self, configuration: gp.Configuration, compute_plan: dict, compute_flags: dict[str,bool], verbose=False):
         num_cscalars = configuration.num_cscalars
 
         compute_u = compute_flags['U']

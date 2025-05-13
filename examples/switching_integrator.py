@@ -33,7 +33,7 @@ configuration.randomize_velocities(temperature=0.7)
 integrator1 = gp.integrators.NVT(temperature=T, tau=0.2, dt=0.0025)
 integrator2 = gp.integrators.NVT(temperature=T, tau=0.2, dt=0.0025)
 
-runtime_actions = [gp.ConfigurationSaver(),
+runtime_actions = [gp.TrajectorySaver(),
                    gp.ScalarSaver(1),
                    gp.MomentumReset(100)]
 
@@ -76,4 +76,5 @@ plt.plot(U1, '.-', label='Integrator1, Equilibration')
 plt.plot(U2, '.-', label='Integrator1, Production')
 plt.plot(U3, '.-', label='Integrator2, Production')
 plt.legend()
-plt.show()
+if __name__ == "__main__":
+    plt.show()

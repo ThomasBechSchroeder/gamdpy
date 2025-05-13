@@ -10,7 +10,7 @@ def LJ_12_6_sigma_epsilon(dist, params):
     
         u(r) = 4\\epsilon(   (r/\\sigma)^{-12} -   (r/\\sigma)^{-6} )
     
-    This is the same as the :func:`rumdpy.LJ_12_6` potential, 
+    This is the same as the :func:`gamdpy.LJ_12_6` potential, 
     but with :math:`\\sigma` (sigma) and :math:`\\epsilon` (epsilon) as parameters.
     
     Parameters

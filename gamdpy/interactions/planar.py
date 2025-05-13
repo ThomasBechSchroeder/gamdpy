@@ -29,7 +29,7 @@ class Planar(Interaction):
 
     potential : Callable
         Potential function for planer interactions
-        See :func:rumdpy.potential_functions.harmonic_repulsion for an example.
+        See :func:gamdpy.potential_functions.harmonic_repulsion for an example.
 
     params : list[list[float]]
         A list of parameters for each plane type.

@@ -1,6 +1,6 @@
-""" The rumdpy main module """
-# Objects which are imported here will be in the main namespace and can be called are rumdpy.object
-# Objects which are imported in the __init__.py of subpackages are called as rumdpy.subpackage.object
+""" The gamdpy main module """
+# Objects which are imported here will be in the main namespace and can be called are gamdpy.object
+# Objects which are imported in the __init__.py of subpackages are called as gamdpy.subpackage.object
 
 # Import from configuration subpackage
 # The configuration subpackage contains details about the configuration (positions, energies, etc)
@@ -34,7 +34,7 @@ from .interactions import Gravity, Relaxtemp, Tether
 from .interactions.potential_functions import *
 
 # Import from runtime_actions subpackage (Actions that can be inserted into the stimulation  kernel)
-from .runtime_actions import RuntimeAction, add_runtime_actions_list, ConfigurationSaver, ScalarSaver, MomentumReset, StressSaver, extract_stress_tensor
+from .runtime_actions import RuntimeAction, add_runtime_actions_list, TrajectorySaver, ScalarSaver, MomentumReset, StressSaver, extract_stress_tensor
 
 # Import from calculators subpackage
 from .calculators import CalculatorHydrodynamicCorrelations, CalculatorHydrodynamicProfile, CalculatorWidomInsertion
@@ -43,8 +43,8 @@ from .calculators import CalculatorRadialDistribution, CalculatorStructureFactor
 # Import from tools subpackage
 # To make type checking work (e.g. pylance): 
 from .tools import TrajectoryIO, calc_dynamics, save_configuration
-# Side effect rp.calc_dynamics does also work! Same problem for integrators
-# TrajectoryIO, save_configuration and calc_dynamics are not directly imported and are called via rp.tools.*
+# Side effect gp.calc_dynamics does also work! Same problem for integrators
+# TrajectoryIO, save_configuration and calc_dynamics are not directly imported and are called via gp.tools.*
 
 # Tools/Evaluator are runtime actions with do not interact with the kernel
 from .tools.Evaluator import Evaluator

@@ -17,7 +17,7 @@ class Bonds(Interaction):
 
     bond_potential : function
         A function that takes the distance between two particles and the bond type as arguments and returns the potential energy, force and laplacian.
-        See :func:rumdpy.potential_functions.harmonic_bond_function for an example.
+        See :func:gamdpy.potential_functions.harmonic_bond_function for an example.
 
     potential_params : list
         A list of parameters for each bond type. Each entry is a list of parameters for a specific bond type.
@@ -28,7 +28,7 @@ class Bonds(Interaction):
     See Also
     --------
 
-    rumdpy.harmonic_bond_function : Harmonic bond potential
+    gamdpy.harmonic_bond_function : Harmonic bond potential
 
     """
     def __init__(self, bond_potential, potential_params, indices):

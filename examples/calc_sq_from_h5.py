@@ -14,12 +14,13 @@ if not os.path.isfile(file_to_read):
 # Load existing data
 output = gp.tools.TrajectoryIO(file_to_read).get_h5()
 # Read number of particles N and dimensions from data
-nblocks, nconfs, _ , N, D = output['block'].shape
+nblocks, nconfs, N, D = output['trajectory_saver/positions'].shape
 
 # Set up the configuration object
 # Create configuration object
 configuration = gp.Configuration(D=D, N=N)
-configuration.simbox = gp.Orthorhombic(D, output.attrs['simbox_initial'])
+configuration.simbox = gp.Orthorhombic(D, output['initial_configuration'].attrs['simbox_data'])
+configuration.ptype = output['initial_configuration/ptype']
 configuration.copy_to_device()
 
 # Call the rdf calculator
@@ -28,7 +29,7 @@ calc_sq.generate_q_vectors(q_max=18)
 
 # NOTE: the structure of the block is (outer_block, inner_steps, pos&img, npart, dimensions)
 #       the zero is to select the position array and discard images
-positions = output['block'][:,:,0,:,:]
+positions = output['trajectory_saver/positions'][:,:,:,:]
 positions = positions.reshape(nblocks*nconfs,N,D)
 
 # Loop over saved configurations

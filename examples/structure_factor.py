@@ -19,7 +19,7 @@ pair_func = gp.apply_shifted_force_cutoff(gp.LJ_12_6_sigma_epsilon)
 sig, eps, cut = 1.0, 1.0, 2.5
 pair_potential = gp.PairPotential(pair_func, params=[sig, eps, cut], max_num_nbs=1000)
 integrator = gp.integrators.NVT(temperature=temperature, tau=0.2, dt=0.005)
-runtime_actions = [gp.ConfigurationSaver(),
+runtime_actions = [gp.TrajectorySaver(),
                    gp.ScalarSaver(),
                    gp.MomentumReset(100)]
 
@@ -71,5 +71,6 @@ plt.xlabel(r'Length of wave-vector, $|q|$ ($\sigma^{-1}$)')
 plt.ylabel(r'Static structure factor, $S(|q|)$')
 plt.ylim(1e-2, 10)
 plt.xlim(0, max(q))
-plt.show()
+if __name__ == "__main__":
+    plt.show()
 

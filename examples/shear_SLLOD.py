@@ -39,7 +39,7 @@ if run_NVT:
     integrator_NVT = gp.integrators.NVT(Ttarget_function, tau=0.2, dt=dt)
 
     # Setup runtime actions, i.e. actions performed during simulation of timeblocks
-    runtime_actions = [gp.ConfigurationSaver(),
+    runtime_actions = [gp.TrajectorySaver(),
                    gp.ScalarSaver(),
                    gp.MomentumReset(100)]
 
@@ -92,7 +92,7 @@ num_steps_transient = int(strain_transient / (sr*dt) ) + 1
 
 
 # Setup runtime actions, i.e. actions performed during simulation of timeblocks
-runtime_actions = [gp.ConfigurationSaver(include_simbox=True),
+runtime_actions = [gp.TrajectorySaver(include_simbox=True),
                    gp.MomentumReset(100),
                    gp.StressSaver(sc_output, compute_flags={'stresses':True}),
                    gp.ScalarSaver(sc_output)]

@@ -1,4 +1,4 @@
-# This is a library of predefined rumdpy classes which can be used in tests
+# This is a library of predefined gamdpy classes which can be used in tests
 __all__ = ["configuration_SC",
            "pairpot_LJ"]
 

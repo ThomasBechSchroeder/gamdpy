@@ -113,7 +113,7 @@ Generators
 Runtime Actions
 ***************
 
-.. autoclass:: gamdpy.ConfigurationSaver
+.. autoclass:: gamdpy.TrajectorySaver
 
 .. autoclass:: gamdpy.ScalarSaver
 

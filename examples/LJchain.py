@@ -52,7 +52,7 @@ compute_plan = gp.get_default_compute_plan(configuration)
 print(compute_plan)
 
 runtime_actions = [gp.MomentumReset(100),
-                   gp.ConfigurationSaver(),
+                   gp.TrajectorySaver(),
                    gp.ScalarSaver(32, {'Fsq':True, 'lapU':True}), ]
 
 
@@ -85,7 +85,7 @@ columns = ['U', 'W', 'K', 'lapU', 'Fsq', 'Vol']
 with h5py.File(filename, "r") as f:
     data = np.array(gp.extract_scalars(f, columns, first_block=1))
 df = pd.DataFrame(data.T, columns=columns)
-df['t'] = np.arange(len(df['U'])) * dt * sim.output.attrs["steps_between_output"]
+df['t'] = np.arange(len(df['U'])) * dt * sim.output['scalar_saver'].attrs["steps_between_output"]
 gp.plot_scalars(df, configuration.N, configuration.D, figsize=(10, 8), block=False)
 
 mu = np.mean(df['U']) / configuration.N
@@ -112,7 +112,8 @@ axs[2].grid(linestyle='--', alpha=0.5)
 axs[0].loglog(dynamics['times'], dynamics['msd'], 'o--')
 axs[1].semilogx(dynamics['times'], dynamics['alpha2'], 'o--')
 axs[2].semilogx(dynamics['times'], dynamics['Fs'], 'o--')
-plt.show(block=False)
+if __name__ == "__main__":
+    plt.show(block=False)
 
 rdf = calc_rdf.read()
 rdf['rdf'] = np.mean(rdf['rdf'], axis=0)
@@ -122,4 +123,5 @@ axs.set_xlabel('Distance')
 axs.grid(linestyle='--', alpha=0.5)
 axs.plot(rdf['distances'], rdf['rdf'], '-')
 axs.set_xlim((0.5, 3.5))
-plt.show(block=True)
+if __name__ == "__main__":
+    plt.show(block=True)

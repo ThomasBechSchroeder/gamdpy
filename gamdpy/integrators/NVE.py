@@ -1,6 +1,6 @@
 import numpy as np
 import numba
-import gamdpy as rp
+import gamdpy as gp
 from numba import cuda
 from .integrator import Integrator
 
@@ -26,11 +26,11 @@ class NVE(Integrator):
     def __init__(self, dt):
         self.dt = dt
   
-    def get_params(self, configuration: rp.Configuration, interactions_params: tuple, verbose=False) -> tuple:
+    def get_params(self, configuration: gp.Configuration, interactions_params: tuple, verbose=False) -> tuple:
         dt = np.float32(self.dt)
         return (dt,)
 
-    def get_kernel(self, configuration: rp.Configuration, compute_plan: dict, compute_flags: dict[str,bool], interactions_kernel, verbose=False):
+    def get_kernel(self, configuration: gp.Configuration, compute_plan: dict, compute_flags: dict[str,bool], interactions_kernel, verbose=False):
 
         # Unpack parameters from configuration and compute_plan
         D, num_part = configuration.D, configuration.N

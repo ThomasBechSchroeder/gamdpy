@@ -34,7 +34,7 @@ for temperature in ['0.70', '1.10', '1.50']:
     integrator = gp.integrators.NVT(temperature=temperature, tau=0.2, dt=0.005)
 
     # Setup runtime actions, i.e. actions performed during simulation of timeblocks
-    runtime_actions = [gp.ConfigurationSaver(),
+    runtime_actions = [gp.TrajectorySaver(),
                     gp.ScalarSaver(),
                     gp.MomentumReset(100)]
 
@@ -54,4 +54,4 @@ for temperature in ['0.70', '1.10', '1.50']:
     print(sim.summary())
 
 # To get a plot of the MSD do something like this:
-# python3 -m rumdpy.tools.calc_dynamics -o Data/msd_r0.973.pdf Data/LJ_r0.973_T*.h5
+# python3 -m gamdpy.tools.calc_dynamics -o Data/msd_r0.973.pdf Data/LJ_r0.973_T*.h5

@@ -4,7 +4,7 @@ from numba import cuda
 import math
 from numba.cuda.random import create_xoroshiro128p_states
 from numba.cuda.random import xoroshiro128p_normal_float32
-import gamdpy as rp
+import gamdpy as gp
 from .integrator import Integrator
 
 class NPT_Langevin(Integrator):
@@ -27,7 +27,7 @@ class NPT_Langevin(Integrator):
         self.dt = dt
         self.seed = seed
 
-    def get_params(self, configuration: rp.Configuration, interactions_params: tuple, verbose=False) -> tuple:
+    def get_params(self, configuration: gp.Configuration, interactions_params: tuple, verbose=False) -> tuple:
         dt = np.float32(self.dt)
         alpha = np.float32(self.alpha)
         alpha_baro = np.float32(self.alpha_baro)
@@ -42,7 +42,7 @@ class NPT_Langevin(Integrator):
                 self.barostatModeISO, np.int32(self.boxFlucCoord), 
                 rng_states, d_barostat_state, d_barostatVirial, d_length_ratio)
     
-    def get_kernel(self, configuration: rp.Configuration, compute_plan: dict, compute_flags:dict[str,bool], interactions_kernel, verbose=False):
+    def get_kernel(self, configuration: gp.Configuration, compute_plan: dict, compute_flags:dict[str,bool], interactions_kernel, verbose=False):
 
         # Unpack parameters from configuration and compute_plan
         D, num_part = configuration.D, configuration.N
@@ -53,11 +53,11 @@ class NPT_Langevin(Integrator):
         if callable(self.temperature):
             temperature_function = self.temperature
         else:
-            temperature_function = rp.make_function_constant(value=float(self.temperature))
+            temperature_function = gp.make_function_constant(value=float(self.temperature))
         if callable(self.pressure):
             pressure_function = self.pressure
         else:
-            pressure_function = rp.make_function_constant(value=float(self.pressure))
+            pressure_function = gp.make_function_constant(value=float(self.pressure))
 
         if verbose:
             print(f'Generating NPT langevin integrator for {num_part} particles in {D} dimensions:')

@@ -1,6 +1,6 @@
 import sys
 import numpy as np
-import gamdpy as rp
+import gamdpy as gp
 from numba import cuda, config
 import pytest
 
@@ -46,17 +46,17 @@ def run_nblist(configuration, nblist, cut, compute_plan, compute_flags):
 def nblist_test(nx, ny, nz, rho=0.8442, pb=None, tp=None, skin=None, gridsync=None, UtilizeNIII=None, box_shift=0, cut=2.5, verbose=True):
     
     # Generate configuration with a FCC lattice
-    configuration = rp.Configuration(D=3)
-    configuration.make_lattice(rp.unit_cells.FCC, cells=(nx, ny, nz), rho=rho)
+    configuration = gp.Configuration(D=3)
+    configuration.make_lattice(gp.unit_cells.FCC, cells=(nx, ny, nz), rho=rho)
     np.random.seed(0)
     configuration['r'] += np.random.uniform(-.3, +.3, configuration['r'].shape)
     configuration['r'] = configuration['r'][np.random.permutation(configuration.N),:]
 
     if box_shift != 0.0:
-        configuration.simbox = rp.LeesEdwards(configuration.D, configuration.simbox.lengths, box_shift)
+        configuration.simbox = gp.LeesEdwards(configuration.D, configuration.simbox.lengths, box_shift)
 
     # Allow for overwriting of the default compute_plan
-    compute_plan = rp.get_default_compute_plan(configuration)
+    compute_plan = gp.get_default_compute_plan(configuration)
     if pb!=None:
         compute_plan['pb'] = pb
     if tp!=None:
@@ -71,16 +71,16 @@ def nblist_test(nx, ny, nz, rho=0.8442, pb=None, tp=None, skin=None, gridsync=No
         print('simbox lengths:', configuration.simbox.lengths)
         print('compute_plan: ', compute_plan)
 
-    compute_flags = rp.get_default_compute_flags()
+    compute_flags = gp.get_default_compute_flags()
 
     configuration.copy_to_device()
-    nblist = rp.NbListLinkedLists(configuration, [], 300)
+    nblist = gp.NbListLinkedLists(configuration, [], 300)
     run_nblist(configuration, nblist, cut, compute_plan, compute_flags)
     nblist_linked_list = nblist.d_nblist.copy_to_host()
 
     #configuration['r'][0,2] += 2*cut # Testing the test: This should make test fail!
     configuration.copy_to_device()
-    nblist = rp.NbList2(configuration, [], 300)
+    nblist = gp.NbList2(configuration, [], 300)
     run_nblist(configuration, nblist, cut, compute_plan, compute_flags)
     nblist_N_squared = nblist.d_nblist.copy_to_host()
     

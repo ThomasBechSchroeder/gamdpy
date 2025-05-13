@@ -51,7 +51,7 @@ neighbour_bond_interaction = gp.Bonds(neighbour_bond_potential, neighbour_bond_p
 integrator = gp.integrators.NVT_Langevin(temperature=0.4, alpha=0.4, dt=0.01, seed=2025)
 
 # Setup runtime actions
-runtime_actions = [gp.ConfigurationSaver(),
+runtime_actions = [gp.TrajectorySaver(),
                    gp.ScalarSaver(),
                    gp.MomentumReset(100)]
 
