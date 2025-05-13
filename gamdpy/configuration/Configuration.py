@@ -756,7 +756,7 @@ def configuration_to_lammps(configuration, timestep=0) -> str:
 
 
 
-def replicate_molecules2(molecule_dicts, num_molecules_each_type_list, safety_distance, random_rotations=True, compute_flags=None):
+def replicate_molecules(molecule_dicts, num_molecules_each_type_list, safety_distance, random_rotations=True, compute_flags=None):
     """ Construct a configuration containing different molecules, with the numbers of each type specified
 
         Parameters:

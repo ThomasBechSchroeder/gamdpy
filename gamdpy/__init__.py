@@ -7,7 +7,7 @@
 # The (abstract base) class SimulationBox, and derived classes Orthrhombic and LeesEdwards have information about the simulation box
 from .configuration.Configuration import Configuration
 from .configuration.Configuration import configuration_to_hdf5, configuration_from_hdf5, configuration_to_rumd3, configuration_from_rumd3, configuration_to_lammps
-from .configuration.Configuration import replicate_molecules2
+from .configuration.Configuration import replicate_molecules
 from .simulation_boxes.orthorhombic import Orthorhombic
 from .simulation_boxes.lees_edwards import LeesEdwards
 from .configuration.topology import Topology

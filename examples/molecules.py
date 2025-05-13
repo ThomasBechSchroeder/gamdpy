@@ -59,7 +59,7 @@ print()
 # Use block=True to visualize the molecule before running the simulation
 gp.plot_molecule(top, positions, particle_types, filename="molecule.pdf", block=False)
 
-configuration = gp.replicate_molecules2([dict_this_mol], [216], safety_distance=2.0, compute_flags={"stresses":True})
+configuration = gp.replicate_molecules([dict_this_mol], [216], safety_distance=2.0, compute_flags={"stresses":True})
 
 configuration.randomize_velocities(temperature=temperature)
 

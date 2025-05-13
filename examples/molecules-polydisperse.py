@@ -86,7 +86,7 @@ for index, cl in enumerate(chain_lengths):
     gp.plot_molecule(top_this_mol, pos_this_mol, types_this_mol, filename=f"chain{cl}.pdf", block=False)
 
 
-configuration = gp.replicate_molecules2(molecule_dicts, num_mols_each_type, safety_distance=3.0)
+configuration = gp.replicate_molecules(molecule_dicts, num_mols_each_type, safety_distance=3.0)
 configuration.randomize_velocities(temperature=temperature)
 
 print(f'Number of molecules: {len(configuration.topology.molecules[f"MyMolecule{chain_lengths[0]}"])}, {len(configuration.topology.molecules[f"MyMolecule{chain_lengths[1]}"])}')
