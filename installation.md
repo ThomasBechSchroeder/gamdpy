@@ -16,9 +16,16 @@ Ensure that the CUDA toolkit and numba is installed (see above) by executing the
 python3 -c "import numba.cuda; print(numba.cuda.get_current_device().name)"
 ```
 
+
 ### Install with the Python Package Index (pip)
 
-Install the package from the GitHub repository:
+Get the latest stable version with (recommended):
+
+```sh
+pip install gamdpy
+```
+
+Alternatively, the latest developers version (on GitHub) can be installed:
 
 ```sh
 pip install git+https://github.com/ThomasBechSchroeder/gamdpy.git
