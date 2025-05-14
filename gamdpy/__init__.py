@@ -60,4 +60,4 @@ from .misc.plot_molecule import plot_molecule
 # Import from visualization 
 #from .visualization import *
 
-__version__ = "0.0.1"
+__version__ = "0.8.0"
