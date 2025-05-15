@@ -445,7 +445,8 @@ class Configuration:
 
         # save simulation box
         output[group_name].attrs['simbox_name'] = self.simbox.get_name()
-        output[group_name].attrs['simbox_data'] = self.simbox.lengths
+        #output[group_name].attrs['simbox_data'] = self.simbox.lengths
+        output[group_name].attrs['simbox_data'] = self.simbox.data_array
 
         # save topology, depending on flag
         if include_topology:

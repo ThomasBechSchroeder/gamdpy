@@ -22,18 +22,20 @@ class LeesEdwards(SimulationBox):
     >>> import gamdpy as gp
     >>> import numpy as np
     >>> simbox = gp.LeesEdwards(D=3, lengths=np.array([3,4,5]), box_shift=1.0)
-    LeesEdwards, box_shift= 1.0
 
     """
-    def __init__(self, D, lengths, box_shift=0.):
+    def __init__(self, D, lengths, box_shift=0., box_shift_image=0):
         if D < 2:
             raise ValueError("Cannot use LeesEdwards with dimension smaller than 2")
         self.D = D
         self.lengths = np.array(lengths, dtype=np.float32) # ensure single precision
         self.box_shift = box_shift
-        self.box_shift_image = 0.
+        self.box_shift_image = np.float32(box_shift_image)
+        self.data_array = np.zeros(D+2,  dtype=np.float32)
+        self.data_array[:D] = self.lengths
+        self.data_array[D] = self.box_shift
+        self.data_array[D+1] = self.box_shift_image
         self.len_sim_box_data = D+2
-        print('LeesEdwards, box_shift=', box_shift)
 
         return
 
@@ -44,11 +46,12 @@ class LeesEdwards(SimulationBox):
         # Here it assumed this is being done for the first time
 
         D = self.D
-        data_array = np.zeros(D+2, dtype=np.float32) # extra entries are: box_shift, box_shift_image
-        data_array[:D] = self.lengths[:]
-        data_array[D] = self.box_shift
-        data_array[D+1] = self.box_shift_image
-        self.d_data = cuda.to_device(data_array)
+        #data_array = np.zeros(D+2, dtype=np.float32) # extra entries are: box_shift, box_shift_image
+        #data_array[:D] = self.lengths[:]
+        #data_array[D] = self.box_shift
+        #data_array[D+1] = self.box_shift_image
+
+        self.d_data = cuda.to_device(self.data_array)
 
     def make_device_copy(self):
         """ Creates a new device copy of the simbox data and returns it to the caller.
@@ -63,11 +66,10 @@ class LeesEdwards(SimulationBox):
 
     def copy_to_host(self):
         D = self.D
-        box_data =  self.d_data.copy_to_host()
-        self.lengths = box_data[:D].copy()
-        self.box_shift = box_data[D]
-        self.boxshift_image = box_data[D+1]
-        # don't need last_box_shift etc on the host except maybe occasionally for debugging?
+        self.data_array =  self.d_data.copy_to_host()
+        self.lengths = self.data_array[:D].copy()
+        self.box_shift = self.data_array[D]
+        self.boxshift_image = self.data_array[D+1]
 
     def get_volume_function(self):
         D = self.D
@@ -186,7 +188,7 @@ class LeesEdwards(SimulationBox):
             strain_change = sim_box[D] - sim_box_last[D] # change in box-shift
             strain_change += (sim_box[D+1] - sim_box_last[D+1]) * sim_box[0] # add contribution from box_shift_image
             strain_change /= sim_box[1] # convert to (xy) strain
-            #strain_change = sim_box[D+4]
+
 
             # we will shift the x-component when the y-component is 'wrapped'
             dr1 = r_current[1] - r_last[1]
@@ -267,4 +269,3 @@ class LeesEdwards(SimulationBox):
             return -int(math.ceil(box_shift/cell_length_x))
 
         return loop_x_shift_function
-

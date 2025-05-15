@@ -25,7 +25,8 @@ class Orthorhombic():
     def __init__(self, D, lengths):
         self.D = D
         self.lengths = np.array(lengths, dtype=np.float32) # ensure single precision
-        self.len_sim_box_data = D # not true for other Simbox classes
+        self.data_array = self.lengths.copy()
+        self.len_sim_box_data = D # not true for other Simbox classes. Want to remove this and just use len(self.data_array)
         return
 
     def get_name(self):
