@@ -45,7 +45,7 @@ class LeesEdwards(SimulationBox):
     def copy_to_device(self):
         # Here it assumed this is being done for the first time
 
-        D = self.D
+        #D = self.D
         #data_array = np.zeros(D+2, dtype=np.float32) # extra entries are: box_shift, box_shift_image
         #data_array[:D] = self.lengths[:]
         #data_array[D] = self.box_shift
@@ -53,16 +53,16 @@ class LeesEdwards(SimulationBox):
 
         self.d_data = cuda.to_device(self.data_array)
 
-    def make_device_copy(self):
-        """ Creates a new device copy of the simbox data and returns it to the caller.
-        To be used by neighbor list for recording the box state at time of last rebuild"""
-        #host_copy = self.d_data.copy_to_host()
-        D = self.D
-        host_copy = np.zeros(D+2)
-        host_copy[:D] = self.lengths[:]
-        host_copy[D] = self.box_shift
-        host_copy[D+1] = self.box_shift_image
-        return cuda.to_device(host_copy)
+    #def make_device_copy(self):
+    #    """ Creates a new device copy of the simbox data and returns it to the caller.
+    #    To be used by neighbor list for recording the box state at time of last rebuild"""
+    #    #host_copy = self.d_data.copy_to_host()
+    #    D = self.D
+    #    host_copy = np.zeros(D+2)
+    #    host_copy[:D] = self.lengths[:]
+    #    host_copy[D] = self.box_shift
+    #    host_copy[D+1] = self.box_shift_image
+    #    return cuda.to_device(host_copy)
 
     def copy_to_host(self):
         D = self.D

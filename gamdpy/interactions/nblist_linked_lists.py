@@ -13,6 +13,7 @@ class NbListLinkedLists():
         self.nbflag = np.zeros(3, dtype=np.int32)
         self.r_ref = np.zeros_like(configuration['r']) # Inherents also data type
         self.exclusions = exclusions  # Should be able to be a list (eg from bonds, angles, etc), and merge
+        self.d_simbox_last_rebuild = cuda.to_device(np.zeros(configuration.simbox.len_sim_box_data, dtype=np.float32))
 
     def copy_to_device(self):
         self.d_nblist = cuda.to_device(self.nblist)
@@ -42,7 +43,7 @@ class NbListLinkedLists():
                 assert self.cells_per_dimension[i] > 6
             # TODO: Take care of
             # - changing simbox size during simulation (NPT, compression)
-            # - LEBC
+
 
         #print(self.cells_per_dimension)
         self.my_cell = np.zeros((self.N, self.D), np.int32) # my_cell[:, -1] 1d index
@@ -53,7 +54,7 @@ class NbListLinkedLists():
         self.next_particle_in_cell = -np.ones(self.N, dtype=np.int32) # -1 = no further particles in list
         self.copy_to_device()                     
         return (np.float32(self.max_cut), np.float32(self.skin), self.d_nbflag, self.d_r_ref, self.d_exclusions, 
-                self.d_cells_per_dimension, self.d_cells, self.d_my_cell, self.d_next_particle_in_cell)
+                self.d_cells_per_dimension, self.d_cells, self.d_my_cell, self.d_next_particle_in_cell, self.d_simbox_last_rebuild)
 
     def get_kernel(self, configuration, compute_plan, compute_flags, verbose=False, force_update=False):
 
@@ -79,10 +80,11 @@ class NbListLinkedLists():
 
         # JIT compile functions to be compiled into kernel
         dist_sq_function = numba.njit(configuration.simbox.get_dist_sq_function())
+        dist_moved_exceeds_limit_function = numba.njit(configuration.simbox.get_dist_moved_exceeds_limit_function())
         loop_x_shift_function = numba.njit(configuration.simbox.get_loop_x_shift_function())
 
         @cuda.jit( device=gridsync )
-        def nblist_check(vectors, sim_box, skin, r_ref, nbflag):
+        def nblist_check(vectors, sim_box, skin, r_ref, nbflag, simbox_last_rebuild, cut):
             """ Check validity of nblist, i.e. did any particle mode more than skin/2 since last nblist update?
                 Each tread-block checks the assigned particles (global_id)
                 nbflag[0] = 0          : No update needed
@@ -96,21 +98,14 @@ class NbListLinkedLists():
                     nbflag[0]=num_blocks
 
             if global_id < num_part and my_t==0:
-                dist_sq = dist_sq_function(vectors[r_id][global_id], r_ref[global_id], sim_box)
-                if dist_sq > skin*skin*numba.float32(0.25):
-                    nbflag[0]=num_blocks
+                if dist_moved_exceeds_limit_function(vectors[r_id][global_id], r_ref[global_id], sim_box, simbox_last_rebuild, skin, cut):
+                    nbflag[0] = num_blocks
 
-            #if global_id < num_part and my_t==0: # Initializion of forces moved here to make NewtonIII possible 
-            #    for k in range(D):
-            #        vectors[f_id][global_id, k] = numba.float32(0.0)
-            #        if  compute_stresses:
-            #            vectors[sx_id][global_id, k] =  numba.float32(0.0)
-            #            if D > 1:
-            #                vectors[sy_id][global_id, k] =  numba.float32(0.0)
-            #                if D > 2:
-            #                    vectors[sz_id][global_id, k] =  numba.float32(0.0)
-            #                    if D > 3:
-            #                        vectors[sw_id][global_id, k] =  numba.float32(0.0)
+            #if global_id < num_part and my_t==0:
+            #    dist_sq = dist_sq_function(vectors[r_id][global_id], r_ref[global_id], sim_box)
+            #    if dist_sq > skin*skin*numba.float32(0.25):
+            #        nbflag[0]=num_blocks
+
 
             return
    
@@ -273,8 +268,8 @@ class NbListLinkedLists():
             # A device function, calling a number of device functions, using gridsync to syncronize
             @cuda.jit( device=gridsync )
             def check_and_update(grid, vectors, scalars, ptype, sim_box, nblist, nblist_parameters):
-                max_cut, skin, nbflag, r_ref, exclusions, cells_per_dimension, cells, my_cell, next_particle_in_cell = nblist_parameters
-                nblist_check(vectors, sim_box, skin, r_ref, nbflag)
+                max_cut, skin, nbflag, r_ref, exclusions, cells_per_dimension, cells, my_cell, next_particle_in_cell, simbox_last_rebuild = nblist_parameters
+                nblist_check(vectors, sim_box, skin, r_ref, nbflag, simbox_last_rebuild, max_cut)
                 grid.sync()
                 if nbflag[0] > 0:
                     put_particles_in_cells(vectors, sim_box, nbflag, cells_per_dimension, cells, my_cell, next_particle_in_cell)
@@ -289,8 +284,8 @@ class NbListLinkedLists():
         else:
             # A python function, making several kernel calls to syncronize  
             def check_and_update(grid, vectors, scalars, ptype, sim_box, nblist, nblist_parameters):
-                max_cut, skin, nbflag, r_ref, exclusions, cells_per_dimension, cells, my_cell, next_particle_in_cell = nblist_parameters
-                nblist_check[num_blocks, (pb, 1)](vectors, sim_box, skin, r_ref, nbflag)
+                max_cut, skin, nbflag, r_ref, exclusions, cells_per_dimension, cells, my_cell, next_particle_in_cell, simbox_last_rebuild = nblist_parameters
+                nblist_check[num_blocks, (pb, 1)](vectors, sim_box, skin, r_ref, nbflag, simbox_last_rebuild, max_cut)
                 if nbflag[0] > 0:
                     put_particles_in_cells[num_blocks, (pb, 1)](vectors, sim_box, nbflag, cells_per_dimension, cells, my_cell, next_particle_in_cell)
                     nblist_update_from_linked_lists[num_blocks, (pb, 1)](vectors, sim_box, max_cut+skin, nbflag,  cells_per_dimension, cells, my_cell, next_particle_in_cell, nblist, r_ref, exclusions)           

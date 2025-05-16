@@ -9,7 +9,7 @@ class NbList2():
         self.nbflag = np.zeros(3, dtype=np.int32)
         self.r_ref = np.zeros_like(configuration['r']) # Inherits also data type
         self.exclusions = exclusions  # Should be able to be a list (eg from bonds, angles, etc), and merge        
-        self.d_simbox_last_rebuild = configuration.simbox.make_device_copy()
+        self.d_simbox_last_rebuild = cuda.to_device(np.zeros(configuration.simbox.len_sim_box_data, dtype=np.float32))
 
     def copy_to_device(self):
         self.d_nblist = cuda.to_device(self.nblist)
@@ -50,7 +50,6 @@ class NbList2():
 
         # JIT compile functions to be compiled into kernel
         dist_sq_function = numba.njit(configuration.simbox.get_dist_sq_function())
-        #dist_moved_sq_function = numba.njit(configuration.simbox.dist_moved_sq_function)
         dist_moved_exceeds_limit_function = numba.njit(configuration.simbox.get_dist_moved_exceeds_limit_function())
 
 
@@ -72,17 +71,7 @@ class NbList2():
                 if dist_moved_exceeds_limit_function(vectors[r_id][global_id], r_ref[global_id], sim_box, simbox_last_rebuild, skin, cut):
                     nbflag[0] = num_blocks
 
-            #if global_id < num_part and my_t==0: # Initializion of forces moved here to make NewtonIII possible 
-            #    for k in range(D):
-            #        vectors[f_id][global_id, k] = numba.float32(0.0)
-            #        if  compute_stresses:
-            #            vectors[sx_id][global_id, k] =  numba.float32(0.0)
-            #            if D > 1:
-            #                vectors[sy_id][global_id, k] =  numba.float32(0.0)
-            #                if D > 2:
-            #                    vectors[sz_id][global_id, k] =  numba.float32(0.0)
-            #                    if D > 3:
-            #                        vectors[sw_id][global_id, k] =  numba.float32(0.0)
+
             return
    
         @cuda.jit(device=gridsync)
@@ -102,7 +91,7 @@ class NbList2():
                 if global_id < num_part and my_t==0:
                     nblist[global_id, max_nbs] = 0  # Set number of neighbors (stored at index max_nbs) to zero
                     
-                cuda.syncthreads() # wait for nblist[global_id, max_nbs] to be ready ready
+                cuda.syncthreads() # wait for nblist[global_id, max_nbs] to be ready
                 
                 if global_id < num_part:
                     my_num_exclusions = exclusions[global_id,-1]

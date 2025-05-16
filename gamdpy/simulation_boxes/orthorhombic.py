@@ -32,17 +32,17 @@ class Orthorhombic():
     def get_name(self):
         return "Orthorhombic"
 
-    def make_device_copy(self):
-        """ Creates a new device copy of the simbox data and returns it to the caller.
-        To be used by neighbor list for recording the box state at time of last rebuild"""
-        return cuda.to_device(self.lengths)
+    #def make_device_copy(self):
+    #    """ Creates a new device copy of the simbox data and returns it to the caller.
+    #    To be used by neighbor list for recording the box state at time of last rebuild"""
+    #    return cuda.to_device(self.lengths)
 
     def copy_to_device(self):
-        self.d_data = cuda.to_device(self.lengths)
+        self.d_data = cuda.to_device(self.data_array)
 
     def copy_to_host(self):
-        self.lengths = self.d_data.copy_to_host()
-
+        self.data_array = self.d_data.copy_to_host()
+        self.lengths = self.data_array.copy()
 
     def get_dist_sq_dr_function(self):
         """Generates function dist_sq_dr which computes displacement and distance squared for one neighbor """
