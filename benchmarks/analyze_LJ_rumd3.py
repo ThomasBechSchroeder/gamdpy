@@ -57,18 +57,16 @@ colors = ['red', 'blue', 'green']
 
 bdf = pd.read_csv('Data/benchmark_LJ_RTX_2080_Ti_bead65_AT.csv')
 axs[0].loglog(bdf['N'], bdf['TPS_AT'], 'o-', color=colors[0], label='gamdpy')
-TPS = np.array(bdf['TPS_AT'])
-N = np.array(bdf['N'])
-PLOTMATS = 2*TPS[-1]*N[-1]/1e6
 bdf = pd.read_csv('Data/benchmark_LJ_RTX_2080_Ti_i43_AT.csv')
 axs[0].loglog(bdf['N'], bdf['TPS_AT'], 'o--', color=colors[0], alpha=0.6)
-#rumd36 = np.loadtxt('Data/Rumd36_LJ_RTX_2080_Ti.dat')
-#axs[0].loglog(rumd36[:,0], rumd36[:, 1], 'o-', color=colors[1], label='Rumd3.6')
+rumd36 = np.loadtxt('Data/Rumd36_LJ_RTX_2080_Ti.dat')
+axs[0].loglog(rumd36[:,0], rumd36[:, 1], 'o-', color=colors[1], label='Rumd3.6')
 lammps = np.loadtxt('Data/Lammps_Rtx2080Ti_gpu_cuda_single_mpi.dat')
 axs[0].loglog(lammps[:,0],lammps[:, 1], 'o--', color=colors[2], alpha=0.6)
 lammps = np.loadtxt('Data/Lammps_Rtx2080Ti_bead65_gpu_cuda_single_mpi.dat')
 axs[0].loglog(lammps[:,0],lammps[:, 1], 'o-', color=colors[2], label='Lammps')
 N = np.array((512, 2e6))
+PLOTMATS = 2*rumd36[-1,0]*rumd36[-1, 1]/1e6
 axs[0].loglog(N, PLOTMATS * 1e6 / N, 'k-.', label=f'MATS={int(PLOTMATS)}')
 axs[0].legend()
 axs[0].set_xlim((400, 1.5e6))
@@ -81,16 +79,14 @@ axs[0].text(1e3, 1e2, txt, fontsize=11)
 
 bdf = pd.read_csv('Data/benchmark_LJ_RTX_4070_AT.csv')
 axs[1].loglog(bdf['N'], bdf['TPS_AT'], 'o-', color=colors[0], label='gamdpy')
-TPS = np.array(bdf['TPS_AT'])
-N = np.array(bdf['N'])
-PLOTMATS = 2*TPS[-1]*N[-1]/1e6
 rumd36 = np.loadtxt('Data/Rumd36_LJ_RTX_4070.dat')
-#axs[1].loglog(rumd36[:,0], rumd36[:, 1], 'o-', color=colors[1], label='Rumd3.6')
+axs[1].loglog(rumd36[:,0], rumd36[:, 1], 'o-', color=colors[1], label='Rumd3.6')
 lammps = np.loadtxt('Data/Lammps_Rtx4070_gpu_cuda_single_mpi.dat')
 axs[1].loglog(lammps[:,0],lammps[:, 1], 'o-', color=colors[2], label='Lammps')
 #lammpsV100 = np.loadtxt('Data/MATS_Lammps_LJ_V100.dat')
 #axs[1].loglog(lammpsV100[:,0],lammpsV100[:, 1]/lammpsV100[:,0]*1e6, 'o--', color=colors[2], alpha=0.6, label='Lammps V100')
 N = np.array((512, 2e6))
+PLOTMATS = 2*rumd36[-1,0]*rumd36[-1, 1]/1e6
 axs[1].loglog(N, PLOTMATS * 1e6 / N, 'k-.', label=f'MATS={int(PLOTMATS)}')
 axs[1].legend()
 axs[1].set_xlim((400, 1.5e6))
@@ -105,14 +101,12 @@ for i in range(6, lammps.shape[0]):
 
 bdf = pd.read_csv('Data/benchmark_LJ_RTX_4090_AT.csv')
 axs[2].loglog(bdf['N'], bdf['TPS'], 'o-', color=colors[0], label='gamdpy')
-TPS = np.array(bdf['TPS_AT'])
-N = np.array(bdf['N'])
-PLOTMATS = 2*TPS[-1]*N[-1]/1e6
 rumd36 = np.loadtxt('Data/Rumd36_LJ_RTX_4090.dat')
-#axs[2].loglog(rumd36[:,0], rumd36[:, 1], 'o-', color=colors[1], label='Rumd3.6')
+axs[2].loglog(rumd36[:,0], rumd36[:, 1], 'o-', color=colors[1], label='Rumd3.6')
 lammps = np.loadtxt('Data/Lammps_Rtx4090_gpu_cuda_single_mpi.dat')
 axs[2].loglog(lammps[:,0],lammps[:, 1], 'o-', color=colors[2], label='Lammps')
 N = np.array((512, 2e6))
+PLOTMATS = 2*rumd36[-1,0]*rumd36[-1, 1]/1e6
 axs[2].loglog(N, PLOTMATS * 1e6 / N, 'k-.', label=f'MATS={int(PLOTMATS)}')
 axs[2].legend()
 axs[2].set_xlim((400, 1.5e6))
@@ -124,6 +118,6 @@ for i in range(6, lammps.shape[0]):
     axs[2].text(lammps[i, 0]/1.2, lammps[i, 1]/1.5, int(lammps[i, 2]), fontsize=10)
 
 
-plt.savefig('Data/benchmark_LJ_compare_tps.pdf')
-plt.savefig('Data/benchmark_LJ_compare_tps.png')
-plt.show(block=True)
+plt.savefig('Data/benchmark_LJ_compare_rumd3_tps.pdf')
+plt.savefig('Data/benchmark_LJ_compare_rumd3_tps.png')
+plt.show(block=False)
