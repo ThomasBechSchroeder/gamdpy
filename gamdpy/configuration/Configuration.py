@@ -657,15 +657,27 @@ def configuration_from_hdf5_group(f, group_name, reset_images=False, compute_fla
 #    >>> print(conf.D, conf.N, conf['r'][0])     # Print number of dimensions D, number of particles N and position of first particle
 #    3 10 [-0.7181449 -1.3644753 -1.5799187]
 
-    simbox_name = f.attrs['simbox_name']
-    simbox_data = f.attrs['simbox_data']
-    r = f['r'][:]
-    v = f['v'][:]
-    ptype = f['ptype'][:]
-    m = f['m'][:]
-    r_im = f['r_im'][:]
-    N, D = r.shape
-    configuration = Configuration(D=D, compute_flags=compute_flags)
+
+
+    vectors_array = f[group_name]['vectors'][:]
+    _, N, D = vectors_array.shape
+    configuration = Configuration(D=D, N=N, compute_flags=compute_flags)
+
+
+    configuration.vector_columns = f[group_name]['vectors'].attrs['vector_columns']
+    configuration.scalar_columns = f[group_name]['scalars'].attrs['scalar_columns']
+
+    configuration.ptype = f[group_name]['ptype'][:]
+
+
+    scalars_array = f[group_name]['scalars'][:]
+    configuration.scalars = scalars_array
+    configuration.vectors.array = vectors_array
+
+
+    simbox_name = f[group_name].attrs['simbox_name']
+    simbox_data = f[group_name].attrs['simbox_data']
+
     if simbox_name == 'Orthorhombic':
         configuration.simbox = Orthorhombic(D, simbox_data)
     elif simbox_name == 'LeesEdwards':
@@ -673,14 +685,11 @@ def configuration_from_hdf5_group(f, group_name, reset_images=False, compute_fla
         configuration.simbox = LeesEdwards(D, simbox_data[:D], simbox_data[D], box_shift_image)
     else:
         raise ValueError('simbox_name %s not recognized in group %s' % (simbox_name, group_name))
-    configuration['r'] = r
-    configuration['v'] = v
-    configuration.ptype = ptype
-    configuration['m'] = m
+
     if reset_images:
         configuration.r_im = np.zeros((N, D), dtype=np.int32)
     else:
-        configuration.r_im = r_im
+        configuration.r_im = f[group_name]['r_im'][:]
     return configuration
 
 
