@@ -13,9 +13,9 @@ import h5py
 class TrajectoryIO():
     """ 
     This class handles the loading and saving of simulation data.
-    When the class can be instanciated with an output from a previous simulation.
+    When the class can be instantiated with an output from a previous simulation.
     The data can be saved in self.h5 in the same format of the sim.output object.
-    When the class is instanciated without an input, self.h5 is None and can be assigned afterward (used to save output from memory simulation)
+    When the class is instantiated without an input, self.h5 is None and can be assigned afterward (used to save output from memory simulation)
 
     Parameters
     ----------
@@ -31,15 +31,15 @@ class TrajectoryIO():
     >>> output = gp.tools.TrajectoryIO("examples/Data/LJ_r0.973_T0.70_toread.h5").get_h5()
     Found .h5 file (examples/Data/LJ_r0.973_T0.70_toread.h5), loading to gamdpy as output dictionary
     >>> nblocks, nconfs, N, D = output['trajectory_saver/positions'].shape
-    >>> print(f"Output file examples/Data/LJ_r0.973_T0.70.h5 containts a simulation of {N} particles in {D} dimensions")
-    Output file examples/Data/LJ_r0.973_T0.70.h5 containts a simulation of 2048 particles in 3 dimensions
+    >>> print(f"Output file examples/Data/LJ_r0.973_T0.70.h5 contains a simulation of {N} particles in {D} dimensions")
+    Output file examples/Data/LJ_r0.973_T0.70.h5 contains a simulation of 2048 particles in 3 dimensions
     >>> print(f"The simulation output is divided into {nblocks} blocks, each of them with {nconfs} configurations")
     The simulation output is divided into 32 blocks, each of them with 12 configurations
     >>> output = gp.tools.TrajectoryIO("examples/Data/NVT_N4000_T2.0_rho1.2_KABLJ_rumd3/TrajectoryFiles").get_h5()   # Read from rumd3
     Found rumd3 TrajectoryFiles, loading to rumpdy as output dictionary
     >>> nblocks, nconfs, N, D = output['trajectory_saver/positions'].shape
-    >>> print(f"File examples/Data/NVT_N4000_T2.0_rho1.2_KABLJ_rumd3/TrajectoryFiles containts a simulation of {N} particles in {D} dimensions")
-    File examples/Data/NVT_N4000_T2.0_rho1.2_KABLJ_rumd3/TrajectoryFiles containts a simulation of 4000 particles in 3 dimensions
+    >>> print(f"File examples/Data/NVT_N4000_T2.0_rho1.2_KABLJ_rumd3/TrajectoryFiles contains a simulation of {N} particles in {D} dimensions")
+    File examples/Data/NVT_N4000_T2.0_rho1.2_KABLJ_rumd3/TrajectoryFiles contains a simulation of 4000 particles in 3 dimensions
     >>> print(f"The simulation output is divided into {nblocks} blocks, each of them with {nconfs} configurations")
     The simulation output is divided into 2 blocks, each of them with 24 configurations
 
