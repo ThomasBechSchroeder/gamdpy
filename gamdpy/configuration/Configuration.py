@@ -644,19 +644,16 @@ def configuration_from_hdf5_group(f, group_name, reset_images=False, compute_fla
         a gamdpy configuration object
 
 
+    Example:
+    --------
+
+    >>> import gamdpy as gp
+    >>> output_file = h5py.File('examples/Data/LJ_r0.973_T0.70_toread.h5')
+    >>> conf = gp.configuration_from_hdf5_group(output_file, 'restarts/restart0000')
+    >>> print(conf.D, conf.N, conf['r'][0])     # Print number of dimensions D, number of particles N and position of first particle
+    3 2048 [-6.384221  -6.3622074 -6.3125153]
 
     """
-
-# The following might become part of the docstring, but right now ther eis no file to read which has restart configuration in it
-#    Example
-#    -------
-#
-#    >>> import gamdpy as gp
-#    >>> output_file = h5py.File('examples/Data/final.h5')
-#    >>> conf = gp.configuration_from_hdf5_group(output_file, 'restarts/restart0000')
-#    >>> print(conf.D, conf.N, conf['r'][0])     # Print number of dimensions D, number of particles N and position of first particle
-#    3 10 [-0.7181449 -1.3644753 -1.5799187]
-
 
 
     vectors_array = f[group_name]['vectors'][:]
