@@ -3,7 +3,7 @@ import numba
 import math
 from numba import cuda
 from .colarray import colarray
-from ..simulation_boxes import Orthorhombic
+from ..simulation_boxes import Orthorhombic, LeesEdwards
 from .topology import Topology, duplicate_topology, replicate_topologies
 from ..simulation.get_default_compute_flags import get_default_compute_flags
 
@@ -585,7 +585,7 @@ def configuration_from_hdf5(filename: str, reset_images=False, compute_flags=Non
         filename of the input file .h5
 
     reset_images : bool
-        if True set the images to zero (deafult False)
+        if True set the images to zero (default False)
 
     Returns
     -------
@@ -615,6 +615,64 @@ def configuration_from_hdf5(filename: str, reset_images=False, compute_flags=Non
     N, D = r.shape
     configuration = Configuration(D=D, compute_flags=compute_flags)
     configuration.simbox = Orthorhombic(D, lengths)
+    configuration['r'] = r
+    configuration['v'] = v
+    configuration.ptype = ptype
+    configuration['m'] = m
+    if reset_images:
+        configuration.r_im = np.zeros((N, D), dtype=np.int32)
+    else:
+        configuration.r_im = r_im
+    return configuration
+
+
+def configuration_from_hdf5_group(f, group_name, reset_images=False, compute_flags=None) -> Configuration:
+    """ Read a configuration from an open HDF5 file identified by group-name
+
+    Parameters
+    ----------
+    f : HDF5 File
+        open HDF5 open, as returned by h5py.File()
+
+    reset_images : bool
+        if True set the images to zero (default False)
+
+    Returns
+    -------
+
+    configuration : gamdpy.Configuration
+        a gamdpy configuration object
+
+
+
+    """
+
+# The following might become part of the docstring, but right now ther eis no file to read which has restart configuration in it
+#    Example
+#    -------
+#
+#    >>> import gamdpy as gp
+#    >>> output_file = h5py.File('examples/Data/final.h5')
+#    >>> conf = gp.configuration_from_hdf5_group(output_file, 'restarts/restart0000')
+#    >>> print(conf.D, conf.N, conf['r'][0])     # Print number of dimensions D, number of particles N and position of first particle
+#    3 10 [-0.7181449 -1.3644753 -1.5799187]
+
+    simbox_name = f.attrs['simbox_name']
+    simbox_data = f.attrs['simbox_data']
+    r = f['r'][:]
+    v = f['v'][:]
+    ptype = f['ptype'][:]
+    m = f['m'][:]
+    r_im = f['r_im'][:]
+    N, D = r.shape
+    configuration = Configuration(D=D, compute_flags=compute_flags)
+    if simbox_name == 'Orthorhombic':
+        configuration.simbox = Orthorhombic(D, simbox_data)
+    elif simbox_name == 'LeesEdwards':
+        box_shift_image = {True:0, False: int(simbox_data[D+1])} [reset_images]
+        configuration.simbox = LeesEdwards(D, simbox_data[:D], simbox_data[D], box_shift_image)
+    else:
+        raise ValueError('simbox_name %s not recognized in group %s' % (simbox_name, group_name))
     configuration['r'] = r
     configuration['v'] = v
     configuration.ptype = ptype
