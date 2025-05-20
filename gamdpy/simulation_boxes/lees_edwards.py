@@ -28,7 +28,6 @@ class LeesEdwards(SimulationBox):
         if D < 2:
             raise ValueError("Cannot use LeesEdwards with dimension smaller than 2")
         self.D = D
-        #self.lengths = np.array(lengths, dtype=np.float32) # ensure single precision
         self.box_shift = box_shift
         self.box_shift_image = np.float32(box_shift_image)
         self.data_array = np.zeros(D+2,  dtype=np.float32)
@@ -49,7 +48,6 @@ class LeesEdwards(SimulationBox):
     def copy_to_host(self):
         D = self.D
         self.data_array =  self.d_data.copy_to_host()
-        #self.lengths = self.data_array[:D].copy()
         self.box_shift = self.data_array[D]
         self.boxshift_image = self.data_array[D+1]
 

@@ -80,7 +80,7 @@ class CalculatorStructureFactor:
             raise ValueError(f'Unknown backend, {backend}. The known backends are {self.BACKENDS}.')
         self.update_count = 0
         self.configuration = configuration
-        self.L = self.configuration.simbox.lengths.copy()  # Copy box lengths so that it is not changed
+        self.L = self.configuration.simbox.get_lengths()
 
         if n_vectors is not None:
             # n_vectors = [[0, 0, 1], [0, 0, 2], ..., [0, 1, 0], [0, 1, 1] ..., [18, 18, 18], ...]
@@ -204,7 +204,7 @@ class CalculatorStructureFactor:
 
     def update(self) -> None:
         """ Update the structure factor with the current configuration. """
-        if not np.allclose(self.L, self.configuration.simbox.lengths):
+        if not np.allclose(self.L, self.configuration.simbox.get_lengths()):
             raise ValueError('Box length has changed. Recreate the S(q) object.')
         this_rho_q = self._compute_rho_q(self.configuration['r'], self.q_vectors, self.atomic_form_factors)
         self.list_of_rho_q.append(this_rho_q)

@@ -46,8 +46,8 @@ class CalculatorHydrodynamicProfile:
         self.momc = np.zeros(bins, dtype=np.float64)
 
         self.volbin = configuration.get_volume()/bins
-        self.widthbin = configuration.simbox.lengths[profdir]/bins
-        self.hbox =  configuration.simbox.lengths[profdir]*0.5
+        self.widthbin = configuration.simbox.get_lengths()[profdir]/bins
+        self.hbox =  configuration.simbox.get_lengths()[profdir]*0.5
         self.nsample = 0
         
         self.Tdir = [0, 1, 2]

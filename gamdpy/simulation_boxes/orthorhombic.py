@@ -24,9 +24,7 @@ class Orthorhombic():
     """
     def __init__(self, D, lengths):
         self.D = D
-        self.lengths = np.array(lengths, dtype=np.float32) # ensure single precision
         self.data_array = np.array(lengths, dtype=np.float32) # ensure single precision
-        #self.lengths.copy()
         self.len_sim_box_data = D # not true for other Simbox classes. Want to remove this and just use len(self.data_array)
         return
 
@@ -39,7 +37,6 @@ class Orthorhombic():
 
     def copy_to_host(self):
         self.data_array = self.d_data.copy_to_host()
-        #self.lengths = self.data_array.copy()
 
 
 

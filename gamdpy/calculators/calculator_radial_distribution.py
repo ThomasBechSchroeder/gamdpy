@@ -128,12 +128,12 @@ class CalculatorRadialDistribution():
             A dictionary containing the distances and the radial distribution function.
         """
         bins = self.rdf_list[0].shape[2]
-        min_box_dim = np.min(self.configuration.simbox.lengths)
+        min_box_dim = np.min(self.configuration.simbox.get_lengths())
         bin_width = (min_box_dim / 2) / bins
         rdf_ptype = np.array(self.rdf_list)
 
         # Normalize the g(r) lengths # Compute in setup and normalize om the fly 
-        rho = self.configuration.N / np.prod(self.configuration.simbox.lengths)
+        rho = self.configuration.N / self.configuration.simbox.get_volume()
         for i in range(bins):  # Normalize one bin/distance at a time
             r_outer = (i + 1) * bin_width
             r_inner = i * bin_width

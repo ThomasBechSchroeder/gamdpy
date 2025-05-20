@@ -366,7 +366,7 @@ class Configuration:
         scale_factor = (actual_rho / density)**(1/3)
         self.vectors['r'] *= scale_factor
         self.simbox.scale(scale_factor)
-        #self.simbox.lengths *= scale_factor
+
 
     def save(self, output: h5py.File, group_name: str, mode="w", include_topology=False) -> None:
         """ Write a configuration to a HDF5 file
@@ -424,11 +424,11 @@ class Configuration:
             raise ValueError("Unexpected combination of input in save method of Configuration")
 
         # Save attributes of group group_name
-#        output[group_name].attrs['simbox'] = self.simbox.lengths
+#        output[group_name].attrs['simbox'] = self.simbox.get_lengths()
 
         # Saving vectors separately
         #output[group_name].create_dataset('r', data=self['r'], dtype=np.float32)
-        #output[f"{group_name}/r"].attrs['simbox'] = self.simbox.lengths
+        #output[f"{group_name}/r"].attrs['simbox'] = self.simbox.get_lengths()
         #output[group_name].create_dataset('v', data=self['v'], dtype=np.float32)
         #output[group_name].create_dataset('f', data=self['f'], dtype=np.float32)
 
@@ -446,7 +446,7 @@ class Configuration:
 
         # save simulation box
         output[group_name].attrs['simbox_name'] = self.simbox.get_name()
-        #output[group_name].attrs['simbox_data'] = self.simbox.lengths
+        #output[group_name].attrs['simbox_data'] = self.simbox.get_lengths()
         output[group_name].attrs['simbox_data'] = self.simbox.data_array
 
         # save topology, depending on flag
@@ -559,7 +559,7 @@ def configuration_to_hdf5(configuration: Configuration, filename: str, meta_data
     if not filename.endswith('.h5'):
         filename += '.h5'
     with h5py.File(filename, "w") as f:
-        f.attrs['simbox'] = configuration.simbox.lengths
+        f.attrs['simbox'] = configuration.simbox.get_lengths()
         if meta_data is not None:
             for item in meta_data:
                 f.attrs[item] = meta_data[item]
@@ -731,7 +731,7 @@ def configuration_to_rumd3(configuration: Configuration, filename: str) -> None:
         type_first_idx = np.where(ptype == type)[0][0]
         masses[type] = m[type_first_idx]
 
-    sim_box = configuration.simbox.lengths
+    sim_box = configuration.simbox.get_lengths()
     if not filename.endswith('.gz'):
         filename += '.gz'
 
@@ -867,7 +867,7 @@ def configuration_to_lammps(configuration, timestep=0) -> str:
     forces = configuration['f']
     velocities = configuration['v']
     ptypes = configuration.ptype
-    simulation_box = configuration.simbox.lengths
+    simulation_box = configuration.simbox.get_lengths()
 
     # Header
     header = f'ITEM: TIMESTEP\n{timestep:d}\n'
@@ -990,6 +990,6 @@ def replicate_molecules(molecule_dicts, num_molecules_each_type_list, safety_dis
     assert particle_count == total_num_particles
 
     for i in range(configuration.D):
-        configuration['r'][:,i] -= configuration.simbox.lengths[i]/2
+        configuration['r'][:,i] -= configuration.simbox.get_lengths()[i]/2
 
     return configuration

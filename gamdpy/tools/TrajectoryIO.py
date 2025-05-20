@@ -93,7 +93,8 @@ class TrajectoryIO():
     # Load from TrajectoryFiles (std rumd3 output)
     # It assumes trajectories are spaced in log2
     def load_rumd3(self, name:str) -> h5py.File:
-        """ Reads a rumd3 TrajectoryFiles folder and convert it into gamdpy .h5 output. This function returns a memory .h5"""
+        """ Reads a rumd3 TrajectoryFiles folder and convert it into gamdpy .h5 output. Assumes RectangularSimulationBox, corresponding to gamdpy's Orthorhombic.
+        This function returns a memory .h5"""
         import os, gzip, glob
         import pandas as pd
 

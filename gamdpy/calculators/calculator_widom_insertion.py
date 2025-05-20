@@ -51,7 +51,7 @@ class CalculatorWidomInsertion:
     >>> sim = gp.get_default_sim()  # Replace with your own equbriliated simulation
     >>> pair_pot = sim.interactions[0]
     >>> num_ghost_particles = 500_000
-    >>> ghost_positions = np.random.rand(num_ghost_particles, sim.configuration.D) * sim.configuration.simbox.lengths
+    >>> ghost_positions = np.random.rand(num_ghost_particles, sim.configuration.D) * sim.configuration.simbox.get_lengths()
     >>> calc_widom = gp.CalculatorWidomInsertion(sim.configuration, pair_pot, sim.integrator.temperature, ghost_positions)
     >>> for block in sim.run_timeblocks():
     ...     calc_widom.update()
@@ -105,7 +105,7 @@ class CalculatorWidomInsertion:
             for n in range(self.configuration.N):
                 ptype = self.configuration.ptype[n]
                 r = self.configuration.vectors['r'][n]
-                dr2 = self.configuration.simbox.dist_sq_function(r, ghost_pos, self.configuration.simbox.lengths)
+                dr2 = self.configuration.simbox.dist_sq_function(r, ghost_pos, self.configuration.simbox.get_lengths())
                 params = self.pair_potential.params[ptype, self.ptype_ghost]
                 r_cut = params[-1]
                 if dr2 < r_cut*r_cut:

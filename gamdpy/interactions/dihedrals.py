@@ -196,10 +196,14 @@ class Dihedrals(Interaction):
  
 # Helpers (copies of angles helpers: This should be centralized somehow)
 def dihedrals_get_dist_vector(ri, rj, simbox):
+    """
+    Function for checking that angles are correctly calculated. Assumes Orthorhombic box
+    """
     dr = np.zeros(3)
+    lengths = simbox.get_lengths()
     for k in range(simbox.D): 
         dr[k] = ri[k] - rj[k]
-        box_k = simbox.lengths[k]
+        box_k = lengths[k]
         #PP
         dr[k] += (-box_k if 2.0*dr[k] > +box_k else (+box_k if 2.0*dr[k] < -box_k else 0.0)) 
 

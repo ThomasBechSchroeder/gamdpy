@@ -6,7 +6,7 @@ import cmath
 
 @jit(nopython=True) 
 def __store__(dk, dmk, jk, jmk, sampletype, mass, pos, vel, ptypes, npart, index, nwaves, lbox):
-   
+
     I = complex(0.0, 1.0)
 
     for k in range(nwaves):
@@ -56,7 +56,7 @@ class CalculatorHydrodynamicCorrelations:
         Output: 
             With the method read() data is written to files and returned to user 
     """
-    
+
     def __init__(self, configuration, dtsample, ptype=0, nwaves=10, lvec=100, verbose=False):
         self.conf = configuration
         self.ptype = ptype
@@ -67,22 +67,22 @@ class CalculatorHydrodynamicCorrelations:
         self.nsample = 0
         self.index = 0
         
-        self.lbox = configuration.simbox.lengths[1]; 
+        self.lbox = configuration.simbox.get_lengths()[1]
 
         # Storage arrays
-        self.dk = np.zeros( (lvec, nwaves), dtype=np.complex64)  
-        self.dmk = np.zeros( (lvec, nwaves), dtype=np.complex64)  
+        self.dk = np.zeros( (lvec, nwaves), dtype=np.complex64)
+        self.dmk = np.zeros( (lvec, nwaves), dtype=np.complex64)
         
-        self.jk = np.zeros( (lvec, nwaves), dtype=np.complex64)  
-        self.jmk = np.zeros( (lvec, nwaves), dtype=np.complex64)  
+        self.jk = np.zeros( (lvec, nwaves), dtype=np.complex64)
+        self.jmk = np.zeros( (lvec, nwaves), dtype=np.complex64)
 
-        # Correlation array - density (longitudinal)  
-        self.dacf = np.zeros( (lvec, nwaves), dtype=np.complex64)    
+        # Correlation array - density (longitudinal)
+        self.dacf = np.zeros( (lvec, nwaves), dtype=np.complex64)
 
         # Current density acf (transverse)
         self.jacf = np.zeros( (lvec, nwaves), dtype=np.complex64)
 
-        
+
         if verbose:
             print(f"Types {self.ptype}, no. wavevectors {self.nwaves}, vector length {self.lvec}")
 
@@ -91,7 +91,7 @@ class CalculatorHydrodynamicCorrelations:
 
     def update(self):
    
-         __store__(self.dk, self.dmk, self.jk, self.jmk, self.ptype,       
+         __store__(self.dk, self.dmk, self.jk, self.jmk, self.ptype,
                    self.conf['m'][:], self.conf['r'][:,0], self.conf['v'][:,1],
                    self.conf.ptype[:], self.conf.N, self.index, self.nwaves, self.lbox)
 
@@ -109,8 +109,9 @@ class CalculatorHydrodynamicCorrelations:
     def read(self, save=True, fname_dacf="dacf.dat", fname_jacf="jacf.dat"):
 
         if self.nsample > 0:
-        
-            volume = self.conf.simbox.lengths[0]*self.conf.simbox.lengths[1]*self.conf.simbox.lengths[2]
+
+            volume = self.conf.simbox.get_volume()
+
 
             out_dacf = np.zeros( (self.lvec, self.nwaves) )
             out_jacf = np.zeros( (self.lvec, self.nwaves) )
