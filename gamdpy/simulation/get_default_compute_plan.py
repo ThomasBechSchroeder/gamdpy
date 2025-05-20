@@ -45,7 +45,7 @@ def get_default_compute_plan(configuration):
 
     # pb: particle per (thread) block
     pb = 512
-    while N // pb < 2 * num_SM:  # Performance heuristic
+    while N // pb < 2 * num_SM and pb >= 8:  # Performance heuristic
         pb = pb // 2
     if pb < 8:
         pb = 8
