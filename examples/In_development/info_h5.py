@@ -31,6 +31,15 @@ with h5py.File(filename,'r') as f:
                 print('\tvectors:', grp['vectors'].attrs['vector_columns'])
             if 'scalars' in grp.keys():
                 print('\tscalars:', grp['scalars'].attrs['scalar_columns'])
+            if 'topology' in grp.keys() and len(grp['topology'].keys())>0:
+                print('\ttopology:')
+                molecules = grp['topology']['molecules']
+                for name in molecules.attrs['names']:
+                    print(f"\t\t{name}, shape: {molecules[name].shape}")
+                print(f"\t\tbonds: {grp['topology']['bonds'].shape}")
+                print(f"\t\tangles: {grp['topology']['angles'].shape}")
+                print(f"\t\tdihedrals: {grp['topology']['dihedrals'].shape}")
+                
         elif key=='restarts':
             grp = f[key]
             print(f'\t{len(grp.keys())} restarts' )
