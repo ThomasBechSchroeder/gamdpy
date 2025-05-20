@@ -39,7 +39,7 @@ def test_SLLOD(run_NVT=False):
     sr = 0.1
     dt = 0.01
 
-    configuration.simbox = gp.LeesEdwards(configuration.D, configuration.simbox.lengths)
+    configuration.simbox = gp.LeesEdwards(configuration.D, configuration.simbox.get_lengths())
 
     integrator_SLLOD = gp.integrators.SLLOD(shear_rate=sr, dt=dt)
 
@@ -68,7 +68,7 @@ def test_SLLOD(run_NVT=False):
         print(sim_SLLOD.status(per_particle=True))
         configuration.simbox.copy_to_host()
         box_shift = configuration.simbox.box_shift
-        lengths = configuration.simbox.lengths
+        lengths = configuration.simbox.get_lengths()
         print(f'box-shift={box_shift:.4f}, strain = {box_shift/lengths[1]:.4f}')
     print(sim_SLLOD.summary())
 

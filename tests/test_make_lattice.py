@@ -91,13 +91,13 @@ def test_fcc_lattice():
     configuration['r'] = positions
     configuration.simbox = gp.Orthorhombic(configuration.D, box_vector)
     expected_box_vector = np.array([2.0, 2.0, 2.0])
-    assert np.allclose(configuration.simbox.lengths, expected_box_vector)
+    assert np.allclose(configuration.simbox.get_lengths(), expected_box_vector)
     expected_number_of_particles = 32
     assert configuration['r'].shape[0] == expected_number_of_particles
     # if verbose:
     #     print('    FCC lattice')
     #     print("positions:", configuration['r'])
-    #     print("box_vector:", configuration.simbox.lengths)
+    #     print("box_vector:", configuration.simbox.get_lengths())
     # if plot:
     #     import matplotlib.pyplot as plt
     #     fig = plt.figure()
@@ -111,10 +111,10 @@ def test_fcc_lattice_method():
     conf.make_lattice(gp.unit_cells.FCC, [2, 2, 2])
     positions = conf['r']
     print("positions:", positions)
-    box_vector = conf.simbox.lengths
+    box_vector = conf.simbox.get_lengths()
     expected_box_vector = np.array([2.0, 2.0, 2.0])
     assert np.allclose(positions, EXPECTED_FCC_POSITIONS, rtol=1e-4)
-    assert np.allclose(conf.simbox.lengths, expected_box_vector)
+    assert np.allclose(conf.simbox.get_lengths(), expected_box_vector)
     print("positions:", positions)
 
 
@@ -128,11 +128,11 @@ def test_bcc_lattice():
     assert configuration['r'].shape[0] == expected_number_of_particles
     assert np.allclose(configuration['r'], EXPECTED_BCC_POSITIONS)
     expected_box_vector = np.array([2.0, 2.0, 2.0])
-    assert np.allclose(configuration.simbox.lengths, expected_box_vector)
+    assert np.allclose(configuration.simbox.get_lengths(), expected_box_vector)
     # if verbose:
     #     print("    BCC lattice")
     #     print("positions:", configuration['r'])
-    #     print("box_vector:", configuration.simbox.lengths)
+    #     print("box_vector:", configuration.simbox.get_lengths())
     # if plot:
     #     import matplotlib.pyplot as plt
     #     fig = plt.figure()
@@ -160,7 +160,7 @@ def test_hexagonal():
     # if verbose:
     #     print('  Hexagonal lattice')
     #     print("positions:", configuration['r'])
-    #     print("box_vector:", configuration.simbox.lengths)
+    #     print("box_vector:", configuration.simbox.get_lengths())
     # if plot:
     #     import matplotlib.pyplot as plt
     #     plt.figure()

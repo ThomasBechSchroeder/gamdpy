@@ -365,7 +365,8 @@ class Configuration:
         actual_rho = self.N / self.get_volume()
         scale_factor = (actual_rho / density)**(1/3)
         self.vectors['r'] *= scale_factor
-        self.simbox.lengths *= scale_factor
+        self.simbox.scale(scale_factor)
+        #self.simbox.lengths *= scale_factor
 
     def save(self, output: h5py.File, group_name: str, mode="w", include_topology=False) -> None:
         """ Write a configuration to a HDF5 file

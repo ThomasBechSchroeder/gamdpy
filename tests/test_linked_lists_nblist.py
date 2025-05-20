@@ -53,7 +53,7 @@ def nblist_test(nx, ny, nz, rho=0.8442, pb=None, tp=None, skin=None, gridsync=No
     configuration['r'] = configuration['r'][np.random.permutation(configuration.N),:]
 
     if box_shift != 0.0:
-        configuration.simbox = gp.LeesEdwards(configuration.D, configuration.simbox.lengths, box_shift)
+        configuration.simbox = gp.LeesEdwards(configuration.D, configuration.simbox.get_lengths(), box_shift)
 
     # Allow for overwriting of the default compute_plan
     compute_plan = gp.get_default_compute_plan(configuration)
@@ -68,7 +68,7 @@ def nblist_test(nx, ny, nz, rho=0.8442, pb=None, tp=None, skin=None, gridsync=No
     if UtilizeNIII!=None:
         compute_plan['UtilizeNb'] = UtilizeNIII
     if verbose:
-        print('simbox lengths:', configuration.simbox.lengths)
+        print('simbox lengths:', configuration.simbox.get_lengths())
         print('compute_plan: ', compute_plan)
 
     compute_flags = gp.get_default_compute_flags()

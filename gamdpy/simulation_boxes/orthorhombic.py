@@ -25,24 +25,23 @@ class Orthorhombic():
     def __init__(self, D, lengths):
         self.D = D
         self.lengths = np.array(lengths, dtype=np.float32) # ensure single precision
-        self.data_array = self.lengths.copy()
+        self.data_array = np.array(lengths, dtype=np.float32) # ensure single precision
+        #self.lengths.copy()
         self.len_sim_box_data = D # not true for other Simbox classes. Want to remove this and just use len(self.data_array)
         return
 
     def get_name(self):
         return "Orthorhombic"
 
-    #def make_device_copy(self):
-    #    """ Creates a new device copy of the simbox data and returns it to the caller.
-    #    To be used by neighbor list for recording the box state at time of last rebuild"""
-    #    return cuda.to_device(self.lengths)
 
     def copy_to_device(self):
         self.d_data = cuda.to_device(self.data_array)
 
     def copy_to_host(self):
         self.data_array = self.d_data.copy_to_host()
-        self.lengths = self.data_array.copy()
+        #self.lengths = self.data_array.copy()
+
+
 
     def get_dist_sq_dr_function(self):
         """Generates function dist_sq_dr which computes displacement and distance squared for one neighbor """
@@ -89,9 +88,12 @@ class Orthorhombic():
             return
         return apply_PBC
 
+    def get_lengths(self):
+        return self.data_array.copy()
+
     def get_volume(self):
         #self.copy_to_host() # not necessary if volume if fixed and if not fixed then presumably stuff like normalizing stress by volume should be done in the device anyway
-        return self.get_volume_function()(self.lengths)
+        return self.get_volume_function()(self.data_array)
 
     def get_volume_function(self):
         D = self.D
@@ -102,6 +104,9 @@ class Orthorhombic():
                 vol *= sim_box[i]
             return vol
         return volume
+
+    def scale(self, scale_factor):
+        self.data_array *= scale_factor
 
     def get_dist_moved_sq_function(self):
         D = self.D

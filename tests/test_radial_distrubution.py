@@ -20,7 +20,7 @@ def test_radial_distribution():
         calc_rdf = gp.CalculatorRadialDistribution(conf, bins=bins)
         number_of_updates = 4
         for _ in range(number_of_updates):
-            conf['r'] = (np.random.rand(number_of_particles, D)-0.5) * conf.simbox.lengths  # Ideal gas configuration
+            conf['r'] = (np.random.rand(number_of_particles, D)-0.5) * conf.simbox.get_lengths()  # Ideal gas configuration
             # print(conf['r'][0])
             conf.copy_to_device()
             calc_rdf.update()

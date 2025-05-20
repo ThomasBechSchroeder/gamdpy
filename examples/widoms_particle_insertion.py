@@ -47,7 +47,7 @@ sim.run()
 
 # Setup the Widom's particle insertion calculator
 num_ghost_particles = 500_000
-ghost_positions = np.random.rand(num_ghost_particles, configuration.D) * configuration.simbox.lengths
+ghost_positions = np.random.rand(num_ghost_particles, configuration.D) * configuration.simbox.get_lengths()
 calc_widom = gp.CalculatorWidomInsertion(sim.configuration, pair_pot, temperature, ghost_positions)
 print('Production run:')
 for block in sim.run_timeblocks():

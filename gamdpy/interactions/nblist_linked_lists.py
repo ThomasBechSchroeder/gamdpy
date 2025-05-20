@@ -36,8 +36,9 @@ class NbListLinkedLists():
 
         self.cells_per_dimension = np.zeros((self.D), dtype=np.int32)
         min_cells_size = (self.max_cut + self.skin)/2
+        simbox_lengths = self.configuration.simbox.get_lengths()
         for i in range(self.D):
-            self.cells_per_dimension[i] = int(self.configuration.simbox.lengths[i]/min_cells_size)
+            self.cells_per_dimension[i] = int(simbox_lengths[i]/min_cells_size)
             assert self.cells_per_dimension[i] > 4
             if i == 0:
                 assert self.cells_per_dimension[i] > 6

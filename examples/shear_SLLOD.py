@@ -74,7 +74,7 @@ sc_output = 8
 dt = 0.01
 sr = 0.02 # restuls for different values shown in comments below. This value only takes 4 seconds to run so good for running as a test
 
-configuration.simbox = gp.LeesEdwards(configuration.D, configuration.simbox.lengths)
+configuration.simbox = gp.LeesEdwards(configuration.D, configuration.simbox.get_lengths())
 
 integrator_SLLOD = gp.integrators.SLLOD(shear_rate=sr, dt=dt)
 
@@ -108,7 +108,7 @@ for block in sim_SLLOD.run_timeblocks():
     print(sim_SLLOD.status(per_particle=True))
     configuration.simbox.copy_to_host()
     box_shift = configuration.simbox.box_shift
-    lengths = configuration.simbox.lengths
+    lengths = configuration.simbox.get_lengths()
     print(f'box-shift={box_shift:.4f}, strain = {box_shift/lengths[1]:.4f}')
 print(sim_SLLOD.summary())
 

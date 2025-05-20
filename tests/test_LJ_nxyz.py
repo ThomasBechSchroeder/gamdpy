@@ -30,7 +30,7 @@ def LJ(nx, ny, nz, rho=0.8442, pb=None, tp=None, skin=None, gridsync=None, Utili
     if UtilizeNIII!=None:
         compute_plan['UtilizeNb'] = UtilizeNIII
     if verbose:
-        print('simbox lengths:', configuration.simbox.lengths)
+        print('simbox lengths:', configuration.simbox.get_lengths())
         print('compute_plan: ', compute_plan)
    
     # Make the pair potential.

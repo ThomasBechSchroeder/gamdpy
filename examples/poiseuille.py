@@ -29,7 +29,7 @@ configuration['m'] = 1.0
 
 # Fluid particles have type '0', wall particles '1', dummy particles '2'
 nwall, npart = 0, configuration.N
-hlz = 0.5 * configuration.simbox.lengths[2]
+hlz = 0.5 * configuration.simbox.get_lengths()[2]
 for n in range(npart):
     if configuration['r'][n][2] + hlz < 3.0:
         configuration.ptype[n] = 1

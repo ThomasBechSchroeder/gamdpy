@@ -37,7 +37,7 @@ sim.run()
 # Plot final configuration and box
 plt.plot(configuration['r'][:, 0], configuration['r'][:, 1], 'o',
          color='blue', label='Final configuration')
-box_lengths = configuration.simbox.lengths
+box_lengths = configuration.simbox.get_lengths()
 x_min, x_max = -box_lengths[0] / 2, box_lengths[0] / 2
 y_min, y_max = -box_lengths[1] / 2, box_lengths[1] / 2
 x_vals = [x_min, x_max, x_max, x_min, x_min]

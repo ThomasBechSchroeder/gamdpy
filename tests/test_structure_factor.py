@@ -164,12 +164,12 @@ def test_atomic_form_factors():
         calc_single = gp.CalculatorStructureFactor(conf, n_vectors, atomic_form_factors, 'CPU single core')
         number_of_updates = 4
         for _ in range(number_of_updates):
-            conf['r'] = (np.random.rand(number_of_particles, D)-0.5) * conf.simbox.lengths  # Ideal gas configuration
+            conf['r'] = (np.random.rand(number_of_particles, D)-0.5) * conf.simbox.get_lengths()  # Ideal gas configuration
             conf.copy_to_device()
             calc_single.update()
         calc_multi = gp.CalculatorStructureFactor(conf, n_vectors, atomic_form_factors, 'CPU multi core')
         for _ in range(number_of_updates):
-            conf['r'] = (np.random.rand(number_of_particles, D)-0.5) * conf.simbox.lengths  # Ideal gas configuration
+            conf['r'] = (np.random.rand(number_of_particles, D)-0.5) * conf.simbox.get_lengths()  # Ideal gas configuration
             conf.copy_to_device()
             calc_multi.update()
 
@@ -182,7 +182,7 @@ def test_structure_factor_gpu():
     conf['m'] = 1.0
 
     # Ideal gas
-    conf['r'] = (np.random.rand(number_of_particles, D)-0.5) * conf.simbox.lengths
+    conf['r'] = (np.random.rand(number_of_particles, D)-0.5) * conf.simbox.get_lengths()
 
     # Test direct
     calc_struct_fact = gp.CalculatorStructureFactor(conf, backend='GPU')

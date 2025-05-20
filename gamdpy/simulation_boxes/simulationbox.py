@@ -40,6 +40,14 @@ class SimulationBox(ABC):
         pass
 
     @abstractmethod
+    def scale(self, scale_factor):
+        """
+        Rescale the box by a factor scale_factor, in all directions, if scale_factor is a single float
+        or by a different factor in each direction if scale_factor is an array of length D
+        """
+        pass
+
+    @abstractmethod
     def get_dist_sq_dr_function(self) -> callable:
         """Generates function dist_sq_dr which computes displacement and distance for one neighbor """
         pass
