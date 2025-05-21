@@ -118,7 +118,7 @@ class Simulation():
         # Close output object if there
         # Check https://stackoverflow.com/questions/610883/how-to-check-if-an-object-has-an-attribute
         # Create output objects
-        if self.storage == 'memory':
+        if self.storage == None or self.storage == 'memory':
             # Creates a memory h5 file with named id(self).h5; id(self) is ensured to be unique
             self.memory = h5py.File(f"{id(self)}.h5", "w", driver='core', backing_store=False)
         elif self.storage[-3:] == '.h5':
@@ -180,19 +180,19 @@ class Simulation():
             interaction.check_datastructure_validity()
 
 
-        if self.storage[-3:] == '.h5':
+        if self.storage and self.storage[-3:] == '.h5':
             self.memory.close()
 
     # __del__ is supposed to work also if __init__ fails. This means you can't use attributed defined in __init__
     # https://www.algorithm.co.il/programming/python-gotchas-1-__del__-is-not-the-opposite-of-__init__/
 
     def get_output(self, mode="r"):
-        if self.storage[-3:] == '.h5':
+        if self.storage and self.storage[-3:] == '.h5':
             output = h5py.File(self.storage, mode)
         elif self.storage == 'memory':
             output = self.memory
         else:
-            print("Warning: self.output can't recognize self.storage option, returning None")
+            #print("Warning: self.output can't recognize self.storage option, returning None")
             output = None
         return output
 
@@ -439,9 +439,10 @@ class Simulation():
             for runtime_action in self.runtime_actions:
                 runtime_action.update_at_end_of_timeblock(block, self.get_output(mode="a"))
 
-            self.configuration.save(output=self.get_output(mode="a"), group_name=f"/restarts/restart{block:04d}", mode="w", include_topology=True)
+            if self.storage:
+                self.configuration.save(output=self.get_output(mode="a"), group_name=f"/restarts/restart{block:04d}", mode="w", include_topology=True)
 
-            if self.storage[-3:] == '.h5':
+            if self.storage and self.storage[-3:] == '.h5':
                 self.output.close()
 
             yield block
