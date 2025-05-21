@@ -96,11 +96,11 @@ class ScalarSaver(RuntimeAction):
         self.params = (self.steps_between_output, self.d_output_array)
         return self.params
     
-    def initialize_before_timeblock(self):
+    def initialize_before_timeblock(self, timeblock: int, output_reference):
         self.zero_kernel(self.d_output_array)
 
-    def update_at_end_of_timeblock(self, block:int, output):
-        output['scalar_saver/scalars'][block, :] = self.d_output_array.copy_to_host()
+    def update_at_end_of_timeblock(self,  timeblock: int, output_reference):
+        output_reference['scalar_saver/scalars'][timeblock, :] = self.d_output_array.copy_to_host()
 
     def get_prestep_kernel(self, configuration, compute_plan, verbose=False):
         pb, tp, gridsync = [compute_plan[key] for key in ['pb', 'tp', 'gridsync']]

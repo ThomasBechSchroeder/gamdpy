@@ -69,11 +69,10 @@ class Simulation():
                  integrator: Integrator,
                  runtime_actions: list[RuntimeAction],
                  num_timeblocks, steps_per_timeblock,
-                 storage,
-                 #num_steps=0, #num_timeblocks=0, steps_per_timeblock=0,
-                 compute_plan=None,
-                 #compute_flags=None, 
-                 verbose=False, timing=True,
+                 storage: str,
+                 compute_plan=None, 
+                 verbose=False, 
+                 timing=True,
                  steps_in_kernel_test=1):
 
         self.configuration = configuration
@@ -90,19 +89,6 @@ class Simulation():
         self.integrator = integrator
         self.dt = self.integrator.dt
 
-        #if num_timeblocks == 0:
-        #    if num_steps == 0:
-        #        raise ValueError("Either num_steps or num_timeblocks must be non-zero")
-        #    num_timeblocks = 32
-        #    steps_per_timeblock = 2 ** int(math.log2(math.ceil(num_steps / num_timeblocks)))
-        #    num_timeblocks = math.ceil(num_steps / steps_per_timeblock)
-        #    print('num_steps: ', num_steps)
-        #    print('num_blocks: ', num_timeblocks)
-        #    print('steps_per_block: ', steps_per_timeblock)
-        #elif steps_per_timeblock == 0:
-        #    raise ValueError("If num_timeblocks is non-zero then steps_per_timeblock must be too (num_steps is ignored in this case)")
-        ## we do not use nsteps if num_timeblocks is non-zero, because it's
-        ## not guaranteed to be a multiple of the latter
         self.num_blocks = num_timeblocks
         self.current_block = -1
 
@@ -114,20 +100,17 @@ class Simulation():
         # Close output object if there
         # Check https://stackoverflow.com/questions/610883/how-to-check-if-an-object-has-an-attribute
         # Create output objects
-        if self.storage == None or self.storage == 'memory':
+        if self.storage == 'memory':
             # Creates a memory h5 file with named id(self).h5; id(self) is ensured to be unique
             self.memory = h5py.File(f"{id(self)}.h5", "w", driver='core', backing_store=False)
-        elif self.storage[-3:] == '.h5':
+        elif isinstance(self.storage, str) and self.storage[-3:] == '.h5':
             # The append is important for repeated istances of sim with same self.storage
             self.memory = h5py.File(self.storage, "w")
         else:
-            print("Simulation data will not be saved")
+            raise ValueError(f"storage needs to be either 'memory' or an hdf5 filename ending in '.h5' (got: {storage})")
+ 
         # Save setup info
         self.memory.attrs['dt'] = self.dt
-        #self.memory.attrs['simbox_initial'] = self.configuration.simbox.lengths #Should be in initial_configuration
-        #if 'ptype' in self.memory.keys(): Moved to initial_configuration h5 group
-        #    del self.memory['ptype']
-        #self.memory.create_dataset("ptype", data=configuration.ptype, shape=(self.configuration.N), dtype=np.int32)
         if 'script_name' not in self.memory.keys():
             script_name = sys.argv[0]
             self.memory.attrs['script_name'] = script_name
@@ -136,11 +119,9 @@ class Simulation():
                     script_content = file.read()
                 self.memory.attrs['script_content'] = script_content
 
-        # Saving starting configuration
-        #print("Starting configuration saved in group initial_configuration")
+        # Saving initial configuration
         self.configuration.save(output=self.memory, group_name="initial_configuration", mode="w", include_topology=True)
-        #print(f"groups: {self.memory.keys()}\tdataset {self.memory['initial_configuration'].keys()}")
-
+        
         self.runtime_actions = runtime_actions
 
         compute_flags = None
@@ -415,7 +396,7 @@ class Simulation():
 
             self.current_block = block
             for runtime_action in self.runtime_actions:
-                runtime_action.initialize_before_timeblock()
+                runtime_action.initialize_before_timeblock(block, self.get_output(mode="a"))
             
             if self.timing: 
                 start_block.record()
@@ -435,8 +416,8 @@ class Simulation():
             for runtime_action in self.runtime_actions:
                 runtime_action.update_at_end_of_timeblock(block, self.get_output(mode="a"))
 
-            if self.storage:
-                self.configuration.save(output=self.get_output(mode="a"), group_name=f"/restarts/restart{block:04d}", mode="w", include_topology=True)
+            #if self.storage:
+            #    self.configuration.save(output=self.get_output(mode="a"), group_name=f"/restarts/restart{block:04d}", mode="w", include_topology=True)
 
             if self.storage and self.storage[-3:] == '.h5':
                 self.output.close()

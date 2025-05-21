@@ -89,13 +89,13 @@ class TrajectorySaver(RuntimeAction):
         zero_kernel = cuda.jit(zero_kernel)
         return zero_kernel[num_blocks, pb]
 
-    def update_at_end_of_timeblock(self, block: int, output):
+    def update_at_end_of_timeblock(self, timeblock: int, output_reference):
         data = self.d_conf_array.copy_to_host()
         # note that d_conf_array has dimensions (self.conf_per_block, 2, self.configuration.N, self.configuration.D)
-        output['trajectory_saver/positions'][block], output['trajectory_saver/images'][block] = data[:, 0], data[:, 1]
+        output_reference['trajectory_saver/positions'][timeblock], output_reference['trajectory_saver/images'][timeblock] = data[:, 0], data[:, 1]
         #output['trajectory_saver'][block, :] = self.d_conf_array.copy_to_host()
         if self.include_simbox:
-            output['trajectory_saver/sim_box'][block, :] = self.d_sim_box_output_array.copy_to_host()
+            output_reference['trajectory_saver/sim_box'][timeblock, :] = self.d_sim_box_output_array.copy_to_host()
         self.zero_kernel(self.d_conf_array)
 
     def get_poststep_kernel(self, configuration, compute_plan, verbose=False):

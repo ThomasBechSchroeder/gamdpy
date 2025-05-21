@@ -48,7 +48,7 @@ class RuntimeAction(ABC):
 
         pass
    
-    def initialize_before_timeblock(self):
+    def initialize_before_timeblock(self, timeblock: int, output_reference):
         """
         Method to be called before each timeblock 
         """
