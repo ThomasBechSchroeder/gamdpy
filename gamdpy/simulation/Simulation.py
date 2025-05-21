@@ -38,9 +38,6 @@ class Simulation():
     runtime_actions : list of runtime actions
         Runtime actions such as ScalarSaver, TrajectorySaver or MomentumReset
 
-    num_steps : int
-        Number of steps to run the simulation. If 0, num_timeblocks and steps_per_timeblock should be set.
-
     num_timeblocks : int
         Number of timeblocks to run the simulation. If not 0, then steps_per_timeblock should be set.
 
@@ -52,9 +49,6 @@ class Simulation():
 
     storage : str
         Storage for the simulation output. Can be 'memory' or a filename with extension '.h5'.
-
-    compute_flags : dict
-        For each scalar quantity, and stresses, specifies whether to be calculated
 
     verbose : bool
         If True, print verbose output.
