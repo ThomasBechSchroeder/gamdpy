@@ -26,7 +26,8 @@ runtime_actions = [gp.TrajectorySaver(),
 
 # Setup Simulation.
 sim = gp.Simulation(configuration, pair_pot, integrator, runtime_actions,
-                    num_steps=32*1024, storage='memory')
+                    num_timeblocks=32, steps_per_timeblock=32*1024, 
+                    storage='memory')
 
 # Plot initial configuration
 plt.figure()

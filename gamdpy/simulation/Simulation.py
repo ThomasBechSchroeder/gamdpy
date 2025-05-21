@@ -74,8 +74,10 @@ class Simulation():
                  interactions: Interaction|list[Interaction], 
                  integrator: Integrator,
                  runtime_actions: list[RuntimeAction],
-                 num_steps=0, num_timeblocks=0, steps_per_timeblock=0,
-                 compute_plan=None, storage='output.h5',
+                 num_timeblocks, steps_per_timeblock,
+                 storage,
+                 #num_steps=0, #num_timeblocks=0, steps_per_timeblock=0,
+                 compute_plan=None,
                  #compute_flags=None, 
                  verbose=False, timing=True,
                  steps_in_kernel_test=1):
@@ -94,19 +96,19 @@ class Simulation():
         self.integrator = integrator
         self.dt = self.integrator.dt
 
-        if num_timeblocks == 0:
-            if num_steps == 0:
-                raise ValueError("Either num_steps or num_timeblocks must be non-zero")
-            num_timeblocks = 32
-            steps_per_timeblock = 2 ** int(math.log2(math.ceil(num_steps / num_timeblocks)))
-            num_timeblocks = math.ceil(num_steps / steps_per_timeblock)
-            print('num_steps: ', num_steps)
-            print('num_blocks: ', num_timeblocks)
-            print('steps_per_block: ', steps_per_timeblock)
-        elif steps_per_timeblock == 0:
-            raise ValueError("If num_timeblocks is non-zero then steps_per_timeblock must be too (num_steps is ignored in this case)")
-        # we do not use nsteps if num_timeblocks is non-zero, because it's
-        # not guaranteed to be a multiple of the latter
+        #if num_timeblocks == 0:
+        #    if num_steps == 0:
+        #        raise ValueError("Either num_steps or num_timeblocks must be non-zero")
+        #    num_timeblocks = 32
+        #    steps_per_timeblock = 2 ** int(math.log2(math.ceil(num_steps / num_timeblocks)))
+        #    num_timeblocks = math.ceil(num_steps / steps_per_timeblock)
+        #    print('num_steps: ', num_steps)
+        #    print('num_blocks: ', num_timeblocks)
+        #    print('steps_per_block: ', steps_per_timeblock)
+        #elif steps_per_timeblock == 0:
+        #    raise ValueError("If num_timeblocks is non-zero then steps_per_timeblock must be too (num_steps is ignored in this case)")
+        ## we do not use nsteps if num_timeblocks is non-zero, because it's
+        ## not guaranteed to be a multiple of the latter
         self.num_blocks = num_timeblocks
         self.current_block = -1
 
