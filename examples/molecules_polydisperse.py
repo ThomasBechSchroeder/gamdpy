@@ -41,7 +41,8 @@ print("num_mols_each_type")
 print(num_mols_each_type)
 
 filename = 'Data/chains_poly'
-num_timeblocks = 128
+num_timeblocks_equilibration = 64
+num_timeblocks_production = 16
 steps_per_timeblock = 1 * 1024
 
 molecule_dicts = []
@@ -132,7 +133,7 @@ runtime_actions = [gp.TrajectorySaver(),
 
 # Setup simulation
 sim = gp.Simulation(configuration, [pair_pot, bonds, angles, dihedrals], integrator, runtime_actions,
-                    num_timeblocks=num_timeblocks, steps_per_timeblock=steps_per_timeblock,
+                    num_timeblocks=num_timeblocks_equilibration, steps_per_timeblock=steps_per_timeblock,
                     storage='memory')
 
 print('\nCompression and equilibration: ')
@@ -162,7 +163,7 @@ print(sim.summary())
 print(configuration)
 
 sim = gp.Simulation(configuration, [pair_pot, bonds, angles, dihedrals], integrator, runtime_actions,
-                    num_timeblocks=num_timeblocks, steps_per_timeblock=steps_per_timeblock,
+                    num_timeblocks=num_timeblocks_production, steps_per_timeblock=steps_per_timeblock,
                     compute_plan=sim.compute_plan, storage=filename+'.h5')
 
 print('\nProduction: ')
