@@ -205,5 +205,45 @@ class ScalarSaver(RuntimeAction):
             return kernel  # return device function
         else:
             return kernel[num_blocks, (pb, 1)]  # return kernel, incl. launch parameters
+        
+    # Class functions to read data
+
+    def info(h5file):
+        h5grp = h5file['scalar_saver']
+        str = f"\tscalar_names: {h5grp.attrs['scalar_names']}"
+        str += f"\n\tscalars, shape: {h5grp['scalars'].shape}, dtype: {h5grp['scalars'].dtype}"
+        return str
+
+    def columns(h5file):
+        return list(h5file['scalar_saver'].attrs['scalar_names'])
+
+    def extract(h5file, columns, per_particle=True, first_block=0, last_block=-1, subsample=1, function=None):
+        _, N, D = h5file['initial_configuration']['vectors'].shape
+
+        h5grp = h5file['scalar_saver']
+        scalar_names = list(h5grp.attrs['scalar_names'])
+
+        output = []
+        for column in columns: 
+            index = scalar_names.index(column)
+            data = np.ravel(h5grp['scalars'][first_block:last_block,:,index])[::subsample]
+            if per_particle:
+                data /= N
+
+            if function:
+                data = function(data)
+        
+            output.append(data)
+        return output
+        
+    def get_times(h5file, first_block=0, last_block=-1, reset_time=True, subsample=1):
+        num_timeblock, saves_per_timeblock = h5file['scalar_saver']['scalars'][first_block:last_block,:,0].shape
+        times_array = np.arange(0,num_timeblock*saves_per_timeblock, step=subsample)*h5file.attrs['dt']
+        return times_array
+
+
+
+
+
 
 
