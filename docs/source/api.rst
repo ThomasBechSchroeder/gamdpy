@@ -70,11 +70,13 @@ Generators
 
 Generators return a function that can be used to calculate the potential energy and the force between two particles.
 
+.. autofunction:: gamdpy.add_potential_functions
+
+.. autofunction:: gamdpy.make_potential_function_from_sympy
+
 .. autofunction:: gamdpy.make_LJ_m_n
 
 .. autofunction:: gamdpy.make_IPL_n
-
-.. autofunction:: gamdpy.make_potential_function_from_sympy
 
 Modifies
 --------

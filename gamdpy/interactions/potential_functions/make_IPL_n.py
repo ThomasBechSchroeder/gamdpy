@@ -15,6 +15,8 @@ def make_IPL_n(n: float, first_parameter:int = 0) -> callable:
 
     n : float
         Exponent in the potential
+    first_parameter : int
+        The index of the first parameter in the list of parameters. See usage in :func:`gamdpy.add_potential_functions`.
 
     Returns
     -------
