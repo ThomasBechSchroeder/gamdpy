@@ -117,6 +117,8 @@ Runtime Actions
 
 .. autoclass:: gamdpy.ScalarSaver
 
+.. autoclass:: gamdpy.RestartSaver
+
 .. autoclass:: gamdpy.MomentumReset
 
 Calculators
