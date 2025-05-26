@@ -14,6 +14,18 @@ The Configuration Class
 .. autoclass:: gamdpy.Configuration
    :members:
 
+Simulation boxes
+================
+
+An simulation box object is attached to an configuration object.
+
+.. autoclass:: gamdpy.Orthorhombic
+   :members:
+
+.. autoclass:: gamdpy.LeesEdwards
+   :members:
+
+
 Integrators
 ***********
 

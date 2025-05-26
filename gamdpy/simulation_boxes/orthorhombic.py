@@ -38,8 +38,6 @@ class Orthorhombic():
     def copy_to_host(self):
         self.data_array = self.d_data.copy_to_host()
 
-
-
     def get_dist_sq_dr_function(self):
         """Generates function dist_sq_dr which computes displacement and distance squared for one neighbor """
         D = self.D
@@ -86,13 +84,16 @@ class Orthorhombic():
         return apply_PBC
 
     def get_lengths(self):
+        """ Return the box lengths as a numpy array """
         return self.data_array.copy()
 
     def get_volume(self):
+        """ Return the box volume """
         #self.copy_to_host() # not necessary if volume if fixed and if not fixed then presumably stuff like normalizing stress by volume should be done in the device anyway
         return self.get_volume_function()(self.data_array)
 
     def get_volume_function(self):
+        """ Return the box volume """
         D = self.D
         def volume(sim_box):
             ''' Returns volume of the rectangular box '''
@@ -103,6 +104,7 @@ class Orthorhombic():
         return volume
 
     def scale(self, scale_factor):
+        """ Scale the box lengths by scale_factor """
         self.data_array *= scale_factor
 
     def get_dist_moved_sq_function(self):
