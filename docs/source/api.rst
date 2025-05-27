@@ -207,6 +207,8 @@ Extract data
 Miscellaneous
 *************
 
+.. autofunction:: gamdpy.select_gpu
+
 .. autofunction:: gamdpy.get_default_sim
 
 .. autofunction:: gamdpy.get_default_compute_plan
