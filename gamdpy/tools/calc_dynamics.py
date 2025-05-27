@@ -23,6 +23,45 @@ def calc_dynamics_(positions, images, ptype, simbox, block0, conf_index0, block1
 
 
 def calc_dynamics(trajectory, first_block, qvalues=None):
+    """Compute dynamical properties from a saved trajectory HDF5 file.
+
+    This function processes blocks of saved configurations to evaluate time‐dependent
+    dynamical observables, including the mean square displacement (MSD), the non‐Gaussian
+    parameter (alpha2), and the self‐intermediate scattering function (Fs), for one or more
+    particle types.
+
+    Parameters
+    ----------
+    trajectory : h5py.File object in the gamdpy style
+
+    first_block : int
+        Index of the first block to use as the reference origin.
+
+    qvalues : float or array‐like of shape (num_types,), optional
+        Wavevector magnitudes at which to compute the self‐intermediate scattering
+        function Fs. If a single float is provided, it is broadcast to all particle types.
+        If None, Fs is not computed (remains zero).
+
+    Returns
+    -------
+    results : dict
+        Dictionary containing dynamcal data.
+
+    Examples
+    --------
+    For command‐line usage, see:
+        $ python -m gamdpy.tools.calc_dynamics -h
+
+    Usage within a Python script:
+
+    >>> import gamdpy as gp
+    >>> sim = gp.get_default_sim()  # Replace with your simulation object
+    >>> for block in sim.run_timeblocks(): pass
+    >>> dynamics = gp.calc_dynamics(sim.output, first_block=0, qvalues=7.5)
+    >>> dynamics.keys()
+    dict_keys(['times', 'msd', 'alpha2', 'qvalues', 'Fs', 'count'])
+
+    """
     ptype = trajectory['initial_configuration/ptype'][:].copy()
     attributes = trajectory.attrs
     

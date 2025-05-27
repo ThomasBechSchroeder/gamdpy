@@ -135,6 +135,8 @@ Runtime Actions
 
 .. autoclass:: gamdpy.MomentumReset
 
+.. autoclass:: gamdpy.StressSaver
+
 Calculators
 ***********
 
@@ -180,6 +182,10 @@ IO functions
 
 .. autofunction:: gamdpy.configuration_to_lammps
 
+Post-analysis tools
+===================
+
+.. autofunction:: gamdpy.tools.calc_dynamics
 
 Mathematical functions
 ======================
