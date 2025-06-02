@@ -40,7 +40,8 @@ class ScalarSaver(RuntimeAction):
             raise ValueError(f'steps_per_timeblock ({steps_per_timeblock}) should be non-negative integer.')
         self.steps_per_timeblock = steps_per_timeblock
 
-        if self.steps_between_output >= steps_per_timeblock:
+#        if self.steps_between_output >= steps_per_timeblock:
+        if self.steps_between_output > steps_per_timeblock:
             raise ValueError(f'scalar_output ({self.steps_between_output}) must be less than steps_per_timeblock ({steps_per_timeblock})')
 
         # per block saving of scalars
