@@ -127,9 +127,9 @@ conda install cudatoolkit
 pip install git+https://github.com/ThomasBechSchroeder/gamdpy.git
 ```
 
-# Known issues
+## Known issues
 
-## LinkerError: libcudadevrt.a not found
+### LinkerError: libcudadevrt.a not found
 A workaround to fix the error `numba.cuda.cudadrv.driver.LinkerError: libcudadevrt.a not found` 
 is to make a symbolic link to the missing file. 
 This can be done by running the something like the below in the terminal:

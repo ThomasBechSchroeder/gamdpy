@@ -216,3 +216,7 @@ Miscellaneous
 .. autofunction:: gamdpy.get_default_compute_flags
 
 .. autofunction:: gamdpy.plot_molecule
+
+.. autofunction:: gamdpy.tools.print_h5_structure
+
+.. autofunction:: gamdpy.tools.print_h5_attributes
