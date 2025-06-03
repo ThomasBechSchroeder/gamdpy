@@ -79,7 +79,7 @@ class CalculatorRadialDistribution():
         """
 
             bins = d_gr_bins.shape[2]  # reading number of bins from size of the device array
-            min_box_dim = min(sim_box)
+            min_box_dim = min(sim_box[:D])
             bin_width = (min_box_dim / 2) / bins  # TODO: Chose more directly!
 
             my_block = cuda.blockIdx.x
