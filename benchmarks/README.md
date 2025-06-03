@@ -1,4 +1,15 @@
-## Preliminary benchmarks.
+## PRELIMINARY benchmarks.
+
+### The Lennard-Jones benchmark (single precision), comparing to Lammps. 
+
+TPS = Timesteps Per Second. Integers next to Lammps results give the number of CPU threads found to be optimal. Gamdpy uses only a single CPU thread, since the whole simulation is done on the GPU. Gamdpy results are optimized by the builtin autotuner (see below).
+
+
+![Fig](./Data/benchmark_LJ_compare_tps.png)
+
+### The Lennard-Jones benchmark (single precision).
+
+Here followed by parameters chosen by the gamdpy autotuner.
 
 ![Fig](./Data/benchmark_LJ_tps.png)
 

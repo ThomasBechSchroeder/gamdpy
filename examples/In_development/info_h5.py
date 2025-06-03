@@ -44,9 +44,7 @@ with h5py.File(filename,'r') as f:
             grp = f[key]
             print(f'\t{len(grp.keys())} restarts' )
         elif 'scalar_saver' in key:
-            grp = f[key]
-            print('\tscalar_names:', grp.attrs['scalar_names'])
-            print('\tscalars, shape:', grp['scalars'].shape, ', dtype:', grp['scalars'].dtype)
+            print(gp.ScalarSaver.info(f))
         elif 'trajectory_saver' in key:
             grp = f[key]
             for subkey in grp.keys():

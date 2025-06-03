@@ -14,6 +14,18 @@ The Configuration Class
 .. autoclass:: gamdpy.Configuration
    :members:
 
+Simulation boxes
+================
+
+An simulation box object is attached to an configuration object.
+
+.. autoclass:: gamdpy.Orthorhombic
+   :members:
+
+.. autoclass:: gamdpy.LeesEdwards
+   :members:
+
+
 Integrators
 ***********
 
@@ -70,11 +82,13 @@ Generators
 
 Generators return a function that can be used to calculate the potential energy and the force between two particles.
 
+.. autofunction:: gamdpy.add_potential_functions
+
+.. autofunction:: gamdpy.make_potential_function_from_sympy
+
 .. autofunction:: gamdpy.make_LJ_m_n
 
 .. autofunction:: gamdpy.make_IPL_n
-
-.. autofunction:: gamdpy.make_potential_function_from_sympy
 
 Modifies
 --------
@@ -117,7 +131,11 @@ Runtime Actions
 
 .. autoclass:: gamdpy.ScalarSaver
 
+.. autoclass:: gamdpy.RestartSaver
+
 .. autoclass:: gamdpy.MomentumReset
+
+.. autoclass:: gamdpy.StressSaver
 
 Calculators
 ***********
@@ -164,6 +182,10 @@ IO functions
 
 .. autofunction:: gamdpy.configuration_to_lammps
 
+Post-analysis tools
+===================
+
+.. autofunction:: gamdpy.tools.calc_dynamics
 
 Mathematical functions
 ======================
@@ -184,6 +206,8 @@ Extract data
 
 Miscellaneous
 *************
+
+.. autofunction:: gamdpy.select_gpu
 
 .. autofunction:: gamdpy.get_default_sim
 
