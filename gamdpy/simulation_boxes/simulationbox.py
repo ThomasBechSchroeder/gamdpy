@@ -61,9 +61,9 @@ class SimulationBox(ABC):
     def get_apply_PBC(self) -> callable:
         pass
 
-    @abstractmethod
-    def get_dist_moved_sq_function(self) -> callable:
-        pass
+    #@abstractmethod
+    #def get_dist_moved_sq_function(self) -> callable:
+    #    pass
 
     @abstractmethod
     def get_dist_moved_exceeds_limit_function(self) -> callable:

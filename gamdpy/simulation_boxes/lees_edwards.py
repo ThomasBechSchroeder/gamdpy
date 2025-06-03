@@ -126,6 +126,7 @@ class LeesEdwards(SimulationBox):
         def apply_PBC(r, image, sim_box):
 
             # first shift the x-component depending on whether the y-component is outside the box
+            # note: assumes at most one box length needs to be added/subtracted.
             box_shift, bs_image = sim_box[D], int(sim_box[D+1])
             box1_half = sim_box[1] * numba.float32(0.5)
             if r[1] > + box1_half:
@@ -161,46 +162,46 @@ class LeesEdwards(SimulationBox):
             return
         return update_box_shift
 
-    def get_dist_moved_sq_function(self):
-        D = self.D
-        def dist_moved_sq_function(r_current, r_last, sim_box, sim_box_last):
-            """ See Chattoraj PhD thesis for criterion for neighbor list checking under shear https://pastel.hal.science/pastel-00664392/"""
-            zero = numba.float32(0.)
-            half = numba.float32(0.5)
-            one = numba.float32(1.0)
-            box_shift = sim_box[D]
-            dist_moved_sq = zero
+    #def get_dist_moved_sq_function(self):
+    #    D = self.D
+    #    def dist_moved_sq_function(r_current, r_last, sim_box, sim_box_last):
+    #        """ See Chattoraj PhD thesis for criterion for neighbor list checking under shear https://pastel.hal.science/pastel-00664392/"""
+    #        zero = numba.float32(0.)
+    #        half = numba.float32(0.5)
+    #        one = numba.float32(1.0)
+    #        box_shift = sim_box[D]
+    #        dist_moved_sq = zero
 
 
-            strain_change = sim_box[D] - sim_box_last[D] # change in box-shift
-            strain_change += (sim_box[D+1] - sim_box_last[D+1]) * sim_box[0] # add contribution from box_shift_image
-            strain_change /= sim_box[1] # convert to (xy) strain
+    #        strain_change = sim_box[D] - sim_box_last[D] # change in box-shift
+    #        strain_change += (sim_box[D+1] - sim_box_last[D+1]) * sim_box[0] # add contribution from box_shift_image
+    #        strain_change /= sim_box[1] # convert to (xy) strain
 
 
-            # we will shift the x-component when the y-component is 'wrapped'
-            dr1 = r_current[1] - r_last[1]
-            box_1 = sim_box[1]
-            y_wrap = (one if dr1 > half*box_1 else
-                      -one if dr1 < -half*box_1 else zero)
+    #        # we will shift the x-component when the y-component is 'wrapped'
+    #        dr1 = r_current[1] - r_last[1]
+    #        box_1 = sim_box[1]
+    #        y_wrap = (one if dr1 > half*box_1 else
+    #                  -one if dr1 < -half*box_1 else zero)
 
-            x_shift = y_wrap * box_shift + (r_current[1] -
-                                            y_wrap*box_1) * strain_change
-            # see the expression in Chatoraj Ph.D. thesis. Adjusted here to
-            # take into account BC wrapping (otherwise would use the images
-            # ie unwrapped positions)
+    #        x_shift = y_wrap * box_shift + (r_current[1] -
+    #                                        y_wrap*box_1) * strain_change
+    #        # see the expression in Chatoraj Ph.D. thesis. Adjusted here to
+    #        # take into account BC wrapping (otherwise would use the images
+    #        # ie unwrapped positions)
 
-            for k in range(D):
-                dr_k = r_current[k] - r_last[k]
-                if k == 0:
-                    dr_k -= x_shift
-                box_k = sim_box[k]
-                dr_k += (-box_k if numba.float32(2.0) * dr_k > +box_k else
-                         (+box_k if numba.float32(2.0) * dr_k < -box_k else numba.float32(0.0)))
-                dist_moved_sq = dist_moved_sq + dr_k * dr_k
+    #        for k in range(D):
+    #            dr_k = r_current[k] - r_last[k]
+    #            if k == 0:
+    #                dr_k -= x_shift
+    #            box_k = sim_box[k]
+    #            dr_k += (-box_k if numba.float32(2.0) * dr_k > +box_k else
+    #                     (+box_k if numba.float32(2.0) * dr_k < -box_k else numba.float32(0.0)))
+    #            dist_moved_sq = dist_moved_sq + dr_k * dr_k
 
 
-            return dist_moved_sq
-        return dist_moved_sq_function
+    #        return dist_moved_sq
+    #    return dist_moved_sq_function
 
     def get_dist_moved_exceeds_limit_function(self):
         D = self.D
