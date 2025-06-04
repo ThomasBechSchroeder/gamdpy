@@ -11,7 +11,7 @@ import numba
 from numba import cuda
 from .simulationbox import SimulationBox
 
-class Orthorhombic():
+class Orthorhombic(SimulationBox):
     """ Standard rectangular simulation box class 
 
     Example
@@ -42,6 +42,7 @@ class Orthorhombic():
         """Generates function dist_sq_dr which computes displacement and distance squared for one neighbor """
         D = self.D
         def dist_sq_dr_function(ri, rj, sim_box, dr):  
+
             ''' Returns the squared distance between ri and rj applying MIC and saves ri-rj in dr '''
             dist_sq = numba.float32(0.0)
             for k in range(D):
@@ -127,7 +128,7 @@ class Orthorhombic():
 
         def dist_moved_exceeds_limit_function(r_current, r_last, sim_box, sim_box_last, skin, cut):
             """ Returns True if squared distance between r_current and r_last exceeds half skin.
-            Parameters sim_box_last and cut are not used here, but is needed for the Lees-Edwards type of Simbox"""
+            Parameters sim_box_last and cut are not used here, but are needed for the Lees-Edwards type of Simbox"""
             dist_sq = numba.float32(0.0)
             for k in range(D):
                 dr_k = r_current[k] - r_last[k]

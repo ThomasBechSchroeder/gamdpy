@@ -77,6 +77,7 @@ class LeesEdwards(SimulationBox):
         D = self.D
 
         def dist_sq_dr_function(ri, rj, sim_box, dr):  
+            ''' Returns the squared distance between ri and rj applying MIC and saves ri-rj in dr '''
             box_shift = sim_box[D]
             for k in range(D):
                 dr[k] = ri[k] - rj[k]
@@ -100,6 +101,7 @@ class LeesEdwards(SimulationBox):
 
         D = self.D
         def dist_sq_function(ri, rj, sim_box):  
+            ''' Returns the squared distance between ri and rj applying MIC'''
             box_shift = sim_box[D]
             dist_sq = numba.float32(0.0)
 
@@ -165,7 +167,6 @@ class LeesEdwards(SimulationBox):
     #def get_dist_moved_sq_function(self):
     #    D = self.D
     #    def dist_moved_sq_function(r_current, r_last, sim_box, sim_box_last):
-    #        """ See Chattoraj PhD thesis for criterion for neighbor list checking under shear https://pastel.hal.science/pastel-00664392/"""
     #        zero = numba.float32(0.)
     #        half = numba.float32(0.5)
     #        one = numba.float32(1.0)
@@ -207,6 +208,10 @@ class LeesEdwards(SimulationBox):
         D = self.D
 
         def dist_moved_exceeds_limit_function(r_current, r_last, sim_box, sim_box_last, skin, cut):
+            """
+            Returns true if the distance moved since last neighbor-list update exceeds half the skin, taking the change in box-shift into account
+            See Chattoraj PhD thesis for criterion for neighbor list checking under shear https://pastel.hal.science/pastel-00664392/
+            """
             zero = numba.float32(0.)
             half = numba.float32(0.5)
             one = numba.float32(1.0)
