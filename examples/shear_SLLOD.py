@@ -118,7 +118,7 @@ N = configuration.N
 u, k, sxy = U/N,K/N, V_sxy / configuration.get_volume()
 
 # alternative (newer way) to get the shear stress
-full_stress_tensor = gp.extract_stress_tensor(sim_SLLOD.output)
+full_stress_tensor = gp.StressSaver.extract(sim_SLLOD.output)
 sxy_alt = full_stress_tensor[:,0,1]
 
 times = np.arange(len(u)) * sc_output *  dt

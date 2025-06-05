@@ -55,7 +55,8 @@ def test_SLLOD(run_NVT=False):
     configuration.set_kinetic_temperature(temperature, ndofs=configuration.N*3-4) # remove one DOF due to constraint on total KE
 
     runtime_actions = [gp.MomentumReset(100), 
-                   gp.TrajectorySaver(include_simbox=True), 
+                   gp.TrajectorySaver(include_simbox=True),
+                   gp.StressSaver(sc_output),
                    gp.ScalarSaver(sc_output, {'stresses':True}), ]
 
     # Setup Simulation. Total number of timesteps: num_blocks * steps_per_block
@@ -72,11 +73,17 @@ def test_SLLOD(run_NVT=False):
         print(f'box-shift={box_shift:.4f}, strain = {box_shift/lengths[1]:.4f}')
     print(sim_SLLOD.summary())
 
-    sxy = gp.extract_scalars(sim_SLLOD.output, ['Sxy'])/configuration.get_volume()
+    sxy = gp.StressSaver.extract(sim_SLLOD.output)[:,0,1]
     sxy_mean = np.mean(sxy)
     print(f'{sr:.2g} {sxy_mean:.6f}')
     assert (np.isclose(sxy_mean, 2.71, atol=0.005 ))
     assert(np.isclose(pairpot.nblist.d_nbflag[2], 49, atol=1))
+
+    #sxy_sc = gp.extract_scalars(sim_SLLOD.output, ['Sxy'])/configuration.get_volume()
+    #sxy_mean_sc = np.mean(sxy)
+    #assert (np.isclose(sxy_mean_sc, 2.71, atol=0.005 ))
+
+
 
 if __name__ == '__main__':
     test_SLLOD()

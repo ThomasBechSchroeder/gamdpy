@@ -240,10 +240,3 @@ class ScalarSaver(RuntimeAction):
         num_timeblock, saves_per_timeblock = h5file['scalar_saver']['scalars'][first_block:last_block,:,0].shape
         times_array = np.arange(0,num_timeblock*saves_per_timeblock, step=subsample)*h5file.attrs['dt']
         return times_array
-
-
-
-
-
-
-
