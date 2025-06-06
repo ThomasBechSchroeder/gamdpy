@@ -217,7 +217,7 @@ class ScalarSaver(RuntimeAction):
     def columns(h5file):
         return list(h5file['scalar_saver'].attrs['scalar_names'])
 
-    def extract(h5file, columns, per_particle=True, first_block=0, last_block=-1, subsample=1, function=None):
+    def extract(h5file, columns, per_particle=True, first_block=0, last_block=None, subsample=1, function=None):
         _, N, D = h5file['initial_configuration']['vectors'].shape
 
         h5grp = h5file['scalar_saver']
