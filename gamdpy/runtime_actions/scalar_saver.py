@@ -12,13 +12,15 @@ class ScalarSaver(RuntimeAction):
     every `steps_between_output` time steps.
     """
 
-    def __init__(self, steps_between_output:int = 16, compute_flags = None, verbose=False) -> None:
+    def __init__(self, steps_between_output:int = 16, compute_flags = None, verbose=False, compression="gzip", compression_opts=4) -> None:
 
         if type(steps_between_output) != int or steps_between_output < 0:
             raise ValueError(f'steps_between_output ({steps_between_output}) should be non-negative integer.')
         self.steps_between_output = steps_between_output
 
         self.compute_flags = compute_flags
+        self.compression = compression
+        self.compression_opts = compression_opts
 
     def get_compute_flags(self):
         return self.compute_flags
@@ -66,9 +68,8 @@ class ScalarSaver(RuntimeAction):
             del output['scalar_saver']
         grp = output.create_group('scalar_saver')
         output.create_dataset('scalar_saver/scalars', shape=shape,
-                chunks=(1, self.scalar_saves_per_block, self.num_scalars), dtype=np.float32)
-        #grp.create_dataset('scalars', shape=shape,
-        #        chunks=(1, self.scalar_saves_per_block, self.num_scalars), dtype=np.float32)
+                chunks=(1, self.scalar_saves_per_block, self.num_scalars), 
+                dtype=np.float32, compression=self.compression, compression_opts=self.compression_opts)
         grp.attrs['steps_between_output'] = self.steps_between_output
         grp.attrs['scalar_names'] = list(self.sid.keys())
 

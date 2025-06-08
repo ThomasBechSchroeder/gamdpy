@@ -12,10 +12,12 @@ class TrajectorySaver(RuntimeAction):
     Does logarithmic saving.
     """
 
-    def __init__(self, include_simbox=False, verbose=False) -> None:
+    def __init__(self, include_simbox=False, verbose=False, compression="gzip", compression_opts=4) -> None:
 
         self.include_simbox = include_simbox
         self.num_vectors = 2  # 'r' and 'r_im' (for now!)
+        self.compression = compression
+        self.compression_opts = compression_opts
         #self.sid = {"r":0, "r_im":1}
 
     def setup(self, configuration, num_timeblocks: int, steps_per_timeblock: int, output, verbose=False) -> None:
@@ -41,11 +43,11 @@ class TrajectorySaver(RuntimeAction):
         output.create_dataset('trajectory_saver/positions', 
                               shape=(self.num_timeblocks, self.conf_per_block, self.configuration.N, self.configuration.D),
                               chunks=(1, 1, self.configuration.N, self.configuration.D), 
-                              dtype=np.float32)
+                              dtype=np.float32, compression=self.compression, compression_opts=self.compression_opts)
         output.create_dataset('trajectory_saver/images', 
                               shape=(self.num_timeblocks, self.conf_per_block, self.configuration.N, self.configuration.D),
                               chunks=(1, 1, self.configuration.N, self.configuration.D), 
-                              dtype=np.int32)
+                              dtype=np.int32,  compression=self.compression, compression_opts=self.compression_opts)
         #output.attrs['vectors_names'] = list(self.sid.keys())
         if self.include_simbox:
             if 'sim_box' in output['trajectory_saver'].keys():
