@@ -4,6 +4,12 @@ import matplotlib.pyplot as plt
 import gamdpy as gp
 from object_lib import pairpot_LJ as pair_potential
 
+# The following environment variable fixes a warning appearing during testing
+# The warning appears when the tbb library is installed with conda
+# https://github.com/numba/numba/issues/6350
+import os
+os.environ['NUMBA_THREADING_LAYER']='omp'
+
 def test_structure_factor():
     # verbose = False
     # plot = False
@@ -197,5 +203,6 @@ def test_structure_factor_gpu():
 if __name__ == '__main__':  # pragma: no cover
     test_structure_factor()
     test_structure_factor_backends()
+    test_atomic_form_factors()
     test_structure_factor_gpu()
 
