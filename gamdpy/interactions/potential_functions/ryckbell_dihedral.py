@@ -5,20 +5,21 @@ from numba import cuda
 
 
 def ryckbell_dihedral(dihedral, params):
-    """ Ryckert-Bellemans  potential
+    """ Ryckert-Bellemans potential
 
     .. math::
-        u(\\phi) = \sum_{n=0}^5 p_n \\cos^n(phi) 
+
+        u(\\phi) = \\sum_{n=0}^5 p_n \\cos^n(phi) 
 
     Parameters
     ----------
-        dihedral: Current dihedral
-        params: Parameter array 
+    dihedral: Current dihedral
+    params: Parameter array 
     
     Returns
     -------
-        u: Potential energy
-        f: Force multiplier
+    u: Potential energy
+    f: Force multiplier
     """
     
     cos_dihedral = math.cos(math.pi - dihedral)
