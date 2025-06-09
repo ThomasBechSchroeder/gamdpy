@@ -121,6 +121,16 @@ class ScalarSaver(RuntimeAction):
         pb, tp, gridsync = [compute_plan[key] for key in ['pb', 'tp', 'gridsync']] 
         num_blocks = (num_part - 1) // pb + 1
         
+#        print(configuration.compute_flags)
+#        for key in configuration.compute_flags.keys():
+#            if key == "stresses" and configuration.compute_flags[key]:
+#                sx_id = configuration.vectors.indices['sx']
+#            elif configuration.compute_flags[key]:
+#                print(key, configuration.compute_flags[key], f'{key}_id', self.sid[key], f'compute_{key}')
+#                globals()[f'compute_{key}'] = configuration.compute_flags[key]
+#                globals()[f'{key}_id'] = self.sid[key]
+#        print(compute_U)
+
         compute_u = configuration.compute_flags['U']
         compute_w = configuration.compute_flags['W']
         compute_lap = configuration.compute_flags['lapU']
