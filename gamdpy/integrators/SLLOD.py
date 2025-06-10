@@ -6,13 +6,6 @@ import math
 from .integrator import Integrator
 
 
-## TO DO LIST FOR SLLOD (including LEBCs)
-# 1. implement gridsync=False case and check that it runs DONE 20/6
-# 2. Check conservation of KE DONE 25/6
-# 3. Figure out how to run the initialization kernel separately DONE 24/6
-# 4. Correct check of whether nb list needs to be built DONE 12/8
-# 5. Update images when box shift gets wrapped
-# 6. Save box-shift
 
 class SLLOD(Integrator):
     """ The SLLOD integrator
@@ -221,10 +214,7 @@ class SLLOD(Integrator):
                     my_v[k] = numba.float32(g_factor * my_v[k])
 
                 # update position and apply boundary conditions
-                my_r[0] += sr*dt*my_r[1] # rumd-3 has another term which seems to be incorrect (!)
-                # Here is the alternative version (DEBUG)
-                #my_r[0] += (my_v[0] + numba.float32(0.5) * sr*dt*my_v[1])  * dt
-                #for k in range(1, D): # DEBUG, was range(D)
+                my_r[0] += sr*dt*my_r[1]
                 for k in range(D):
                     my_r[k] += my_v[k] * dt
 
@@ -266,9 +256,6 @@ class SLLOD(Integrator):
                 integrate_sllod_b2(grid, vectors, scalars, integrator_params, time)
                 grid.sync()
                 call_update_box_shift(sim_box, integrator_params)
-                # need to apply wrap to images!
-                # (alternatively store an extra integer with the box to count
-                # how many times it's been wrapped)
                 grid.sync()
                 integrate_sllod_a_b1(grid, vectors, scalars, r_im, sim_box, integrator_params, time)
                 return
@@ -278,9 +265,6 @@ class SLLOD(Integrator):
                 integrate_sllod_b1[num_blocks, (pb, 1)](grid, vectors, scalars, integrator_params, time)
                 integrate_sllod_b2[num_blocks, (pb, 1)](grid, vectors, scalars, integrator_params, time)
                 call_update_box_shift[1, (1, 1)](sim_box, integrator_params)
-                # need to apply wrap to images!
-                # (alternatively store an extra integer with the box to count
-                # how many times it's been wrapped)
                 integrate_sllod_a_b1[num_blocks, (pb, 1)](grid, vectors, scalars, r_im, sim_box, integrator_params, time)
                 return
 
