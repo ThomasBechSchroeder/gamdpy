@@ -20,7 +20,10 @@ class ScalarSaver(RuntimeAction):
 
         self.compute_flags = compute_flags
         self.compression = compression
-        self.compression_opts = compression_opts
+        if self.compression == 'gzip':
+            self.compression_opts = compression_opts
+        else:
+            self.compression_opts = None
 
     def get_compute_flags(self):
         return self.compute_flags
@@ -66,12 +69,17 @@ class ScalarSaver(RuntimeAction):
         shape = (self.num_timeblocks, self.scalar_saves_per_block, self.num_scalars)
         if 'scalar_saver' in output.keys():
             del output['scalar_saver']
-        grp = output.create_group('scalar_saver')
+        output.create_group('scalar_saver')
+
+        # Compression has a different syntax depending if is gzip or not because gzip can have also a compression_opts
+        # it is possible to use compression=None for not compressing the data
         output.create_dataset('scalar_saver/scalars', shape=shape,
-                chunks=(1, self.scalar_saves_per_block, self.num_scalars), 
+                chunks=(1, self.scalar_saves_per_block, self.num_scalars),
                 dtype=np.float32, compression=self.compression, compression_opts=self.compression_opts)
-        grp.attrs['steps_between_output'] = self.steps_between_output
-        grp.attrs['scalar_names'] = list(self.sid.keys())
+        output['scalar_saver'].attrs['compression_info'] = f"{self.compression} with opts {self.compression_opts}"
+
+        output['scalar_saver'].attrs['steps_between_output'] = self.steps_between_output
+        output['scalar_saver'].attrs['scalar_names'] = list(self.sid.keys())
 
         flag = config.CUDA_LOW_OCCUPANCY_WARNINGS
         config.CUDA_LOW_OCCUPANCY_WARNINGS = False

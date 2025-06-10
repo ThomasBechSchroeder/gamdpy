@@ -62,8 +62,11 @@ def print_h5_attributes(obj, path="/"):
     Attributes at /initial_configuration/vectors:
         - vector_columns: ['r' 'v' 'f']
     Attributes at /scalar_saver/:
+        - compression_info: gzip with opts 4
         - scalar_names: ['U' 'W' 'K']
         - steps_between_output: 16
+    Attributes at /trajectory_saver/:
+        - compression_info: gzip with opts 4
 
     """
     # obj could be the File or a Group

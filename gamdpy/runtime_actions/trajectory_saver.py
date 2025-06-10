@@ -17,7 +17,10 @@ class TrajectorySaver(RuntimeAction):
         self.include_simbox = include_simbox
         self.num_vectors = 2  # 'r' and 'r_im' (for now!)
         self.compression = compression
-        self.compression_opts = compression_opts
+        if self.compression == 'gzip':
+            self.compression_opts = compression_opts
+        else:
+            self.compression_opts = None
         #self.sid = {"r":0, "r_im":1}
 
     def setup(self, configuration, num_timeblocks: int, steps_per_timeblock: int, output, verbose=False) -> None:
@@ -40,14 +43,19 @@ class TrajectorySaver(RuntimeAction):
         if 'trajectory_saver' in output.keys():
             del output['trajectory_saver']
         output.create_group('trajectory_saver')
-        output.create_dataset('trajectory_saver/positions', 
-                              shape=(self.num_timeblocks, self.conf_per_block, self.configuration.N, self.configuration.D),
-                              chunks=(1, 1, self.configuration.N, self.configuration.D), 
-                              dtype=np.float32, compression=self.compression, compression_opts=self.compression_opts)
-        output.create_dataset('trajectory_saver/images', 
-                              shape=(self.num_timeblocks, self.conf_per_block, self.configuration.N, self.configuration.D),
-                              chunks=(1, 1, self.configuration.N, self.configuration.D), 
-                              dtype=np.int32,  compression=self.compression, compression_opts=self.compression_opts)
+
+        # Compression has a different syntax depending if is gzip or not because gzip can have also a compression_opts
+        # it is possible to use compression=None for not compressing the data
+        output.create_dataset('trajectory_saver/positions',
+                shape=(self.num_timeblocks, self.conf_per_block, self.configuration.N, self.configuration.D),
+                chunks=(1, 1, self.configuration.N, self.configuration.D),
+                dtype=np.float32, compression=self.compression, compression_opts=self.compression_opts)
+        output.create_dataset('trajectory_saver/images',
+                shape=(self.num_timeblocks, self.conf_per_block, self.configuration.N, self.configuration.D),
+                chunks=(1, 1, self.configuration.N, self.configuration.D),
+                dtype=np.int32,  compression=self.compression, compression_opts=self.compression_opts)
+        output['trajectory_saver'].attrs['compression_info'] = f"{self.compression} with opts {self.compression_opts}"
+
         #output.attrs['vectors_names'] = list(self.sid.keys())
         if self.include_simbox:
             if 'sim_box' in output['trajectory_saver'].keys():
