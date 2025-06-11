@@ -129,6 +129,9 @@ class ScalarSaver(RuntimeAction):
         pb, tp, gridsync = [compute_plan[key] for key in ['pb', 'tp', 'gridsync']] 
         num_blocks = (num_part - 1) // pb + 1
         
+        # Below is three alternatives of how to unpack parameters for use in the kernel
+
+#        Alternative 1. Requires renaming of some variables
 #        print(configuration.compute_flags)
 #        for key in configuration.compute_flags.keys():
 #            if key == "stresses" and configuration.compute_flags[key]:
@@ -139,41 +142,54 @@ class ScalarSaver(RuntimeAction):
 #                globals()[f'{key}_id'] = self.sid[key]
 #        print(compute_U)
 
-        compute_u = configuration.compute_flags['U']
-        compute_w = configuration.compute_flags['W']
-        compute_lap = configuration.compute_flags['lapU']
-        compute_fsq = configuration.compute_flags['Fsq']
-        compute_k = configuration.compute_flags['K']
-        compute_vol = configuration.compute_flags['Vol']
-        compute_Ptot = configuration.compute_flags['Ptot']
-        compute_stresses = configuration.compute_flags['stresses']
+
+        # Alternative 2. 'None' used as index for scalars that are not there, and therefore shouldn't be used (kernel throws an getitem error)  
+        unpacked_compute_flags = [configuration.compute_flags[key] for key in ['U', 'W', 'lapU', 'Fsq', 'K', 'Vol', 'Ptot', 'stresses']]
+        compute_u, compute_w, compute_lap, compute_fsq, compute_k, compute_vol, compute_Ptot, compute_stresses = unpacked_compute_flags
+
+        unpacked_scalar_indicies = [self.sid.get(key, None) for key in ['U', 'W', 'lapU', 'Fsq', 'K', 'Vol', 'Px', 'Py', 'Pz', 'Sxy']]
+        u_id, w_id, lap_id, fsq_id, k_id, vol_id, Px_id, Py_id, Pz_id, Sxy_id = unpacked_scalar_indicies
+
+        # Original
+        #compute_u = configuration.compute_flags['U']
+        #compute_w = configuration.compute_flags['W']
+        #compute_lap = configuration.compute_flags['lapU']
+        #compute_fsq = configuration.compute_flags['Fsq']
+        #compute_k = configuration.compute_flags['K']
+        #compute_vol = configuration.compute_flags['Vol']
+        #compute_Ptot = configuration.compute_flags['Ptot']
+        #compute_stresses = configuration.compute_flags['stresses']
+        
+    
         # Unpack indices for scalars to be compiled into kernel
-        if compute_u:
-            u_id = self.sid['U']
+        #if compute_u:
+        #    u_id = self.sid['U']
 
-        if compute_k:
-            k_id = self.sid['K']
-        if compute_w:
-            w_id = self.sid['W']
+        #if compute_k:
+        #    k_id = self.sid['K']
+        #if compute_w:
+        #    w_id = self.sid['W']
 
-        if compute_fsq:
-            fsq_id = self.sid['Fsq']
+        #if compute_fsq:
+        #    fsq_id = self.sid['Fsq']
 
-        if compute_lap:
-            lap_id = self.sid['lapU']
+        #if compute_lap:
+        #    lap_id = self.sid['lapU']
 
-        if compute_vol:
-            vol_id = self.sid['Vol']
+        #if compute_vol:
+        #    vol_id = self.sid['Vol']
 
-        if compute_Ptot:
-            Px_id = self.sid['Px']
-            Py_id = self.sid['Py']
-            Pz_id = self.sid['Pz']
+        #if compute_Ptot:
+        #    Px_id = self.sid['Px']
+        #    Py_id = self.sid['Py']
+        #    Pz_id = self.sid['Pz']
 
-        if compute_stresses:
-            Sxy_id = self.sid['Sxy']
+        #if compute_stresses:
+        #    Sxy_id = self.sid['Sxy']
 
         m_id = configuration.sid['m']
+
+
         v_id = configuration.vectors.indices['v']
         if compute_stresses:
             sx_id = configuration.vectors.indices['sx']
