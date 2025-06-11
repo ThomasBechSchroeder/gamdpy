@@ -15,7 +15,7 @@ the (experienced) user can extend most aspect of the code, including new integra
 
 [Info for developers](info_for_developers.md)
 
-## Overall structure of the package
+## Overall structure of the package 
 
 ### 1. Configuration
 A class containing all relevant information about a configuration, including the simulation box (class sim_box). 
