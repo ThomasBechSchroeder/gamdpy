@@ -157,7 +157,21 @@ class TrajectorySaver(RuntimeAction):
             else:
                 conf_array, = conf_saver_params
 
+<<<<<<< HEAD
             flag, save_index = stepcheck_function(step)
+=======
+            Flag, save_index = self.time_scheduler.check_step(step)
+            # Flag = False
+            # if step == 0:
+            #     Flag = True
+            #     save_index = 0
+            # else:
+            #     b = np.int32(math.log2(np.float32(step)))
+            #     c = 2 ** b
+            #     if step == c:
+            #         Flag = True
+            #         save_index = b + 1
+>>>>>>> 65640d2 (Create TimeScheduler for TrajectorySaver)
 
             if flag:
                 global_id, my_t = cuda.grid(2)
