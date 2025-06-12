@@ -138,15 +138,27 @@ coverage report -m
 
 or `coverage html`.
 
-## Building documentation
+## Build Jupyter notebooks with tutorials
 
-To building the documentation using sphinx, https://www.sphinx-doc.org
-(needs `pip install myst_nb pydata_sphinx_theme`)
-
-Install the necessary packages:
+Jupyter Notebooks in the tutorial section of the documentation can be built with 
 
 ```sh
-pip install sphinx myst_nb pydata_sphinx_theme
+cd tutorials
+jupyter nbconvert --to notebook --execute --inplace my_first_simulation.ipynb
+jupyter nbconvert --to notebook --execute --inplace post_analysis.ipynb
+cd -
+```
+
+## Building documentation
+
+Heads-up: Build Jupyter notebooks with tutorials (see above), before building the documentation 
+This is not done automatically, since the readthedocs.org server does not support GPU's.
+
+The documentation is build using sphinx: https://www.sphinx-doc.org
+and needs additional packages. Install these with:
+
+```sh 
+pip install -r docs/requirements.txt
 ```
 
 Build documentation webpage:
@@ -170,20 +182,20 @@ make clean
 
 ## Make new release
 
-1. Update version number in gamdpy/__init__.py and pyproject.toml, x.y.z
-2. Test code
-3. Build notebooks (tutorials): (coomandline)
-4. Build documentation (se above)
-5. push code to github
-6. 'git tag  x.y.z'
-7. git push --tags
+1. Update version number in `gamdpy/__init__.py` and `pyproject.toml` to x.y.z
+2. Test code (see above)
+3. Build tutorial notebooks (see above)
+4. Build documentation (see above), and confirm that it looks great.
+5. Push code to github
+6. Make tag: `git tag  x.y.z`
+7. Push tag: `git push --tags`
 8. Goto github and make release (button in right panel)
 9. Add new version readthedocs (should be made automatic)
 10. Update on pypi (requires twine and build)
-    * rm dist/*
-    * python3 -m build --sdist
-    * python3 -m build --wheel
-    * twine upload dist/*  (asks for token)
-11. Update version number in gamdpy/__init__.py and pyproject.toml, x.y.(z+1)dev (or similar)
+    * `rm dist/*`
+    * `python3 -m build --sdist`
+    * `python3 -m build --wheel`
+    * `twine upload dist/*`  (asks for token)
+11. Update version number in `gamdpy/__init__.py` and `pyproject.toml`, x.y.(z+1)dev (or similar)
 
 
