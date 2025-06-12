@@ -170,7 +170,7 @@ make clean
 
 ## Make new release
 
-1. Update version number in gamdpy/__init__.py and pyproject.toml
+1. Update version number in gamdpy/__init__.py and pyproject.toml, x.y.z
 2. Test code
 3. Build notebooks (tutorials): (coomandline)
 4. Build documentation (se above)
@@ -184,5 +184,6 @@ make clean
     * python3 -m build --sdist
     * python3 -m build --wheel
     * twine upload dist/*  (asks for token)
+11. Update version number in gamdpy/__init__.py and pyproject.toml, x.y.(z+1)dev (or similar)
 
 
