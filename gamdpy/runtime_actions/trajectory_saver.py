@@ -6,23 +6,14 @@ from numba import cuda, config
 from .runtime_action import RuntimeAction
 
 #@numba.jit(nopython=True)    
-def check_step(step, steps):
-    Flag = False
-    save_index = ''#None
-    for i in range(len(steps)):
-        if step == steps[i]:
-            Flag = True
-            save_index = steps.index(step)
-            break
-    return Flag, save_index
+
 
 
 class TimeScheduler():
 
-    def __init__(self, schedule='log', **kwargs):
+    def __init__(self, schedule='log2', **kwargs):
 
         self.schedule = schedule
-        # to pass kwargs to other methods
         self._kwargs = kwargs
 
     def setup(self, stepmax):
@@ -34,29 +25,39 @@ class TimeScheduler():
         self.stepmax = stepmax
 
         # keywords specific to selected schedule
-        if self.schedule=='log':
+        if self.schedule=='log2':
             self.base = self._kwargs.get('base', 2.0)
-            self.steps = self._log_steps()
+            self.steps = self._steps_log()
+            self.stepcheck_func = numba.njit(self._get_stepcheck_log2())
+            # self.stepcheck_func = self._get_stepcheck_log()
+
+        elif self.schedule=='log':
+            self.base = self._kwargs.get('base', np.exp(1.0))
+            self.steps = self._steps_log()
+            self.stepcheck_func = numba.njit(self._get_stepcheck_log())
 
         elif self.schedule=='lin':
             self.npoints = self._kwargs.get('npoints', None)
             assert type(self.npoints)==int, 'Invalid number of points'
-            self.steps = self._lin_steps()
+            self.steps = self._steps_lin()
+            self.stepcheck_func = numba.njit(self._get_stepcheck_lin())
 
         elif self.schedule=='geom':
             self.npoints = self._kwargs.get('npoints', None)
             assert type(self.npoints)==int, 'Invalid number of points'
-            self.steps = self._geom_steps()
+            self.steps = self._steps_geom()
+            self.stepcheck_func = numba.njit(self._get_stepcheck_geom())
 
-        elif self.schedule=='custom':
-            self.steps = self._kwargs.get('steps', None)
-            assert self.steps is not None, 'Expected custom list of steps'
-            try:
-                self.steps = list(np.array(self.steps, dtype=np.int32))
-            except:
-                raise ValueError('Steps must be convertible to list')
+        # TODO: "... but never is probably better than RIGHT now"
+        # elif self.schedule=='custom':
+        #     self.steps = self._kwargs.get('steps', None)
+        #     assert self.steps is not None, 'Expected custom list of steps'
+        #     try:
+        #         self.steps = list(np.array(self.steps, dtype=np.int32))
+        #     except:
+        #         raise ValueError('Steps must be convertible to list')
 
-    def _log_steps(self):
+    def _steps_log(self):
         ii = 0
         steps = [np.int32(0)]
         while True:
@@ -66,14 +67,68 @@ class TimeScheduler():
             ii += 1
         if self.stepmax not in steps: steps.append(self.stepmax)
         return steps
+
+    def _steps_lin(self):
+        pass
+
+    def _steps_geom(self):
+        pass
+
+    def _get_stepcheck_log2(self):
+        def stepcheck(step):
+            Flag = False
+            if step == 0:
+                Flag = True
+                save_index = 0
+            else:
+                b = np.int32(math.log(np.float32(step)/math.log(2.0)))
+                c = 2 ** b
+                if step == c:
+                    Flag = True
+                    save_index = b + 1
+            return Flag, save_index
+        return stepcheck
+
+    # TODO: potential bug here
+    def _get_stepcheck_log(self):
+        base = self.base
+        def stepcheck(step):
+            Flag = False
+            if step == 0:
+                Flag = True
+                save_index = 0
+            else:
+                exponent = np.int32(math.log(np.float32(step)) / math.log(base))
+                c = np.int32(base ** exponent)
+                if abs(step-c)<1: # this is a potential bug
+                    Flag = True
+                    save_index = exponent + 1
+            return Flag, save_index
+        return stepcheck
+
+    def _get_stepcheck_lin(self):
+        # variables
+        def stepcheck(step):
+            if step == 0:
+                Flag = True
+                save_index = 0
+            else:
+                pass
+            return Flag, save_index
+        return stepcheck
+
+    def _get_stepcheck_geom(self):
+        # variables
+        def stepcheck(step):
+            if step == 0:
+                Flag = True
+                save_index = 0
+            else:
+                pass
+            return Flag, save_index
+        return stepcheck
     
-    def _lin_steps(self):
-        pass
-
-    def _geom_steps(self):
-        pass
-
-    # def check_step(self, step):
+    # def stepcheck(self, step):
     #     Flag = False
     #     save_index = ''#None
     #     if step in self.steps:
@@ -82,22 +137,34 @@ class TimeScheduler():
     #     return Flag, save_index
 
     # @numba.jit(nopython=True)    
-    # def check_step(step, steps):
+    # def stepcheck(step, steps):
     #     Flag = False
     #     save_index = ''#None
     #     if step in steps:
     #         Flag = True
     #         save_index = steps.index(step)
     #     return Flag, save_index
+
+    # def get_stepcheck(self):
+            
+    #     def stepcheck(step):
+    #         Flag = False
+    #         save_index = ''#None
+    #         for i in range(len(steps)):
+    #             if step == steps[i]:
+    #                 Flag = True
+    #                 save_index = steps.index(step)
+    #                 break
+    #         return Flag, save_index
     
     @property
     def nsaves(self):
         try:
             return len(self.steps)
         except AttributeError:
-            print('TimeScheduler was not able to setup steps to save')
+            print('TimeScheduler was not able to setup steps, probably setup() has not been called yet')
 
-    # def check_step_old(self, step):
+    # def stepcheck_old(self, step):
     #     Flag = False
     #     if step == 0:
     #         Flag = True
@@ -132,6 +199,13 @@ class TrajectorySaver(RuntimeAction):
         else:
             self.compression_opts = None
         #self.sid = {"r":0, "r_im":1}
+
+        if isinstance(scheduler, TimeScheduler):
+            # in this case the user must have set up the scheduler
+            self.time_scheduler = scheduler
+        else:
+            # fallback option is log, with base 2 handled by the scheduler
+            self.time_scheduler = TimeScheduler(schedule='log')
 
     def setup(self, configuration, num_timeblocks: int, steps_per_timeblock: int, output, verbose=False) -> None:
         self.configuration = configuration
@@ -249,23 +323,19 @@ class TrajectorySaver(RuntimeAction):
         # Unpack indices for scalars to be compiled into kernel  
         r_id, = [configuration.vectors.indices[key] for key in ['r', ]]
 
-        # TODO: here the steps MUST be passed to this kernel, but where is it called??
+        # get function to check steps in the kernel, already compiled
+        stepcheck_function = getattr(self.time_scheduler, 'stepcheck_func')
+        # stepcheck_function = numba.njit(self.time_scheduler._get_stepcheck_log())
+
         def kernel(grid, vectors, scalars, r_im, sim_box, step, conf_saver_params):
             if include_simbox:
                 conf_array, sim_box_output_array = conf_saver_params
             else:
                 conf_array, = conf_saver_params
 
-            # this can't possibly work 
-            #Flag, save_index = self.time_scheduler.check_step(step)
+            Flag, save_index = stepcheck_function(step)
 
-            # TODO: here steps is missing, but it should work
-            # for i in range(len(steps)):
-            #     if steps[i]==step:
-            #         Flag = True
-            #         save_index = i
-            #         break
-            Flag, save_index = False, 0
+            # Flag, save_index = False, 0
 
             # Flag = False
             # if step == 0:
