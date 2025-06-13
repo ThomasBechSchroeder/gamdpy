@@ -1,4 +1,9 @@
 """ The gamdpy main module """
+
+# Setting to make gamdpy run on google.colab:
+from numba import config
+config.CUDA_ENABLE_PYNVJITLINK = 1
+
 # Objects which are imported here will be in the main namespace and can be called are gamdpy.object
 # Objects which are imported in the __init__.py of subpackages are called as gamdpy.subpackage.object
 
