@@ -3,93 +3,7 @@ import numba
 from numba import cuda, config
 
 from .runtime_action import RuntimeAction
-<<<<<<< HEAD
 from .time_scheduler import Log2
-=======
-
-class TimeScheduler():
-
-    def __init__(self, schedule='log', **kwargs):
-
-        self.schedule = schedule
-        # to pass kwargs to other methods
-        self._kwargs = kwargs
-
-    def setup(self, stepmax):
-        """
-        This is necessary aside from __init__ because in TrajectorySaver
-        `steps_per_timeblock` is initialised only in a `setup` method
-        """
-        # `stepmax` is by construction the same as `steps_per_timeblock` in TrajectorySaver
-        self.stepmax = stepmax
-
-        # keywords specific to selected schedule
-        if self.schedule=='log':
-            self.base = self._kwargs.get('base', 2.0)
-            self.steps = self._log_steps()
-
-        elif self.schedule=='lin':
-            self.npoints = self._kwargs.get('npoints', None)
-            assert type(self.npoints)==int, 'Invalid number of points'
-            self.steps = self._lin_steps()
-
-        elif self.schedule=='geom':
-            self.npoints = self._kwargs.get('npoints', None)
-            assert type(self.npoints)==int, 'Invalid number of points'
-            self.steps = self._geom_steps()
-
-        elif self.schedule=='custom':
-            self.steps = self._kwargs.get('steps', None)
-            assert self.steps is not None, 'Expected custom list of steps'
-            try:
-                self.steps = list(np.array(self.steps, dtype=np.int32))
-            except:
-                raise ValueError('Steps must be convertible to list')
-
-    def _log_steps(self):
-        ii = 0
-        steps = [np.int32(0)]
-        while True:
-            step = np.int32(self.base**ii)
-            if step<=self.stepmax: steps.append(step)
-            else: break
-            ii += 1
-        if self.stepmax not in steps: steps.append(self.stepmax)
-        return steps
-    
-    def _lin_steps(self):
-        pass
-
-    def _geom_steps(self):
-        pass
-
-    def check_step(self, step):
-        Flag = False
-        if step in self.steps:
-            Flag = True
-            save_index = self.steps.index(step)
-        return Flag, save_index
-    
-    @property
-    def nsaves(self):
-        try:
-            return len(self.steps)
-        except AttributeError:
-            print('TimeScheduler was not able to setup steps to save')
-
-    # def check_step_old(self, step):
-    #     Flag = False
-    #     if step == 0:
-    #         Flag = True
-    #         save_index = 0
-    #     else:
-    #         b = np.int32(math.log2(np.float32(step)))
-    #         c = 2 ** b
-    #         if step == c:
-    #             Flag = True
-    #             save_index = b + 1
-    #     return Flag, save_index
->>>>>>> 4a42907 (Add steps as attribute in .h5 savefile)
 
 class TrajectorySaver(RuntimeAction):
     """ 
@@ -244,21 +158,7 @@ class TrajectorySaver(RuntimeAction):
             else:
                 conf_array, = conf_saver_params
 
-<<<<<<< HEAD
             flag, save_index = stepcheck_function(step)
-=======
-            Flag, save_index = self.time_scheduler.check_step(step)
-            # Flag = False
-            # if step == 0:
-            #     Flag = True
-            #     save_index = 0
-            # else:
-            #     b = np.int32(math.log2(np.float32(step)))
-            #     c = 2 ** b
-            #     if step == c:
-            #         Flag = True
-            #         save_index = b + 1
->>>>>>> 65640d2 (Create TimeScheduler for TrajectorySaver)
 
             if flag:
                 global_id, my_t = cuda.grid(2)
