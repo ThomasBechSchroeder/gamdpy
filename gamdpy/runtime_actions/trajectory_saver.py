@@ -5,6 +5,18 @@ from numba import cuda, config
 
 from .runtime_action import RuntimeAction
 
+#@numba.jit(nopython=True)    
+def check_step(step, steps):
+    Flag = False
+    save_index = ''#None
+    for i in range(len(steps)):
+        if step == steps[i]:
+            Flag = True
+            save_index = steps.index(step)
+            break
+    return Flag, save_index
+
+
 class TimeScheduler():
 
     def __init__(self, schedule='log', **kwargs):
@@ -61,12 +73,22 @@ class TimeScheduler():
     def _geom_steps(self):
         pass
 
-    def check_step(self, step):
-        Flag = False
-        if step in self.steps:
-            Flag = True
-            save_index = self.steps.index(step)
-        return Flag, save_index
+    # def check_step(self, step):
+    #     Flag = False
+    #     save_index = ''#None
+    #     if step in self.steps:
+    #         Flag = True
+    #         save_index = self.steps.index(step)
+    #     return Flag, save_index
+
+    # @numba.jit(nopython=True)    
+    # def check_step(step, steps):
+    #     Flag = False
+    #     save_index = ''#None
+    #     if step in steps:
+    #         Flag = True
+    #         save_index = steps.index(step)
+    #     return Flag, save_index
     
     @property
     def nsaves(self):
@@ -227,13 +249,24 @@ class TrajectorySaver(RuntimeAction):
         # Unpack indices for scalars to be compiled into kernel  
         r_id, = [configuration.vectors.indices[key] for key in ['r', ]]
 
+        # TODO: here the steps MUST be passed to this kernel, but where is it called??
         def kernel(grid, vectors, scalars, r_im, sim_box, step, conf_saver_params):
             if include_simbox:
                 conf_array, sim_box_output_array = conf_saver_params
             else:
                 conf_array, = conf_saver_params
 
-            Flag, save_index = self.time_scheduler.check_step(step)
+            # this can't possibly work 
+            #Flag, save_index = self.time_scheduler.check_step(step)
+
+            # TODO: here steps is missing, but it should work
+            # for i in range(len(steps)):
+            #     if steps[i]==step:
+            #         Flag = True
+            #         save_index = i
+            #         break
+            Flag, save_index = False, 0
+
             # Flag = False
             # if step == 0:
             #     Flag = True
