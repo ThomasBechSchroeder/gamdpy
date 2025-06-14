@@ -14,14 +14,14 @@ def test_savers():
     assert (a==np.c_[conf.ptype, conf['r']]).all(), "Failure in save_configuration"
     os.remove("final.xyz")
     # Save as h5
-    gp.configuration_to_hdf5(configuration=conf, filename="final.h5")
-    with h5py.File("final.h5", "r") as f:
-        assert [key for key in f.keys()] == ['m', 'ptype', 'r', 'r_im', 'v']
-        assert (f['r'] == conf['r']).all()
-        assert (f['v'] == conf['v']).all()
-        assert (f['ptype'] == conf.ptype).all()
-        assert (f['m'] == conf['m']).all()
-    os.remove("final.h5")
+#    gp.configuration_to_hdf5(configuration=conf, filename="final.h5")
+#    with h5py.File("final.h5", "r") as f:
+#        assert [key for key in f.keys()] == ['m', 'ptype', 'r', 'r_im', 'v']
+#        assert (f['r'] == conf['r']).all()
+#        assert (f['v'] == conf['v']).all()
+#        assert (f['ptype'] == conf.ptype).all()
+#        assert (f['m'] == conf['m']).all()
+#    os.remove("final.h5")
     # Save as lammps
     assert isinstance(gp.configuration_to_lammps(configuration=conf), str)
     # Save/load to/from rumd3

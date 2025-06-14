@@ -5,6 +5,7 @@ and Lees-Edwards boundary conditions. Runs one shear rate but easy to make a loo
 
 """
 import os
+import h5py
 import numpy as np
 import gamdpy as gp
 import matplotlib.pyplot as plt
@@ -57,10 +58,12 @@ if run_NVT:
         print(sim_NVT.status(per_particle=True))
 
     # save both in hdf5 and rumd-3 formats
-    gp.configuration_to_hdf5(configuration, 'LJ_cooled_0.70.h5')
+    with h5py.File('LJ_cooled_0.70.h5', 'w') as fout:
+        configuration.save(fout, "configuration")
 
 else:
-    configuration = gp.configuration_from_hdf5('LJ_cooled_0.70.h5', compute_flags={'stresses':True})
+    with h5py.File('LJ_cooled_0.70.h5', 'r') as fin:
+        configuration = Configuration.from_h5(fin, "configuration", compute_flags={'stresses':True})
 
 compute_plan = gp.get_default_compute_plan(configuration)
 compute_plan['gridsync'] = gridsync
