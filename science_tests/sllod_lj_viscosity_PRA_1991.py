@@ -153,9 +153,9 @@ print(f'{sr:.2g} {sxy_mean:.6f}+/- {2*error_on_mean_sts:.3f} {viscosity: .4f}+/-
 # 1. Error bar for one run DONE
 # 2. Loop over SR values
 # 3. Number and choice of SR values to get convincing check in reasonable time
-# 4. Include table of literature values with errors
+# 4. Include table of literature values with errors DONE
 # 5. Generate graph comparing.
-# 6. Figure out issue with committing reference_data 
+# 6. Figure out issue with committing reference_data  DONE
 
 #calc_rdf.save_average()
 
