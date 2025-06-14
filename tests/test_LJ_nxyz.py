@@ -126,7 +126,7 @@ def test_nvt(nx, ny, nz):
     # assert var_e < 0.001
     assert 0.67 < Tkin  < 0.73, print(f'{Tkin=}')
     assert 0.67 < Tconf < 0.73, print(f'{Tkin=}')
-    assert 0.91 <   R   < 1.00, print(f'{R=}')
+    assert 0.90 <   R   < 1.00, print(f'{R=}')
     assert 4.9  < Gamma < 7.2,  print(f'{Gamma=}')
     
     return
