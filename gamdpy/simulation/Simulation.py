@@ -132,16 +132,19 @@ class Simulation():
                 else:
                     compute_flags = runtime_action.get_compute_flags()
 
-        self.compute_flags = gp.get_default_compute_flags() # configuration.compute_flags
+        self.compute_flags = configuration.compute_flags
+        '''self.compute_flags = gp.get_default_compute_flags() # configuration.compute_flags
         if compute_flags is not None:
             # only keys present in the default are processed
             for k in compute_flags:
                 if k in self.compute_flags:
                     self.compute_flags[k] = compute_flags[k]
                 else:
-                    raise ValueError('Unknown key in compute_flags:%s' %k)
+                    raise ValueError('Unknown key in compute_flags:%s' %k)'''
         for k in self.compute_flags:
             if self.compute_flags[k] and not configuration.compute_flags[k]:
+                raise ValueError('compute_flags["%s]" set for Simulation but not in Configuration' % k)
+            if configuration.compute_flags[k] and not self.compute_flags[k]:
                 raise ValueError('compute_flags["%s]" set for Simulation but not in Configuration' % k)
 
         for runtime_action in self.runtime_actions:

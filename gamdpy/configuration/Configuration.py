@@ -80,16 +80,18 @@ class Configuration:
                           }
 
 
-    def __init__(self, D: int, N: int = None, type_names=None, compute_flags=None, ftype=np.float32, itype=np.int32) -> None:
+    def __init__(self, D: int, N: int = None, type_names=None, compute_flags: dict=get_default_compute_flags(), ftype=np.float32, itype=np.int32) -> None:
         self.D = D
         self.N = N
 
         self.type_names = type_names
         self.index_from_type_name = {}
+        self.compute_flags = compute_flags
+
         if type_names:
             for index, type_name in enumerate(type_names):
                 self.index_from_type_name[type_name] = index
-
+        '''
         self.compute_flags = get_default_compute_flags()
         if compute_flags != None:
             # only keys present in the default are processed
@@ -98,8 +100,20 @@ class Configuration:
                     self.compute_flags[k] = compute_flags[k]
                 else:
                     raise ValueError('Unknown key in compute_flags:%s' %k)
-
+        '''
+        # only keys present in the default are processed
+        default_compute_flags = get_default_compute_flags()
+        for k in default_compute_flags.keys():
+            if default_compute_flags[k]==True:          # if k is computed by default is activated in self.compute_flags()
+                self.compute_flags[k]=True
+            elif k not in self.compute_flags.keys():    # if k is not present in self.compute_flags.keys() is set to False
+                self.compute_flags[k]=False
+        for k in self.compute_flags.keys():             # check if the key k is an unknown key
+            if k in self.compute_flags.keys() and k not in default_compute_flags.keys():
+                raise ValueError('Unknown key in compute_flags:%s' %k)
+        
         self.vector_columns = ['r', 'v', 'f']  # Should be user modifiable
+        #if 'stresses' in self.compute_flags.keys() and self.compute_flags['stresses']:
         if self.compute_flags['stresses']:
             if self.D > 4:
                 raise ValueError("compute_flags['stresses'] should not be set for D>4")
@@ -457,7 +471,7 @@ class Configuration:
     # The following is equivalent to overloading in c++ : https://stackoverflow.com/questions/12179271/meaning-of-classmethod-and-staticmethod-for-beginner
     # cls stands for class, in this case the Configuration class
     @classmethod
-    def from_h5(cls, h5file: h5py.File, group_name: str, reset_images: bool=False, compute_flags: bool=None):
+    def from_h5(cls, h5file: h5py.File, group_name: str, reset_images: bool=False, compute_flags: dict=get_default_compute_flags()):
         """ Read a configuration from an open HDF5 file identified by group-name
 
         Parameters
@@ -471,7 +485,7 @@ class Configuration:
         reset_images : bool
             if True set the images to zero (default False)
 
-        compute_flags : bool
+        compute_flags : dict
             NOTE: still to be developed, should be possible to define compute flags from dictionary
             compute_flags defining what will be stored in the configuration (default None)
 
@@ -493,6 +507,10 @@ class Configuration:
 
         """
 
+        # Sanity
+        assert isinstance(h5file, h5py.File), "h5file is not an open h5 file"
+        assert isinstance(group_name, str), "group_name is not a str"
+        assert isinstance(compute_flags, dict), "compute_flags is not a dict"
 
         vectors_array = h5file[group_name]['vectors'][:]
         _, N, D = vectors_array.shape
@@ -599,7 +617,7 @@ def make_configuration_fcc(nx, ny, nz, rho, N=None):
     return configuration
 
 
-def replicate_molecules(molecule_dicts, num_molecules_each_type_list, safety_distance, random_rotations=True, compute_flags=None):
+def replicate_molecules(molecule_dicts, num_molecules_each_type_list, safety_distance, random_rotations=True, compute_flags: dict=get_default_compute_flags()):
     """ Construct a configuration containing different molecules, with the numbers of each type specified
 
         Parameters:
@@ -645,7 +663,6 @@ def replicate_molecules(molecule_dicts, num_molecules_each_type_list, safety_dis
 
     # shuffle molecule types randomly
     np.random.shuffle(mol_types)
-
 
     configuration = Configuration(D=D, N=total_num_particles, compute_flags=compute_flags)
     configuration.topology = replicate_topologies(mol_topology_list, num_molecules_each_type_list, mol_types, size_molecule_type_list)

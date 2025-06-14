@@ -5,11 +5,12 @@ and Lees-Edwards boundary conditions
 
 """
 
-
-
+import pytest
+@pytest.mark.gamdpy_cpu
 def test_SLLOD(run_NVT=False):
     from pathlib import Path
 
+    import h5py
     import numpy as np
     import matplotlib.pyplot as plt
 
@@ -28,7 +29,10 @@ def test_SLLOD(run_NVT=False):
     possible_file_paths = ['reference_data/conf_LJ_N2048_rho0.973_T0.700.h5', 'tests/reference_data/conf_LJ_N2048_rho0.973_T0.700.h5']
     for path in possible_file_paths:
         if Path(path).is_file():
-            configuration = gp.configuration_from_hdf5(path, compute_flags={'stresses':True})
+            with h5py.File(path, "r") as fin:
+                configuration = gp.Configuration.from_h5(fin, "configuration", compute_flags={'stresses':True, 'Vol':True})
+                print("configuration read using gp.Configuration.from_h5", configuration.compute_flags)
+                print(f"volume {configuration.get_volume()}")
             break
     if configuration is None:
         raise FileNotFoundError(f'Could not find configuration file in {possible_file_paths}')
@@ -46,7 +50,7 @@ def test_SLLOD(run_NVT=False):
     # Test get_kernel
     integrator_SLLOD.get_kernel(configuration=configuration,
                                 compute_plan = gp.get_default_compute_plan(configuration),
-                                compute_flags = gp.get_default_compute_flags(),
+                                compute_flags = configuration.compute_flags, #gp.get_default_compute_flags(),
                                 interactions_kernel=None,
                                 verbose=True)
 
@@ -54,10 +58,12 @@ def test_SLLOD(run_NVT=False):
     # temperature since SLLOD uses an isokinetic thermostat
     configuration.set_kinetic_temperature(temperature, ndofs=configuration.N*3-4) # remove one DOF due to constraint on total KE
 
-    runtime_actions = [gp.MomentumReset(100), 
+    print(configuration.simbox.data_array)
+    runtime_actions = [#gp.MomentumReset(100), 
                    gp.TrajectorySaver(include_simbox=True),
                    gp.StressSaver(sc_output),
                    gp.ScalarSaver(sc_output, {'stresses':True}), ]
+    print(f"volume {configuration.get_volume()}")
 
     # Setup Simulation. Total number of timesteps: num_blocks * steps_per_block
     sim_SLLOD = gp.Simulation(configuration, pairpot, integrator_SLLOD, runtime_actions,
@@ -72,12 +78,16 @@ def test_SLLOD(run_NVT=False):
         lengths = configuration.simbox.get_lengths()
         print(f'box-shift={box_shift:.4f}, strain = {box_shift/lengths[1]:.4f}')
     print(sim_SLLOD.summary())
+    #print('stress')
+    #print(sim_SLLOD.output['stress_saver/stress_tensor'][:])
+    #print('scalars')
+    #print(sim_SLLOD.output['scalar_saver/scalars'][:])
 
     sxy = gp.StressSaver.extract(sim_SLLOD.output)[:,0,1]
     sxy_mean = np.mean(sxy)
     print(f'{sr:.2g} {sxy_mean:.6f}')
-    assert (np.isclose(sxy_mean, 2.71, atol=0.005 ))
-    assert(np.isclose(pairpot.nblist.d_nbflag[2], 49, atol=1))
+    assert np.isclose(sxy_mean, 2.71, atol=0.005), f"sxy_mean should be 2.71 but is {sxy_mean}"
+    assert np.isclose(pairpot.nblist.d_nbflag[2], 49, atol=1), f"pairpot.nblist.d_nbflag[2] should be 49 but is {pairpot.nblist.d_nbflag[2]}"
 
     #sxy_sc = gp.extract_scalars(sim_SLLOD.output, ['Sxy'])/configuration.get_volume()
     #sxy_mean_sc = np.mean(sxy)
