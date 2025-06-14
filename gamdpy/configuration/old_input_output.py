@@ -60,7 +60,7 @@ def configuration_to_hdf5(configuration: Configuration, filename: str, meta_data
 '''
 
 
-def configuration_from_hdf5(filename: str, reset_images=False, compute_flags=None) -> Configuration:
+def configuration_from_hdf5(filename: str, reset_images=False, compute_flags=get_default_compute_flags()) -> Configuration:
     """ Read a configuration from a HDF5 file
 
     Parameters
@@ -238,7 +238,7 @@ def configuration_to_rumd3(configuration: Configuration, filename: str) -> None:
             f.write(line_out)
 
 
-def configuration_from_rumd3(filename: str, reset_images=False, compute_flags=None) -> Configuration:
+def configuration_from_rumd3(filename: str, reset_images=False, compute_flags=get_default_compute_flags()) -> Configuration:
     """ Read a configuration from a RUMD3 file 
 
     Parameters
