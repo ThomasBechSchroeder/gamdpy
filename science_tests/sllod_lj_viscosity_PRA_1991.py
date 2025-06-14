@@ -5,6 +5,7 @@ and Lees-Edwards boundary conditions. Runs one shear rate but easy to make a loo
 
 """
 import os
+import math
 import numpy as np
 import gamdpy as gp
 import matplotlib.pyplot as plt
@@ -25,7 +26,7 @@ start_temperature = 3.0
 target_temperature = 0.725
 gridsync = True
 
-direc = "reference_data"
+direc = "../tests/reference_data"
 conf_filename = direc + "/" + f'conf_LJ_N2048_rho{density:.4f}_{target_temperature:.4f}.h5'
 
 if run_NVT:
@@ -74,9 +75,8 @@ compute_plan = gp.get_default_compute_plan(configuration)
 compute_plan['gridsync'] = gridsync
 
 sc_output = 16
-
 dt = 0.005
-sr = 0.16 # results for different values shown in comments below.
+sr = 0.16
 
 
 configuration.simbox = gp.LeesEdwards(configuration.D, configuration.simbox.get_lengths())
@@ -92,7 +92,7 @@ totalStrain = 100.0
 steps_per_block = 4096
 total_steps = int(totalStrain / (sr*dt)) + 1
 num_blocks = total_steps // steps_per_block + 1
-strain_transient = 1.0 # how much of the output to ignore
+strain_transient = 1.0 # how much of the output to ignore (ie 1 corresponds to the first 100% of strain)
 num_steps_transient = int(strain_transient / (sr*dt) ) + 1
 
 
@@ -121,30 +121,61 @@ for block in sim_SLLOD.run_timeblocks():
 print(sim_SLLOD.summary())
 
 
-U, K, W, V_sxy = gp.extract_scalars(sim_SLLOD.output, ['U', 'K', 'W', 'Sxy'])
-N = configuration.N
-u, k, sxy = U/N,K/N, V_sxy / configuration.get_volume()
 
-# alternative (newer way) to get the shear stress
+
 full_stress_tensor = gp.StressSaver.extract(sim_SLLOD.output)
-sxy_alt = full_stress_tensor[:,0,1]
+sxy = full_stress_tensor[:,0,1]
 
-times = np.arange(len(u)) * sc_output *  dt
-#stacked_output = np.column_stack((times, u, k, sxy, sxy_alt))
-#np.savetxt('shear_run.txt', stacked_output, delimiter=' ', fmt='%f')
-
-
-
+times = np.arange(len(full_stress_tensor)) * sc_output *  dt
 strains = times * sr
+stacked_output = np.column_stack((times, sxy))
+np.savetxt('shear_run.txt', stacked_output, delimiter=' ', fmt='%f')
+
 
 num_items_transient = num_steps_transient // sc_output
 print(f'num_items_transient={num_items_transient}')
 sxy_SS = sxy[num_items_transient:]
 
 sxy_mean = np.mean(sxy_SS)
-print(f'{sr:.2g} {sxy_mean:.6f} {sxy_mean/sr: .4f}')
+sxy_var = np.var(sxy_SS, ddof=1)
+
+time_SS = (totalStrain - strain_transient) / sr
+t_corr = 0.3 # estimated visually (no fitting) from calculating autocorrelation of stress in xmgrace using data for SR 0.16.
+
+num_independent =  time_SS / t_corr
+error_on_mean_sts = math.sqrt(sxy_var/num_independent)
+viscosity = sxy_mean / sr
+error_on_visc = error_on_mean_sts/sr
+print('SR mean-stress viscosity; errors as two-sigma ie 95% confidence')
+print(f'{sr:.2g} {sxy_mean:.6f}+/- {2*error_on_mean_sts:.3f} {viscosity: .4f}+/-{2*error_on_visc:.4}')
+
+# TO DO
+# 1. Error bar for one run DONE
+# 2. Loop over SR values
+# 3. Number and choice of SR values to get convincing check in reasonable time
+# 4. Include table of literature values with errors
+# 5. Generate graph comparing.
+# 6. Figure out issue with committing reference_data 
 
 #calc_rdf.save_average()
+
+data_Ferrario_1991 = np.array([[0.0, 3.24, 0.04],
+                               [0.01, 3.20, 0.12],
+                               [0.05, 3.16, 0.05],
+                               [0.10, 3.13, 0.05],
+                               [0.15, 3.01, 0.04],
+                               [0.20, 2.88, 0.04],
+                               [0.25, 2.81, 0.03],
+                               [0.316, 2.67, 0.03],
+                               [0.6, 2.37, 0.02],
+                               [0.8, 2.22, 0.02],
+                               [1.0, 2.12, 0.01],
+                               [1.41, 1.95, 0.01],
+                               [1.73, 1.84, 0.01],
+                               [2.0, 1.76, 0.01]])
+plt.errorbar(data_Ferrario_1991[:,0],data_Ferrario_1991[:,1],data_Ferrario_1991[:,2])
+plt.show()
+
 
 # STRAINRATE VS MEAN STRESS
 # SR STS VIS [Run 2]
@@ -168,12 +199,6 @@ print(f'{sr:.2g} {sxy_mean:.6f} {sxy_mean/sr: .4f}')
 
 
 # for 0.01 it was 2 million steps
-
-# quadratic fit gives the following
-# -0.00083871 + 15.436 * x - 110.19*x^2
-
-# The small value of the stress at zero is consistent with zero
-# which is promising and we can read the Newtonian viscosity off as XXXX
 
 
 # Compare with Ferrario et al Phys. REv. A, 44, 6936 (1991)
