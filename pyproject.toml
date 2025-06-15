@@ -19,12 +19,11 @@ description = "GPU Accelerated Molecular Dynamics in Python "
 readme = "READMEpypi.md"
 requires-python = ">=3.10"
 dependencies = [
-    "hypothesis",
-    "matplotlib",
     "numpy",
     "numba",
-    "pandas",
     "h5py",
+    "pandas",
+    "matplotlib",
 ]
 license = "MIT AND (Apache-2.0 OR BSD-2-Clause)"
 license-files = ["LICENSE*"]
