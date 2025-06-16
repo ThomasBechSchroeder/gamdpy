@@ -9,6 +9,8 @@ the (experienced) user can extend most aspect of the code, including new integra
 
 [Installation](installation.md)
 
+[Tutorials](tutorials/README.md) Includes instructions on how to try out gamdpy on google.colab, by getting access to a NVIDIA GPU for free.
+
 [Examples](examples/README.md)
 
 [Benchmarks (preliminary)](benchmarks/README.md)
