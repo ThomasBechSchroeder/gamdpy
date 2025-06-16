@@ -154,8 +154,8 @@ for sr in sr_list:
     print(f'{sr:.2g} {sxy_mean:.6f}+/- {2*error_on_mean_sts:.3f} {viscosity: .4f}+/-{2*error_on_visc:.4}')
 
     sllod_results.append([sr, viscosity, error_on_visc])
-print("RESULTS")
-print(sllod_results)
+#print("RESULTS")
+#print(sllod_results)
 sllod_results = np.array(sllod_results)
 
 #calc_rdf.save_average()
