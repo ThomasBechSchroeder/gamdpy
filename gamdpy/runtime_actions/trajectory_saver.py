@@ -13,28 +13,33 @@ class TimeScheduler():
         self.schedule = schedule
         self._kwargs = kwargs
 
-    def _setup(self, stepmax):
+    def setup(self, stepmax, ntimeblocks):
         """
         This is necessary aside from __init__ because in TrajectorySaver
         `steps_per_timeblock` is initialised only in a `setup` method
         """
         # `stepmax` is by construction the same as `steps_per_timeblock` in TrajectorySaver
+        # it makes sense to keep it as an attribute since it may be needed in the future for other schedules
         self.stepmax = stepmax
+        self.ntimeblocks = ntimeblocks
 
-        # keywords specific to selected schedule
+        # no specific kwarg is required
         if self.schedule=='log2':
-            self.base = self._kwargs.get('base', 2.0)
             self.stepcheck_func = self._get_stepcheck_log2()
 
+        # `base` kwarg is required
         elif self.schedule=='log':
             self.base = self._kwargs.get('base', np.exp(1.0))
             self.stepcheck_func = self._get_stepcheck_log()
 
+        # `steps_between_output` kwarg is required
         elif self.schedule=='lin':
-            self.npoints = self._kwargs.get('npoints', None)
-            assert type(self.npoints)==int, 'Invalid number of points'
+            self.deltastep = self._kwargs.get('steps_between_output', None)
+            assert type(self.deltastep)==int, 'Invalid number of points'
             self.stepcheck_func = self._get_stepcheck_lin()
 
+        # TODO
+        # `npoints` kwarg is required
         elif self.schedule=='geom':
             self.npoints = self._kwargs.get('npoints', None)
             assert type(self.npoints)==int, 'Invalid number of points'
@@ -42,12 +47,10 @@ class TimeScheduler():
 
         # TODO: "... but never is probably better than RIGHT now"
         # elif self.schedule=='custom':
-        #     self.steps = self._kwargs.get('steps', None)
-        #     assert self.steps is not None, 'Expected custom list of steps'
-        #     try:
-        #         self.steps = list(np.array(self.steps, dtype=np.int32))
-        #     except:
-        #         raise ValueError('Steps must be convertible to list')
+        #     pass
+
+        self.steps = self._compute_steps()
+        self.stepsall = self._compute_stepsall()
 
     def _get_stepcheck_log2(self):
         def stepcheck(step):
@@ -82,15 +85,14 @@ class TimeScheduler():
             return Flag, save_index
         return stepcheck
 
-    # TODO
     def _get_stepcheck_lin(self):
-        # variables
+        deltastep = self.deltastep
         def stepcheck(step):
-            if step == 0:
+            Flag = False
+            save_index = -1 # this is for python calls of the function
+            if step%deltastep==0:
                 Flag = True
-                save_index = 0
-            else:
-                pass
+                save_index = step//deltastep
             return Flag, save_index
         return stepcheck
 
@@ -106,12 +108,11 @@ class TimeScheduler():
             return Flag, save_index
         return stepcheck
 
-    @property
-    def savesteps(self):
+    def _compute_steps(self):
         try:
             stepmax = self.stepmax
         except AttributeError:
-            print('TimeScheduler was not able to setup steps, probably _setup() has not been called yet')
+            print('probably setup() has not been called yet')
         steps = []
         for step in range(stepmax+1):
             Flag, _ = self.stepcheck_func(step)
@@ -119,12 +120,38 @@ class TimeScheduler():
         if stepmax not in steps: steps.append(stepmax)
         return steps
 
+    def _compute_stepsall(self):
+        try:
+            stepmax = self.stepmax
+            ntimeblocks = self.ntimeblocks
+        except AttributeError:
+            print('probably setup() has not been called yet')
+        steps = []
+        for step in range(stepmax+1):
+            Flag, _ = self.stepcheck_func(step)
+            if Flag: steps.append(step)
+        overallsteps = []
+        for i_block in range(ntimeblocks):
+            for step in steps:
+                overallstep = step+stepmax*i_block
+                overallsteps.append(overallstep)
+        if stepmax not in steps: 
+            overallsteps.append(stepmax*ntimeblocks)
+        return overallsteps
+
     @property
     def nsaves(self):
         try:
-            return len(self.savesteps)
+            return len(self.steps)
         except AttributeError:
-            print('TimeScheduler was not able to setup steps, probably _setup() has not been called yet')
+            print('probably setup() has not been called yet')
+
+    @property
+    def nsavesoverall(self):
+        try:
+            return len(self.stepsall)
+        except AttributeError:
+            print('probably setup() has not been called yet')
 
     # def stepcheck_old(self, step):
     #     Flag = False
@@ -162,12 +189,14 @@ class TrajectorySaver(RuntimeAction):
             self.compression_opts = None
         #self.sid = {"r":0, "r_im":1}
 
-        if isinstance(scheduler, TimeScheduler):
+        if isinstance(schedule, TimeScheduler):
             # in this case the user must have set up the scheduler
-            self.time_scheduler = scheduler
+            self.time_scheduler = schedule
+        elif schedule in ['log2', 'log', 'lin']:
+            # otherwise check if an option was given (specific kwargs must be passed here, if any)
+            self.time_scheduler = TimeScheduler(schedule=schedule, **kwargs)
         else:
-            # fallback option is log, with base 2 handled by the scheduler
-            self.time_scheduler = TimeScheduler(schedule='log')
+            raise ValueError('invalid choice for time schedule')
 
     def setup(self, configuration, num_timeblocks: int, steps_per_timeblock: int, output, verbose=False) -> None:
         self.configuration = configuration
@@ -182,7 +211,7 @@ class TrajectorySaver(RuntimeAction):
 
         # pass the number of steps to the scheduler
         # without this line the scheduler does nothing at all
-        self.time_scheduler._setup(stepmax=self.steps_per_timeblock)
+        self.time_scheduler.setup(stepmax=self.steps_per_timeblock, ntimeblocks=self.num_timeblocks)
 
         # both steps '0' and the last one are already counted by the scheduler
         self.conf_per_block = self.time_scheduler.nsaves# + 1 
@@ -209,7 +238,8 @@ class TrajectorySaver(RuntimeAction):
         output['trajectory_saver'].attrs['compression_info'] = f"{self.compression} with opts {self.compression_opts}"
 
         #output.attrs['vectors_names'] = list(self.sid.keys())
-        output.attrs['savesteps'] = self.time_scheduler.savesteps
+        output.attrs['steps'] = self.time_scheduler.steps
+        output.attrs['stepsall'] = self.time_scheduler.stepsall
         if self.include_simbox:
             if 'sim_box' in output['trajectory_saver'].keys():
                 del output['trajectory_saver/sim_box']
