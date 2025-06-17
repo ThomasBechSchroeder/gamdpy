@@ -7,6 +7,31 @@ from .runtime_action import RuntimeAction
 
 
 class TimeScheduler():
+    """
+    Class used to:
+        - define steps to save configuration at;
+        - get functions for the numba kernel to check whether to save.
+
+    An instance of TimeScheduler must be passed to TrajectorySaver, either explicitly or implicitly
+    (i.e. passing appropriate kewords to TrajectorySaver, that will create an instance of TimeScheduler).
+
+    Example:
+
+    ..code-block:: python
+        import gamdpy as gp
+        scheduler = gp.TimeScheduler(schedule='log', base=1.5)
+        runtime_actions = [gp.TrajectorySaver(scheduler=scheduler),]
+
+    alternatively
+
+    ..code-block:: python
+        import gamdpy as gp
+        runtime_actions = [gp.TrajectorySaver(schedule='log', base=1.5),]
+
+    See below for indications about kwargs for different schedules,
+    If no keyword or scheduler instance is passed to TrajectorySaver,
+    it falls back to a logarithmic schedule with base 2.
+    """
 
     def __init__(self, schedule='log2', **kwargs):
 
@@ -14,10 +39,9 @@ class TimeScheduler():
         self._kwargs = kwargs
 
     def setup(self, stepmax, ntimeblocks):
-        """
-        This is necessary aside from __init__ because in TrajectorySaver
-        `steps_per_timeblock` is initialised only in a `setup` method
-        """
+        # This is necessary aside from __init__ because in TrajectorySaver
+        # `steps_per_timeblock` is initialised only in a `setup` method
+
         # `stepmax` is by construction the same as `steps_per_timeblock` in TrajectorySaver
         # it makes sense to keep it as an attribute since it may be needed in the future for other schedules
         self.stepmax = stepmax
@@ -147,7 +171,7 @@ class TimeScheduler():
             print('probably setup() has not been called yet')
 
     @property
-    def nsavesoverall(self):
+    def nsavesall(self):
         try:
             return len(self.stepsall)
         except AttributeError:
@@ -196,7 +220,7 @@ class TrajectorySaver(RuntimeAction):
             # otherwise check if an option was given (specific kwargs must be passed here, if any)
             self.time_scheduler = TimeScheduler(schedule=schedule, **kwargs)
         else:
-            raise ValueError('invalid choice for time schedule')
+            raise ValueError('Invalid choice for time schedule')
 
     def setup(self, configuration, num_timeblocks: int, steps_per_timeblock: int, output, verbose=False) -> None:
         self.configuration = configuration
@@ -325,19 +349,6 @@ class TrajectorySaver(RuntimeAction):
                 conf_array, = conf_saver_params
 
             Flag, save_index = stepcheck_function(step)
-
-            # Flag, save_index = False, 0
-
-            # Flag = False
-            # if step == 0:
-            #     Flag = True
-            #     save_index = 0
-            # else:
-            #     b = np.int32(math.log2(np.float32(step)))
-            #     c = 2 ** b
-            #     if step == c:
-            #         Flag = True
-            #         save_index = b + 1
 
             if Flag:
                 global_id, my_t = cuda.grid(2)
