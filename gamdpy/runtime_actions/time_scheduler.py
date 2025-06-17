@@ -24,9 +24,9 @@ class TimeScheduler():
         import gamdpy as gp
         runtime_actions = [gp.TrajectorySaver(schedule='log', base=1.5),]
 
-    See below for indications about kwargs for different schedules,
-    If no keyword or scheduler instance is passed to TrajectorySaver,
-    it falls back to a logarithmic schedule with base 2.
+    See below for indications about kwargs for different schedules. If no keyword or scheduler instance 
+    is passed to TrajectorySaver, it falls back to a logarithmic schedule with base 2. The list 
+    `runtime_actions` must then be passed to a Simulation instance.
     """
 
     def __init__(self, schedule='log2', **kwargs):
