@@ -5,9 +5,6 @@ from numba import cuda, config
 
 from .runtime_action import RuntimeAction
 
-#@numba.jit(nopython=True)    
-
-
 
 class TimeScheduler():
 
@@ -16,7 +13,7 @@ class TimeScheduler():
         self.schedule = schedule
         self._kwargs = kwargs
 
-    def setup(self, stepmax):
+    def _setup(self, stepmax):
         """
         This is necessary aside from __init__ because in TrajectorySaver
         `steps_per_timeblock` is initialised only in a `setup` method
@@ -27,26 +24,26 @@ class TimeScheduler():
         # keywords specific to selected schedule
         if self.schedule=='log2':
             self.base = self._kwargs.get('base', 2.0)
-            self.steps = self._steps_log()
-            self.stepcheck_func = numba.njit(self._get_stepcheck_log2())
-            # self.stepcheck_func = self._get_stepcheck_log()
+            self.stepcheck_func = self._get_stepcheck_log2()
+            # self.steps = self._steps_log()
 
         elif self.schedule=='log':
             self.base = self._kwargs.get('base', np.exp(1.0))
-            self.steps = self._steps_log()
-            self.stepcheck_func = numba.njit(self._get_stepcheck_log())
+            self.stepcheck_func = self._get_stepcheck_log()
+            # self.steps = self._steps_log()
 
         elif self.schedule=='lin':
             self.npoints = self._kwargs.get('npoints', None)
             assert type(self.npoints)==int, 'Invalid number of points'
-            self.steps = self._steps_lin()
-            self.stepcheck_func = numba.njit(self._get_stepcheck_lin())
+            self.stepcheck_func = self._get_stepcheck_lin()
+            # self.steps = self._steps_lin()
 
         elif self.schedule=='geom':
             self.npoints = self._kwargs.get('npoints', None)
             assert type(self.npoints)==int, 'Invalid number of points'
-            self.steps = self._steps_geom()
-            self.stepcheck_func = numba.njit(self._get_stepcheck_geom())
+            self.stepcheck_func = self._get_stepcheck_geom()
+            # self.steps = self._steps_geom()
+
 
         # TODO: "... but never is probably better than RIGHT now"
         # elif self.schedule=='custom':
@@ -57,31 +54,33 @@ class TimeScheduler():
         #     except:
         #         raise ValueError('Steps must be convertible to list')
 
-    def _steps_log(self):
-        ii = 0
-        steps = [np.int32(0)]
-        while True:
-            step = np.int32(self.base**ii)
-            if step<=self.stepmax: steps.append(step)
-            else: break
-            ii += 1
-        if self.stepmax not in steps: steps.append(self.stepmax)
-        return steps
 
-    def _steps_lin(self):
-        pass
+    # def _steps_log(self):
+    #     ii = 0
+    #     steps = [np.int32(0)]
+    #     while True:
+    #         step = np.int32(self.base**ii)
+    #         if step<=self.stepmax: steps.append(step)
+    #         else: break
+    #         ii += 1
+    #     if self.stepmax not in steps: steps.append(self.stepmax)
+    #     return steps
 
-    def _steps_geom(self):
-        pass
+    # def _steps_lin(self):
+    #     pass
+
+    # def _steps_geom(self):
+    #     pass
 
     def _get_stepcheck_log2(self):
         def stepcheck(step):
             Flag = False
+            save_index = -1 # this is for python calls of the function
             if step == 0:
                 Flag = True
                 save_index = 0
             else:
-                b = np.int32(math.log(np.float32(step)/math.log(2.0)))
+                b = np.int32(math.log2(np.float32(step)))
                 c = 2 ** b
                 if step == c:
                     Flag = True
@@ -89,23 +88,24 @@ class TimeScheduler():
             return Flag, save_index
         return stepcheck
 
-    # TODO: potential bug here
     def _get_stepcheck_log(self):
         base = self.base
         def stepcheck(step):
             Flag = False
+            save_index = -1 # this is for python calls of the function
             if step == 0:
                 Flag = True
                 save_index = 0
             else:
                 exponent = np.int32(math.log(np.float32(step)) / math.log(base))
                 c = np.int32(base ** exponent)
-                if abs(step-c)<1: # this is a potential bug
+                if abs(step-c)==1: # this seems to be working
                     Flag = True
-                    save_index = exponent + 1
+                    save_index = exponent
             return Flag, save_index
         return stepcheck
 
+    # TODO
     def _get_stepcheck_lin(self):
         # variables
         def stepcheck(step):
@@ -117,6 +117,7 @@ class TimeScheduler():
             return Flag, save_index
         return stepcheck
 
+    # TODO
     def _get_stepcheck_geom(self):
         # variables
         def stepcheck(step):
@@ -156,13 +157,26 @@ class TimeScheduler():
     #                 save_index = steps.index(step)
     #                 break
     #         return Flag, save_index
-    
+
+    @property
+    def savesteps(self):
+        try:
+            stepmax = self.stepmax
+        except AttributeError:
+            print('TimeScheduler was not able to setup steps, probably _setup() has not been called yet')
+        steps = []
+        for step in range(stepmax+1):
+            Flag, _ = self.stepcheck_func(step)
+            if Flag: steps.append(step)
+        if stepmax not in steps: steps.append(stepmax)
+        return steps
+
     @property
     def nsaves(self):
         try:
-            return len(self.steps)
+            return len(self.savesteps)
         except AttributeError:
-            print('TimeScheduler was not able to setup steps, probably setup() has not been called yet')
+            print('TimeScheduler was not able to setup steps, probably _setup() has not been called yet')
 
     # def stepcheck_old(self, step):
     #     Flag = False
@@ -220,7 +234,7 @@ class TrajectorySaver(RuntimeAction):
 
         # pass the number of steps to the scheduler
         # without this line the scheduler does nothing at all
-        self.time_scheduler.setup(stepmax=self.steps_per_timeblock)
+        self.time_scheduler._setup(stepmax=self.steps_per_timeblock)
 
         # both steps '0' and the last one are already counted by the scheduler
         self.conf_per_block = self.time_scheduler.nsaves# + 1 
@@ -247,7 +261,7 @@ class TrajectorySaver(RuntimeAction):
         output['trajectory_saver'].attrs['compression_info'] = f"{self.compression} with opts {self.compression_opts}"
 
         #output.attrs['vectors_names'] = list(self.sid.keys())
-        output.attrs['steps'] = self.time_scheduler.steps
+        output.attrs['savesteps'] = self.time_scheduler.savesteps
         if self.include_simbox:
             if 'sim_box' in output['trajectory_saver'].keys():
                 del output['trajectory_saver/sim_box']
@@ -324,7 +338,7 @@ class TrajectorySaver(RuntimeAction):
         r_id, = [configuration.vectors.indices[key] for key in ['r', ]]
 
         # get function to check steps in the kernel, already compiled
-        stepcheck_function = getattr(self.time_scheduler, 'stepcheck_func')
+        stepcheck_function = numba.njit(getattr(self.time_scheduler, 'stepcheck_func'))
         # stepcheck_function = numba.njit(self.time_scheduler._get_stepcheck_log())
 
         def kernel(grid, vectors, scalars, r_im, sim_box, step, conf_saver_params):
