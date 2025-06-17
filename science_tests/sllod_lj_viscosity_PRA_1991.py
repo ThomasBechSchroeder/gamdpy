@@ -197,6 +197,7 @@ if success:
 else:
     print('FAIL')
 
+plt.figure(figsize=(8, 6))
 title = f' Science test ({filename}.py): SUCCESS\n'
 title += f'LJ fluid at triple point, N=2048, rho={density: .4f}, T={target_temperature:.4f} \n'
 title += 'Reference: PRA v44 6936 (1991), doi.org/10.1103/PhysRevA.44.6936'
@@ -207,8 +208,17 @@ plt.errorbar(sllod_results[:,0],sllod_results[:,1],sllod_results[:,2], label='Ga
 plt.xlabel('Strain rate')
 plt.ylabel('Viscosity')
 plt.legend()
-plt.show()
 
+
+filename = 'sllod_lj_viscosity_PRA_1991'
+plt.savefig('Data/'+filename+'.pdf')
+print(f"Wrote: {'Data/'+filename+'.pdf'}")
+
+plt.savefig('Data/'+filename+'.png')
+print(f"Wrote: {'Data/'+filename+'.png'}")
+
+if __name__ == "__main__":
+    plt.show()
 
 # Ferrario also used SLLOD to measure viscosity of the LJ fluid at different
 # strain rates. Same density, temperature, N, time step. Cutoff slightly
