@@ -73,7 +73,6 @@ class TrajectorySaver(RuntimeAction):
         output['trajectory_saver'].attrs['steps_per_timeblock'] = self.steps_per_timeblock
 
         #output.attrs['vectors_names'] = list(self.sid.keys())
-        output.attrs['steps'] = self.time_scheduler.steps
         if self.include_simbox:
             if 'sim_box' in output['trajectory_saver'].keys():
                 del output['trajectory_saver/sim_box']
