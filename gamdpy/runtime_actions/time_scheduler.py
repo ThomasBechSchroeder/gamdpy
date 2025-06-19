@@ -9,14 +9,14 @@ class TimeScheduler():
         - get functions for the numba kernel to check whether to save.
 
     An instance of TimeScheduler must be passed to TrajectorySaver, either explicitly or implicitly
-    (i.e. passing appropriate kewords to TrajectorySaver, that will create an instance of TimeScheduler).
+    (i.e. passing appropriate keywords to TrajectorySaver, that will create an instance of TimeScheduler).
 
     Example:
 
     ..code-block:: python
         import gamdpy as gp
         scheduler = gp.TimeScheduler(schedule='log', base=1.5)
-        runtime_actions = [gp.TrajectorySaver(scheduler=scheduler),]
+        runtime_actions = [gp.TrajectorySaver(schedule=scheduler),]
 
     alternatively
 
@@ -24,13 +24,14 @@ class TimeScheduler():
         import gamdpy as gp
         runtime_actions = [gp.TrajectorySaver(schedule='log', base=1.5),]
 
-    See below for indications about kwargs for different schedules. If no keyword or scheduler instance
-    is passed to TrajectorySaver, it falls back to a logarithmic schedule with base 2. The list
-    `runtime_actions` must then be passed to a Simulation instance.
+    See below for indications about kwargs required by different schedules. 
+    Default is 'log2', which does not require any arguments.
+    The list `runtime_actions` must then be passed to a Simulation instance.
     """
 
     def __init__(self, schedule='log2', **kwargs):
 
+        self.known_schedules = ['log2', 'log', 'lin', 'geom', 'custom']
         self.schedule = schedule
         self._kwargs = kwargs
 
@@ -42,8 +43,6 @@ class TimeScheduler():
         # it makes sense to keep it as an attribute since it may be needed in the future for other schedules
         self.stepmax = stepmax
         self.ntimeblocks = ntimeblocks
-
-        self.steps = np.arange(0, self.stepmax, dtype=int)
 
         # no specific kwarg is required
         if self.schedule=='log2':
@@ -78,9 +77,14 @@ class TimeScheduler():
             else:
                 raise TypeError("'npoints' is required for schedule 'geom'")
 
-        # TODO
+        # `steps` kwarg is required
         elif self.schedule=='custom':
-            pass
+            steps = self._kwargs.get('steps', None)
+            if steps is not None:
+                assert isinstance(steps, (list, np.array)), "'steps' must be 'list' or 'numpy.array'"
+                self.steps = np.unique(np.array(steps))
+            else:
+                raise TypeError("'steps' is required for schedule 'custom'")
 
         if self.schedule != 'log2':
             self.stepcheck_func = self._get_stepcheck()

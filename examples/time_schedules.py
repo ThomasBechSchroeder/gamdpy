@@ -48,7 +48,7 @@ Alternatively, if keyword arguments are passed to TrajectorySaver, it will
 automatically create and use an appropriate TimeScheduler instance. E.g.:
 
 ..code-block:: python
-        runtime_actions.append(gp.TrajectorySaver(shedule='log', base=1.5))
+        runtime_actions.append(gp.TrajectorySaver(schedule='log', base=1.5))
 """
 
 #############################################################################

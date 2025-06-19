@@ -31,7 +31,7 @@ class TrajectorySaver(RuntimeAction):
         if isinstance(schedule, TimeScheduler):
             # in this case the user must have set up the scheduler
             self.time_scheduler = schedule
-        elif schedule in ['log2', 'log', 'lin', 'geom']:
+        elif schedule in TimeScheduler().known_schedules:
             # otherwise check if an option was given (specific kwargs must be passed here, if any)
             self.time_scheduler = TimeScheduler(schedule=schedule, **kwargs)
         else:
