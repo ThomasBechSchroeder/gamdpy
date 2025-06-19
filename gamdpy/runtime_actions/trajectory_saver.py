@@ -75,10 +75,9 @@ class TrajectorySaver(RuntimeAction):
                 chunks=(1, 1, self.configuration.N, self.configuration.D),
                 dtype=np.int32,  compression=self.compression, compression_opts=self.compression_opts)
         output['trajectory_saver'].attrs['compression_info'] = f"{self.compression} with opts {self.compression_opts}"
+        output['trajectory_saver'].attrs['steps'] = self.time_scheduler.steps
 
         #output.attrs['vectors_names'] = list(self.sid.keys())
-        output.attrs['steps'] = self.time_scheduler.steps
-        # output.attrs['stepsall'] = self.time_scheduler.stepsall
         if self.include_simbox:
             if 'sim_box' in output['trajectory_saver'].keys():
                 del output['trajectory_saver/sim_box']
