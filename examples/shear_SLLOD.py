@@ -57,13 +57,13 @@ if run_NVT:
         print(block)
         print(sim_NVT.status(per_particle=True))
 
-    # save both in hdf5 and rumd-3 formats
+    # save both in hdf5 formats
     with h5py.File('LJ_cooled_0.70.h5', 'w') as fout:
         configuration.save(fout, "configuration")
 
 else:
     with h5py.File('LJ_cooled_0.70.h5', 'r') as fin:
-        configuration = Configuration.from_h5(fin, "configuration", compute_flags={'stresses':True})
+        configuration = gp.Configuration.from_h5(fin, "configuration", compute_flags={'stresses':True})
 
 compute_plan = gp.get_default_compute_plan(configuration)
 compute_plan['gridsync'] = gridsync
@@ -75,7 +75,7 @@ sc_output = 8
 
 
 dt = 0.01
-sr = 0.02 # restuls for different values shown in comments below. This value only takes 4 seconds to run so good for running as a test
+sr = 0.02 # results for different values shown in comments below. This value only takes 4 seconds to run so good for running as a test
 
 configuration.simbox = gp.LeesEdwards(configuration.D, configuration.simbox.get_lengths())
 
