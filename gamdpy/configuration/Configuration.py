@@ -512,21 +512,36 @@ class Configuration:
         assert isinstance(group_name, str), "group_name is not a str"
         assert isinstance(compute_flags, dict), "compute_flags is not a dict"
 
-        vectors_array = h5file[group_name]['vectors'][:]
-        _, N, D = vectors_array.shape
-        configuration = cls(D=D, N=N, compute_flags=compute_flags)
+        h5_vector_columns = h5file[group_name]['vectors'].attrs['vector_columns']
+        h5_scalar_columns = h5file[group_name]['scalars'].attrs['scalar_columns']
+        h5_vec_col_dict = {value: index for index, value in enumerate(h5_vector_columns)}
+        h5_sca_col_dict = {value: index for index, value in enumerate(h5_scalar_columns)}
 
-        configuration.vector_columns = h5file[group_name]['vectors'].attrs['vector_columns']
-        configuration.scalar_columns = h5file[group_name]['scalars'].attrs['scalar_columns']
-
-        configuration.ptype = h5file[group_name]['ptype'][:]
-
-        scalars_array = h5file[group_name]['scalars'][:]
-        configuration.scalars = scalars_array
-        configuration.vectors.array = vectors_array
-
+        h5_vectors_array = h5file[group_name]['vectors'][:]
+        h5_scalars_array = h5file[group_name]['scalars'][:]
         simbox_name = h5file[group_name].attrs['simbox_name']
         simbox_data = h5file[group_name].attrs['simbox_data']
+
+        _, N, D = h5_vectors_array.shape
+        configuration = cls(D=D, N=N, compute_flags=compute_flags)
+        configuration.ptype = h5file[group_name]['ptype'][:]
+
+        conf_vec_col_dict = {value: index for index, value in enumerate(configuration.vector_columns)}
+        conf_sca_col_dict = {value: index for index, value in enumerate(configuration.scalar_columns)}
+
+
+        # copy scalars where present in both places
+        for label in h5_scalar_columns:
+            if label in configuration.scalar_columns:
+                configuration.scalars[:, conf_sca_col_dict[label]] = h5_scalars_array[:,h5_sca_col_dict[label]]
+
+        # copy vectors where present in both places
+        for label in h5_vector_columns:
+            if label in configuration.vector_columns:
+                configuration.vectors.array[conf_vec_col_dict[label],:,:] = h5_vectors_array[h5_vec_col_dict[label],:,:]
+        #configuration.scalars = h5_scalars_array
+        #configuration.vectors.array = h5_vectors_array
+
 
         if simbox_name == 'Orthorhombic':
             configuration.simbox = Orthorhombic(D, simbox_data)
