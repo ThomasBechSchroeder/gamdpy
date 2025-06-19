@@ -54,7 +54,6 @@ class TimeScheduler():
         elif self.schedule=='log':
             self.base = self._kwargs.get('base', np.exp(1.0))
             self.steps = self._steps_log()
-            # self.stepcheck_func = self._get_stepcheck_log()
 
         # `steps_between_output` or `npoints` kwarg is required
         elif self.schedule=='lin':
@@ -68,7 +67,6 @@ class TimeScheduler():
                 self.steps = self._steps_lin(delta=False)
             else:
                 raise TypeError("'steps_between_output' or 'npoints' is required for schedule 'lin'")
-            # self.stepcheck_func = self._get_stepcheck_lin()
 
         # `npoints` kwarg is required
         elif self.schedule=='geom':
@@ -79,8 +77,6 @@ class TimeScheduler():
                 assert self.nsaves==self.npoints, 'Too many points, schedule distorsion; try fewer points'
             else:
                 raise TypeError("'npoints' is required for schedule 'geom'")
-                
-            # self.stepcheck_func = self._get_stepcheck_geom()
 
         # TODO
         elif self.schedule=='custom':
@@ -90,15 +86,6 @@ class TimeScheduler():
             self.stepcheck_func = self._get_stepcheck()
         else:
             self.stepcheck_func = self._get_stepcheck_log2()
-
-
-        # self.steps = self._compute_steps()
-        print(len(self.steps), self.steps)
-        # this is specific to 'geom' schedule
-        # if self.npoints is not None:
-        #     assert self.npoints==self.nsaves, 'Invalid npoints, try saving fewer points'
-        # # TODO: deprecate this
-        # self.stepsall = self._compute_stepsall()
 
     def _steps_log(self):
         steps = [0]
@@ -150,120 +137,16 @@ class TimeScheduler():
     
     def _get_stepcheck_log2(self):
         def stepcheck(step):
-            # flag = False
-            # save_index = -1 # this is for python calls of the function
             if step == 0:
-                # flag = True
-                # save_index = 0
                 return True, 0
             else:
                 b = np.int32(math.log2(np.float32(step)))
                 c = 2 ** b
                 if step==c:
-                    # flag = True
-                    # save_index = b + 1
                     return True, b+1
-            # return flag, save_index
             return False, -1
         return stepcheck
 
     @property
     def nsaves(self):
         return len(self.steps)
-
-    '''
-    def _get_stepcheck_log(self):
-        base = self.base
-        arr = self.steps
-        ls = list(self.steps)
-        tupl = tuple(self.steps)
-        print('hello')
-        def checkstep(step):
-            print(tupl[step])
-            # arr[0] +=  1
-            # print(arr[0])
-            if step==0 or step==1:
-                return True, step
-            prev_int = 1
-            current = 1.0
-            idx = 1
-            while True:
-                current *= base
-                curr_int = int(current)
-                if curr_int != prev_int:
-                    idx += 1
-                    if curr_int == step:
-                        return True, idx
-                    if curr_int > step:
-                        return False, -1
-                    prev_int = curr_int
-        return checkstep
-
-    def _get_stepcheck_lin(self):
-        deltastep = self.deltastep
-        def stepcheck(step):
-            # flag = False
-            # save_index = -1 # this is for python calls of the function
-            if step%deltastep==0:
-                # flag = True
-                # save_index = step//deltastep
-                return True, step//deltastep
-            return False, -1
-            # return flag, save_index
-        return stepcheck
-
-    def _get_stepcheck_geom(self):
-        nsteps = self.stepmax
-        npoints = self.npoints
-        def stepcheck(step):
-            if step==0:
-                return True, 0
-            xx = nsteps**(1.0/npoints)
-            for idx in range(1, npoints):
-                c = xx**(idx+1)-1
-                if step==int(c):
-                    return True, idx
-            return False, -1
-        return stepcheck
-    '''
-
-    # def _compute_steps(self):
-    #     try:
-    #         stepmax = self.stepmax
-    #     except AttributeError:
-    #         print('Error in steps computation; probably setup() has not been called yet')
-    #     steps = []
-    #     for step in range(stepmax+1):
-    #         flag, _ = self.stepcheck_func(step)
-    #         if flag: steps.append(step)
-    #     # if stepmax not in steps: steps.append(stepmax)
-    #     return steps
-
-    # # TODO: deprecate this
-    # def _compute_stepsall(self):
-    #     try:
-    #         stepmax = self.stepmax
-    #         ntimeblocks = self.ntimeblocks
-    #     except AttributeError:
-    #         print('probably setup() has not been called yet')
-    #     steps = []
-    #     for step in range(stepmax+1):
-    #         flag, _ = self.stepcheck_func(step)
-    #         if flag: steps.append(step)
-    #     overallsteps = []
-    #     for i_block in range(ntimeblocks):
-    #         for step in steps:
-    #             overallstep = step+stepmax*i_block
-    #             overallsteps.append(overallstep)
-    #     if stepmax not in steps:
-    #         overallsteps.append(stepmax*ntimeblocks)
-    #     return overallsteps
-
-
-    # @property
-    # def nsavesall(self):
-    #     try:
-    #         return len(self.stepsall)
-    #     except AttributeError:
-    #         print('probably setup() has not been called yet')
-
