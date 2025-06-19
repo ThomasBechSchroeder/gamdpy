@@ -31,7 +31,7 @@ class TrajectorySaver(RuntimeAction):
         if isinstance(schedule, TimeScheduler):
             # in this case the user must have set up the scheduler
             self.time_scheduler = schedule
-        elif schedule in ['log2', 'log', 'lin']:
+        elif schedule in ['log2', 'log', 'lin', 'geom']:
             # otherwise check if an option was given (specific kwargs must be passed here, if any)
             self.time_scheduler = TimeScheduler(schedule=schedule, **kwargs)
         else:
@@ -78,7 +78,7 @@ class TrajectorySaver(RuntimeAction):
 
         #output.attrs['vectors_names'] = list(self.sid.keys())
         output.attrs['steps'] = self.time_scheduler.steps
-        output.attrs['stepsall'] = self.time_scheduler.stepsall
+        # output.attrs['stepsall'] = self.time_scheduler.stepsall
         if self.include_simbox:
             if 'sim_box' in output['trajectory_saver'].keys():
                 del output['trajectory_saver/sim_box']
@@ -163,9 +163,9 @@ class TrajectorySaver(RuntimeAction):
             else:
                 conf_array, = conf_saver_params
 
-            Flag, save_index = stepcheck_function(step)
+            flag, save_index = stepcheck_function(step)
 
-            if Flag:
+            if flag:
                 global_id, my_t = cuda.grid(2)
                 if global_id < num_part and my_t == 0:
                     for k in range(D):
