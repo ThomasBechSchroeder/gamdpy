@@ -11,7 +11,8 @@ class NPT_Langevin(Integrator):
     r""" Constant NPT Langevin integrator with isotropic volume fluctuations.
 
     This integrator is a Leap-Frog implementation of the GJ-F Langevin equations of motion present
-    in Ref. [Grønbech2014b]_ .
+    in Ref. [Grønbech2014b]_. It is intended for an orthorhombic simulation box in any spatial dimention.
+
     Let :math:`f` be the conservative force field, :math:`\alpha` is a friction parameter, and
     :math:`\beta` be uncorrelated Gauss distributed noise:
     :math:`\langle \beta(t)\rangle=0` and :math:`\langle \beta(t)\beta(t')\rangle=2\alpha k_B T\delta(t-t')`
@@ -120,7 +121,7 @@ class NPT_Langevin(Integrator):
         d_barostat_state = cuda.to_device(barostat_state)
         barostatVirial = np.array([0.0], dtype=np.float32)
         d_barostatVirial = cuda.to_device(barostatVirial)
-        d_length_ratio = cuda.to_device(np.ones(3, dtype=np.float32))
+        d_length_ratio = cuda.to_device(np.ones(configuration.D, dtype=np.float32))
         return (dt, alpha, alpha_baro, mass_baro, # Needs to be compatible with unpacking in step() below
                 rng_states, d_barostat_state, d_barostatVirial, d_length_ratio)
     
@@ -167,18 +168,13 @@ class NPT_Langevin(Integrator):
         temperature_function = numba.njit(temperature_function)
         pressure_function = numba.njit(pressure_function)
         apply_PBC = numba.njit(configuration.simbox.get_apply_PBC())
+        # get_volume = numba.njit(configuration.simbox.get_volume)
 
 
         def copyParticleVirial(scalars, integrator_params):
             dt, alpha, alpha_baro, mass_baro, rng_states, barostat_state, barostatVirial, length_ratio  = integrator_params
             global_id, my_t = cuda.grid(2)
             my_w = scalars[global_id][w_id]
-
-            #reset the barostatVirial to zero 
-            #if global_id == 0 and my_t == 0:
-            #    barostatVirial[0] = numba.float32(0.0)
-            #                    # Not safe to set to zero like this! (moved to end of update_barostat_state)
-            #cuda.syncthreads()  # - particles in other blocks might allready have added their w
             
             if global_id < num_part and my_t == 0:
                 cuda.atomic.add(barostatVirial, 0, my_w)  # factor of 6 already accounted for using virial_factor and virial_factor_NIII
@@ -197,10 +193,15 @@ class NPT_Langevin(Integrator):
                 current_barostat_state = cuda.local.array(2, numba.float64)
                 current_barostat_state[0] = barostat_state[0]
                 current_barostat_state[1] = barostat_state[1]
-                
-                volume = sim_box[0]*sim_box[1]*sim_box[2]  # Fix to use simbox function
-                targetConfPressure = pressure - temperature * num_part / volume 
+
+                volume = numba.float32(1.0)
+                for k in range(D):  # Use simbox function
+                    volume *= sim_box[k]
+
+                targetConfPressure = pressure - temperature * num_part / volume
                 barostatForce = barostatVirial[0] / volume - targetConfPressure
+                # print('press', barostatVirial[0] / volume+temperature * num_part / volume)
+
 
                 random_number = xoroshiro128p_normal_float32(rng_states, 0)          # 0th random number state is reserved for barostat
                 barostatRandomForce = math.sqrt(numba.float32(2.0) * alpha_baro * temperature * dt) * random_number 
@@ -217,25 +218,19 @@ class NPT_Langevin(Integrator):
                 # Update the barostat state
                 barostat_state[0] = new_volume / volume 
                 barostat_state[1] = new_volume_vel
-
-                # reset length_ratio to 1.0. WHY?
-                for i in range(3):
-                    length_ratio[i] = numba.float64(1.0)
                 
                 vol_scale_factor = barostat_state[0]
-                lr_iso = math.pow(vol_scale_factor, numba.float64(1.0) / numba.float64(3.0))
+                scale_factor = math.pow(vol_scale_factor, numba.float64(1.0) / numba.float64(D))  # Changes needed for aniso
 
-                #update box length
-                sim_box[0] += sim_box[0] * (lr_iso - 1.) # Better: sim_box[0] = sim_box[0] * lr_iso ?
-                sim_box[1] += sim_box[1] * (lr_iso - 1.)
-                sim_box[2] += sim_box[2] * (lr_iso - 1.)
+                # update box length, assume Orthorhombic
+                for k in range(D):
+                    sim_box[k] = sim_box[k] * scale_factor
                 
-                # update length_ratio using cuda loop  
-                for i in range(3):
-                    length_ratio[i] = lr_iso
+                # update length_ratio using cuda loop
+                for k in range(D):
+                    length_ratio[k] = scale_factor
                 
                 barostatVirial[0] = numba.float32(0.0)
-                        
             return
 
     
