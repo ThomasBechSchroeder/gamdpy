@@ -8,43 +8,43 @@ import gamdpy as gp
 from .integrator import Integrator
 
 class NPT_Langevin(Integrator):
-    """ Constant NPT Langevin integrator with isotropic volume fluctuations.
+    r""" Constant NPT Langevin integrator with isotropic volume fluctuations.
 
     This integrator is a Leap-Frog implementation of the GJ-F Langevin equations of motion present
     in Ref. [Grønbech2014b]_ .
-    Let :math:`f` be the conservative force field, :math:`\\alpha` is a friction parameter, and
-    :math:`\\beta` be uncorrelated Gauss distributed noise:
-    :math:`\\langle \\beta(t)\\rangle=0` and :math:`\\langle \\beta(t)\\beta(t')\\rangle=2\\alpha k_B T\delta(t-t')`
+    Let :math:`f` be the conservative force field, :math:`\alpha` is a friction parameter, and
+    :math:`\beta` be uncorrelated Gauss distributed noise:
+    :math:`\langle \beta(t)\rangle=0` and :math:`\langle \beta(t)\beta(t')\rangle=2\alpha k_B T\delta(t-t')`
     where :math:`T` is the target temperature.
     The Langevin equation of motion for a given particle is
 
-    .. math:: m\ddot x = f - \\alpha \dot x + \\beta
+    .. math:: m\ddot x = f - \alpha \dot x + \beta
 
-    For choosing the :math:`\\alpha` parameters, it is instructive to note that a characteristic timescale is given by
+    For choosing the :math:`\alpha` parameters, it is instructive to note that a characteristic timescale is given by
 
-    .. math:: \\tau_T = m/\\alpha
+    .. math:: \tau_T = m/\alpha
 
     The (isotropic) equations of motions for the volume of the simulation box (:math:`V`) can similarly be written as
 
-    .. math:: Q\\ddot V = f_P - \\alpha_V \dot V + \\beta_V
+    .. math:: Q\ddot V = f_P - \alpha_V \dot V + \beta_V
 
-    Here, :math:`Q` is an inertial coefficient (a barostat mass), :math:`\\alpha_V` is another friction parameter,
-    :math:`\\beta_V` is Gauss distributed white noise, and :math:`f_P` is a "barostat force".
+    Here, :math:`Q` is an inertial coefficient (a barostat mass), :math:`\alpha_V` is another friction parameter,
+    :math:`\beta_V` is uncorrelated Gauss distributed noise, and :math:`f_P` is a "barostat force".
     Specifically, if :math:`W` is the (instantaneous) virial, then
 
-    .. math:: f_P = W + \\frac{Nk_B T}{V} - P
+    .. math:: f_P = W + \frac{Nk_B T}{V} - P
 
-    where :math:`P` is the target pressure. To set the barstat parameters :math:`Q` and :math:`\\alpha_V` it can be
+    where :math:`P` is the target pressure. To set the barstat parameters :math:`Q` and :math:`\alpha_V` it can be
     instructive to note that equations of motions for the volume resemble that of a damped harmonic oscillator.
     If :math:`K=-VdP/dV` is the bulk modulus of the system,
     then the "spring constant" of the oscillator is :math:`k=K/V`, then the natural frequency
-    is :math:`\omega_0=\sqrt{k/Q}` and damping ratio is :math:`\zeta=\\alpha_V/2\sqrt{Qk}`
+    is :math:`\omega_0=\sqrt{k/Q}` and damping ratio is :math:`\zeta=\alpha_V/2\sqrt{Qk}`
     (:math:`\zeta<1` for underdamped oscillation).
-    If a characteristic timescale is defined as :math:`\\tau_V\equiv 1/\omega_0`, then
+    If a characteristic timescale is defined as :math:`\tau_V\equiv 1/\omega_0`, then
 
-    .. math:: \\alpha_V = 2 K \\tau_v/V
+    .. math:: \alpha_V = 2 K \tau_v/V
 
-    .. math:: Q = K (\zeta \\tau_v)^2 / V
+    .. math:: Q = K (\zeta \tau_v)^2 / V
 
     Parameters
     ----------
@@ -55,12 +55,12 @@ class NPT_Langevin(Integrator):
         Target pressure, :math:`P`
 
     alpha : float
-        Friction coefficient of the thermostat, :math:`\\alpha`
+        Friction coefficient of the thermostat, :math:`\alpha`
 
-    alpha_baro : float
-        Friction coefficient of the barostat, :math:`\\alpha_V`
+    alpha_barostat : float
+        Friction coefficient of the barostat, :math:`\alpha_V`
 
-    mass_baro : float
+    mass_barostat : float
         Inertial coefficient (barostat mass), :math:`Q`
 
     dt : float
@@ -72,6 +72,24 @@ class NPT_Langevin(Integrator):
     seed : int
         seed for the (pseudo) random noise
 
+    Examples
+    --------
+
+    Example of setting parameters for the NPT langevin barostat (see above) in "Lennard-Jones like" reduced units.
+
+    >>> tau_T = 2.0
+    >>> tau_V = 8.0
+    >>> zeta = 0.2
+    >>> K = 100   # Replace with an estimate of the bulk modulus
+    >>> V = 1000  # Replace with an estimate of the average volume
+    >>> integrator = gp.NPT_Langevin(
+    ...    temperature=2.0,
+    ...    pressure=1.0,
+    ...    alpha=1/tau_T,
+    ...    alpha_barostat=2*K/tau_V/V,
+    ...    mass_barostat=K*(zeta*tau_V)**2/V,
+    ...    dt=0.004)
+
     Notes
     -----
 
@@ -82,12 +100,12 @@ class NPT_Langevin(Integrator):
 
     """
 
-    def __init__(self, temperature, pressure, alpha: float, alpha_baro: float, mass_baro: float, dt: float, volume_velocity = 0.0, seed = 0) -> None:
+    def __init__(self, temperature, pressure, alpha: float, alpha_barostat: float, mass_barostat: float, dt: float, volume_velocity = 0.0, seed = 0) -> None:
         self.temperature = temperature
         self.pressure = pressure
         self.alpha = alpha 
-        self.alpha_baro = alpha_baro 
-        self.mass_baro = mass_baro
+        self.alpha_barostat = alpha_barostat
+        self.mass_barostat = mass_barostat
         self.dt = dt
         self.volume_velocity = volume_velocity
         self.seed = seed
@@ -95,8 +113,8 @@ class NPT_Langevin(Integrator):
     def get_params(self, configuration: gp.Configuration, interactions_params: tuple, verbose=False) -> tuple:
         dt = np.float32(self.dt)
         alpha = np.float32(self.alpha)
-        alpha_baro = np.float32(self.alpha_baro)
-        mass_baro = np.float32(self.mass_baro)
+        alpha_baro = np.float32(self.alpha_barostat)
+        mass_baro = np.float32(self.mass_barostat)
         rng_states = create_xoroshiro128p_states(configuration.N+1, seed=self.seed) # +1 for barostat dynamics 
         barostat_state = np.array([1.0, self.volume_velocity], dtype=np.float64)       # [0] = new_vol / old_vol , [1] = vol velocity
         d_barostat_state = cuda.to_device(barostat_state)

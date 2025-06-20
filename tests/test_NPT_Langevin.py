@@ -8,8 +8,9 @@ def test_NPT_Langevin_isotropic(verbose=False, plot=False):
     configuration = gp.Configuration(D=3, compute_flags={'Vol':True})
     expected_volume_per_particle = 0.8835
     configuration.make_lattice(gp.unit_cells.FCC, cells=[8, 8, 8], rho=1/expected_volume_per_particle)
+    simbox: gp.Orthorhombic = configuration.simbox
     configuration['m'] = 1.0
-    configuration.randomize_velocities(temperature=2.0, seed=2025)
+    configuration.randomize_velocities(temperature=4.0, seed=2025)
 
     # Setup pair potential: Single component 12-6 Lennard-Jones
     pair_func = gp.apply_shifted_potential_cutoff(gp.LJ_12_6_sigma_epsilon)
@@ -18,14 +19,23 @@ def test_NPT_Langevin_isotropic(verbose=False, plot=False):
     interactions = [pair_pot, ]
 
     # Setup integrator
+    temperature = 2.0
+    tau_T = 2.0
+    tau_V = 8.0
+    zeta = 0.2
+    K = 120  # Estimate for the bulk modulus
+    V = float(simbox.get_volume())
+    if verbose:
+        print(f'alpha_V: {2*K/tau_V/V = }')
+        print(f'Q: {K*(zeta*tau_V)**2/V = }')
     integrator = gp.integrators.NPT_Langevin(
-        temperature=2.0,
+        temperature=temperature,
         pressure=22.007,
-        alpha=1.0,
-        alpha_baro=0.01,
-        mass_baro=1.0,
-        volume_velocity=0.0,
+        alpha=1/tau_T,
+        alpha_barostat=2 * K / tau_V / V,  # 0.01
+        mass_barostat=K * (zeta * tau_V) ** 2 / V,  # 1.0
         dt=0.004,
+        volume_velocity=0.0,
         seed=2025,
     )
 
@@ -34,8 +44,9 @@ def test_NPT_Langevin_isotropic(verbose=False, plot=False):
         gp.MomentumReset(steps_between_reset=100),
     ]
 
+    time_multiplyer = 1  # Increase for better statistics
     sim = gp.Simulation(configuration, interactions, integrator, runtime_actions,
-                        num_timeblocks=32, steps_per_timeblock=2048,
+                        num_timeblocks=32, steps_per_timeblock=2048*time_multiplyer,
                         storage='memory')
 
     initial_box_lengths = configuration.simbox.get_lengths()
@@ -47,9 +58,13 @@ def test_NPT_Langevin_isotropic(verbose=False, plot=False):
     # Production run
     for _ in sim.run_timeblocks():
         if verbose:
-            print(sim.status(per_particle=True), configuration.simbox.get_lengths())
+            print(
+                sim.status(per_particle=True),
+                configuration.simbox.get_lengths(),
+            )
 
     final_box_lengths = configuration.simbox.get_lengths()
+
     if verbose:
         print(f"Final box lengths:   {final_box_lengths}")
         print(sim.configuration['r'])
@@ -80,13 +95,17 @@ def test_NPT_Langevin_isotropic(verbose=False, plot=False):
 
     volume_per_particle_mean = float(np.mean(Vol/configuration.N))
     volume_per_particle_std = float(np.std(Vol/configuration.N))
-    expected_std = 0.005
+    expected_std = 0.0027
 
     if verbose:
         print(f"Volume per particle mean: {volume_per_particle_mean = }")
         print(f"Expected volume per particle: {expected_volume_per_particle = }")
         print(f"Standard deviation of volume per particle: {volume_per_particle_std = }")
         print(f"Expected standard deviation of volume per particle: {expected_std = }")
+        K_T = float(temperature * np.mean(Vol) / np.std(Vol) ** 2)
+        print(f'Computed bulk modulus: {K_T = }')
+        K_T_expected = 120
+        print(f'Expected bulk modulus: {K_T_expected = }')
 
     assert np.isclose(volume_per_particle_mean, expected_volume_per_particle, atol=0.05), "Wrong volume per particle"
     assert np.isclose(volume_per_particle_std, expected_std, atol=0.002), "Wrong standard deviation of volume per particle"

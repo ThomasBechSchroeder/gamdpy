@@ -22,8 +22,8 @@ my_T, my_rho, my_p = 2.0, 0.754289412611, 4.7     # Pressure should be P=4.7 for
 if flag=="Atomic":
     integrator = gp.integrators.NPT_Atomic  (temperature=my_T, tau=0.4, pressure=my_p, tau_p=20, dt=0.001)
 elif flag=="Langevin":
-    gp.integrators.NPT_Langevin(temperature=my_T, pressure=my_p, alpha=0.1, alpha_baro=0.0001, mass_baro=0.0001,
-                                                             volume_velocity=0.0, barostatModeISO=True, boxFlucCoord=2, dt=0.001, seed=2023)
+    gp.integrators.NPT_Langevin(temperature=my_T, pressure=my_p, alpha=0.1, alpha_barostat=0.0001, mass_barostat=0.0001,
+                                volume_velocity=0.0, barostatModeISO=True, boxFlucCoord=2, dt=0.001, seed=2023)
 
 
 print(f"\nRunning an NPT simulation using the integrator NPT_{flag} at (P, T) = ({my_p}, {my_T})\n")
