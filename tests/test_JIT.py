@@ -45,7 +45,7 @@ def test_JIT():
                      gp.integrators.NPT_Atomic  (temperature=temperature, tau=0.4, pressure=pressure, tau_p=20, dt=dt),
                      gp.integrators.NPT_Langevin(temperature=temperature, pressure=pressure, 
                                                  alpha=0.1, alpha_baro=0.0001, mass_baro=0.0001, 
-                                                 volume_velocity=0.0, barostatModeISO = True , boxFlucCoord = 2,
+                                                 volume_velocity=0.0,
                                                  dt=dt, seed=2023)]
 
        for configuration in [configuration1, configuration3]:
@@ -60,7 +60,7 @@ def test_JIT():
                                                  num_timeblocks=2, steps_per_timeblock=256, 
                                                  storage='memory')
                             print(sim.compute_plan)
-              
+
 if __name__ == '__main__':
        test_JIT()
 

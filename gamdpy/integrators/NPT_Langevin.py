@@ -8,22 +8,52 @@ import gamdpy as gp
 from .integrator import Integrator
 
 class NPT_Langevin(Integrator):
-    """ Constant NPT Langevin integrator
-    NPT Langevin Leap-frog integrator based on 
-    N. Grønbech-Jensen and Oded Farago, J. Chem. Phys. 141, 194108 (2014),
-    `doi:10.1063/1.4901303 <https://doi.org/10.1063/1.4901303>`_        
+    """ Constant NPT Langevin integrator with isotropic volume fluctuations.
+
+    This integrator is a Leap-Frog implementation of the GJ-F Langevin equations of motion present in Ref. [1]_.
+    Let :math:`f` be the conservative force field, :math:`\\alpha` is a friction parameter, and
+    :math:`\\beta` be Gaussian distributed white noise:
+    :math:`\\langle \\beta(t)\\rangle=0` and :math:`\\langle \\beta(t)\\beta(t')\\rangle=2\\alpha k_B T\delta(t-t')`
+    where :math:`T` is the target temperature.
+    The Langevin equation of motion for a given particle is
+
+    .. math:: m\ddot x = f - \\alpha \dot x + \\beta
+
+    For choosing the :math:`\\alpha` parameters, it is instructive to note that a characteristic timescale is given by
+
+    .. math:: \\tau_T = m/\\alpha
+
+    The (isotropic) equations of motions for the volume of the simulation box (:math:`V`) can similarly be written as
+
+    .. math:: Q\\ddot V = f_P - \\alpha_V \dot V + \\beta_V
+
+    Here, :math:`Q` is an inertial coefficient (a barostat mass), :math:`\\alpha_V` is another friction parameter,
+    :math:`\\beta_V` is Gauss distributed white noise, and :math:`f_P` is a "barostat force".
+    Specifically, if :math:`W` is the (instantaneous) virial, then
+
+    .. math:: f_P = W + \\frac{Nk_B T}{V} - P
+
+    where :math:`P` is the target pressure.
+
+    Parameters
+    ----------
+    temperature : float or
+
+    Notes
+    -----
+    .. [1] Niels Grønbech-Jensen and Oded Farago,
+       "Constant pressure and temperature discrete-time Langevin molecular dynamics",
+       J. Chem. Phys. 141, 194108 (2014)
+       https://doi.org/10.1063/1.4901303
     """
 
-    def __init__(self, temperature, pressure, alpha:float, alpha_baro, mass_baro,
-           volume_velocity, barostatModeISO, boxFlucCoord, dt:float, seed:int) -> None:
+    def __init__(self, temperature, pressure, alpha:float, alpha_baro, mass_baro, volume_velocity, dt:float, seed:int) -> None:
         self.temperature = temperature
         self.pressure = pressure
         self.alpha = alpha 
         self.alpha_baro = alpha_baro 
         self.mass_baro = mass_baro
         self.volume_velocity = volume_velocity
-        self.barostatModeISO = barostatModeISO
-        self.boxFlucCoord = boxFlucCoord
         self.dt = dt
         self.seed = seed
 
@@ -39,7 +69,6 @@ class NPT_Langevin(Integrator):
         d_barostatVirial = cuda.to_device(barostatVirial)
         d_length_ratio = cuda.to_device(np.ones(3, dtype=np.float32))
         return (dt, alpha, alpha_baro, mass_baro, # Needs to be compatible with unpacking in step() below
-                self.barostatModeISO, np.int32(self.boxFlucCoord), 
                 rng_states, d_barostat_state, d_barostatVirial, d_length_ratio)
     
     def get_kernel(self, configuration: gp.Configuration, compute_plan: dict, compute_flags:dict[str,bool], interactions_kernel, verbose=False):
@@ -49,7 +78,7 @@ class NPT_Langevin(Integrator):
         pb, tp, gridsync = [compute_plan[key] for key in ['pb', 'tp', 'gridsync']] 
         num_blocks = (num_part - 1) // pb + 1
 
-        # Convert temperature and pressure to a functions id needed
+        # Convert temperature and pressure to a function if needed
         if callable(self.temperature):
             temperature_function = self.temperature
         else:
@@ -88,7 +117,7 @@ class NPT_Langevin(Integrator):
 
 
         def copyParticleVirial(scalars, integrator_params):
-            dt, alpha, alpha_baro, mass_baro, barostatModeISO, boxFlucCoord, rng_states, barostat_state, barostatVirial, length_ratio  = integrator_params
+            dt, alpha, alpha_baro, mass_baro, rng_states, barostat_state, barostatVirial, length_ratio  = integrator_params
             global_id, my_t = cuda.grid(2)
             my_w = scalars[global_id][w_id]
 
@@ -104,7 +133,7 @@ class NPT_Langevin(Integrator):
             return
     
         def update_barostat_state(sim_box, integrator_params, time):
-            dt, alpha, alpha_baro, mass_baro, barostatModeISO, boxFlucCoord, rng_states, barostat_state, barostatVirial, length_ratio = integrator_params
+            dt, alpha, alpha_baro, mass_baro, rng_states, barostat_state, barostatVirial, length_ratio = integrator_params
             temperature = temperature_function(time)
             pressure = pressure_function(time) 
 
@@ -116,7 +145,7 @@ class NPT_Langevin(Integrator):
                 current_barostat_state[0] = barostat_state[0]
                 current_barostat_state[1] = barostat_state[1]
                 
-                volume = sim_box[0]*sim_box[1]*sim_box[2]
+                volume = sim_box[0]*sim_box[1]*sim_box[2]  # Fix to use simbox function
                 targetConfPressure = pressure - temperature * num_part / volume 
                 barostatForce = barostatVirial[0] / volume - targetConfPressure
 
@@ -163,7 +192,7 @@ class NPT_Langevin(Integrator):
                 REF: https://arxiv.org/pdf/1303.7011.pdf
             """
 
-            dt, alpha, alpha_baro, mass_baro, barostatModeISO, boxFlucCoord, rng_states, barostat_state, barostatVirial, length_ratio = integrator_params
+            dt, alpha, alpha_baro, mass_baro, rng_states, barostat_state, barostatVirial, length_ratio = integrator_params
             temperature = temperature_function(time)
 
             global_id, my_t = cuda.grid(2)
