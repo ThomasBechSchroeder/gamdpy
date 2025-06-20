@@ -39,7 +39,8 @@ class Evaluator:
         else:
             self.compute_plan = compute_plan
 
-        compute_flags = get_default_compute_flags()
+        #compute_flags = get_default_compute_flags()
+        compute_flags = configuration.compute_flags
 
         # Make sure interactions is a list
         if type(interactions) == list:
