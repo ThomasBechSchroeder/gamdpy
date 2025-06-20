@@ -245,7 +245,7 @@ def test_NPT_Langevin_isotropic_2d(verbose=False, plot=False):
         plt.ylabel(r'$y$')
         plt.show()
 
-def test_NPT_Langevin_LeesEdwards_TypeError(verbose=False):
+def test_NPT_Langevin_LeesEdwards_TypeError():
     # Test that code raise an error for Lees Edwards Simulation cell
     import gamdpy as gp
     import pytest
@@ -265,6 +265,6 @@ def test_NPT_Langevin_LeesEdwards_TypeError(verbose=False):
 
 
 if __name__ == '__main__':
-    test_NPT_Langevin_LeesEdwards_TypeError(verbose=True)
-    #test_NPT_Langevin_isotropic(verbose=True, plot=True)
-    #test_NPT_Langevin_isotropic_2d(verbose=True, plot=True)
+    test_NPT_Langevin_LeesEdwards_TypeError()
+    test_NPT_Langevin_isotropic(verbose=True, plot=True)
+    test_NPT_Langevin_isotropic_2d(verbose=True, plot=True)
