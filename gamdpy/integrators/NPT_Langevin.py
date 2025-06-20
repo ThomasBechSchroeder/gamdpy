@@ -127,6 +127,10 @@ class NPT_Langevin(Integrator):
     
     def get_kernel(self, configuration: gp.Configuration, compute_plan: dict, compute_flags:dict[str,bool], interactions_kernel, verbose=False):
 
+        # This integrator is designed for an Orthorhombic simulation box
+        if not isinstance(configuration.simbox, gp.Orthorhombic):
+            raise TypeError(f"The NPT Langevin integrator expected Orthorhombic simulation box but got {configuration.simbox.get_name()}")
+
         # Unpack parameters from configuration and compute_plan
         D, num_part = configuration.D, configuration.N
         pb, tp, gridsync = [compute_plan[key] for key in ['pb', 'tp', 'gridsync']] 

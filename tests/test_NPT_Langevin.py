@@ -1,4 +1,10 @@
 
+def test_NPT_Langevin_interface():
+    import gamdpy as gp
+    args = 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
+    itg = gp.integrators.NPT_Langevin(*args)
+
+
 def test_NPT_Langevin_isotropic(verbose=False, plot=False):
     # Investigate a state-point in Table I of https://doi.org/10.1063/1.4818747
     import numpy as np
@@ -239,7 +245,26 @@ def test_NPT_Langevin_isotropic_2d(verbose=False, plot=False):
         plt.ylabel(r'$y$')
         plt.show()
 
+def test_NPT_Langevin_LeesEdwards_TypeError(verbose=False):
+    # Test that code raise an error for Lees Edwards Simulation cell
+    import gamdpy as gp
+    import pytest
+
+    configuration = gp.Configuration(D=3, N=1000)
+    configuration.make_positions(1000, 1.0)
+    configuration.simbox = gp.LeesEdwards(configuration.D, configuration.simbox.get_lengths())
+    interactions = [gp.PairPotential(gp.harmonic_repulsion, params=[1.0, 1.0], max_num_nbs=1000), ]
+    args = 1.0, 10.0, 1.0, 1.0, 1.0, 0.001
+    integrator = gp.integrators.NPT_Langevin(*args)
+    runtime_actions = []
+
+    with pytest.raises(TypeError,
+                       match="The NPT Langevin integrator expected Orthorhombic simulation box but got LeesEdwards"):
+        sim = gp.Simulation(configuration, interactions, integrator, runtime_actions,
+                            num_timeblocks=3, steps_per_timeblock=128, storage='memory')
+
 
 if __name__ == '__main__':
-    test_NPT_Langevin_isotropic(verbose=True, plot=True)
-    test_NPT_Langevin_isotropic_2d(verbose=True, plot=True)
+    test_NPT_Langevin_LeesEdwards_TypeError(verbose=True)
+    #test_NPT_Langevin_isotropic(verbose=True, plot=True)
+    #test_NPT_Langevin_isotropic_2d(verbose=True, plot=True)
