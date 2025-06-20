@@ -259,7 +259,7 @@ def test_NPT_Langevin_LeesEdwards_TypeError():
     runtime_actions = []
 
     with pytest.raises(TypeError,
-                       match="The NPT Langevin integrator expected Orthorhombic simulation box but got LeesEdwards"):
+                       match="The NPT Langevin integrator expected Orthorhombic simulation box but got .*LeesEdwards.*"):
         sim = gp.Simulation(configuration, interactions, integrator, runtime_actions,
                             num_timeblocks=3, steps_per_timeblock=128, storage='memory')
 

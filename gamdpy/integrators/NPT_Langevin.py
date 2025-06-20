@@ -129,7 +129,7 @@ class NPT_Langevin(Integrator):
 
         # This integrator is designed for an Orthorhombic simulation box
         if not isinstance(configuration.simbox, gp.Orthorhombic):
-            raise TypeError(f"The NPT Langevin integrator expected Orthorhombic simulation box but got {configuration.simbox.get_name()}")
+            raise TypeError(f"The NPT Langevin integrator expected Orthorhombic simulation box but got {type(configuration.simbox)}")
 
         # Unpack parameters from configuration and compute_plan
         D, num_part = configuration.D, configuration.N
