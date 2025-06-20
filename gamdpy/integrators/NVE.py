@@ -6,24 +6,32 @@ from .integrator import Integrator
 
 
 class NVE(Integrator):
-    """Total energy conserving integrator
+    """Total energy conserving integrator.
 
-    Use the Leap-frog algorithm to integrate the equations of motion:
+    Consider a conservative force field :math:`f`.
+    In this integrator, Newton's equation of motion
+
+    .. math:: m\ddot x = f
+
+    are discretized using the Leap-Frog algorithm
 
     .. math::
+
         v(t+dt/2) &= v(t-dt/2) + f(t) dt / m
 
-        r(t+dt) &= r(t) + v(t+dt/2) dt
+        x(t+dt) &= x(t) + x(t+dt/2) dt
 
+    where :math:`v=\dot x`.
+    This algorithm conserves the total energy up to numerical accuracy of floating point operations.
 
     Parameters
     ----------
 
     dt : float
-        Time step for the integration.
+        Time step for discretization
 
     """
-    def __init__(self, dt):
+    def __init__(self, dt: float):
         self.dt = dt
   
     def get_params(self, configuration: gp.Configuration, interactions_params: tuple, verbose=False) -> tuple:

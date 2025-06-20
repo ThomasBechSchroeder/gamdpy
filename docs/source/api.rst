@@ -29,26 +29,42 @@ An simulation box object is attached to an configuration object.
 Integrators
 ***********
 
+Constant energy and volume
+==========================
+
 .. autoclass:: gamdpy.NVE
    :members:
+   :exclude-members: get_kernel, get_params
+
+Constant temperature and volume
+===============================
 
 .. autoclass:: gamdpy.NVT
    :members:
+   :exclude-members: get_kernel, get_params
 
 .. autoclass:: gamdpy.NVT_Langevin
    :members:
+   :exclude-members: get_kernel, get_params
+
+Constant temperature and pressure
+=================================
 
 .. autoclass:: gamdpy.NPT_Atomic
    :members:
+   :exclude-members: get_kernel, get_params
 
 .. autoclass:: gamdpy.NPT_Langevin
    :members:
+   :exclude-members: get_kernel, get_params
+
+Other integrators
+=================
 
 .. autoclass:: gamdpy.SLLOD
    :members:
+   :exclude-members: get_kernel, get_params
 
-.. autoclass:: gamdpy.NVU_RT
-   :members:
 
 Interactions
 ************

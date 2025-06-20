@@ -7,30 +7,39 @@ from gamdpy.misc.make_function import make_function_constant
 from .integrator import Integrator
 
 class NPT_Atomic(Integrator):
-    """ Constant NPT integrator for atomic systems
+    """ Constant NPT integrator for atomic systems.
 
-        Integrator keeping N (number of particles), P (pressure), and T (temperature) constant, 
-        using the leapfrog algorithm and the thermostat-barostat by G Martyna, DJ Tobias and ML Klein in
-        Molecular Physics 87(5), 1117 (1996), `doi:10.1063/1.467468 <https://doi.org/10.1080/00268979600100761>`_
-        Note that the thermostat and barostat states defined here are :math:`p_\\xi/Q` and :math:`p_\\epsilon/W` from Eq. 2.9 in the paper.
+    Integrator that keeps the number of particles (:math:`N`), pressure (:math:`P`),
+    and temperature (:math:`T`) constant, using a Leap-Frog implementation
+    of the Nosé–Hoover thermostat by Martyna–Tuckerman–Klein presented in Ref. [Martyna1996]_.
+    (Note that the thermostat and barostat states in this implimentation is defined as
+    :math:`p_\\xi/Q` and :math:`p_\\epsilon/W`, see Eq. 2.9 in the reference.).
 
-        Parameters
-        ----------
-        temperature : float or function
-            Target temperature as a function of time or constant
-        
-        tau : float
-            Thermostat relaxation time
-        
-        pressure : float or function
-            Target pressure as a function of time or constant
-        
-        tau_p : float
-            Barostat relaxation time
-        
-        dt : float
-            Timestep size
-        
+    The thermal and barometric coupling parameters are defined via two time-scales.
+
+    Parameters
+    ----------
+    temperature : float or function
+        Target temperature
+
+    tau : float
+        Thermostat relaxation time
+
+    pressure : float or function
+        Target pressure
+
+    tau_p : float
+        Barostat relaxation time
+
+    dt : float
+        a time step for the integration.
+
+    Notes
+    -----
+    .. [Martyna1996] Glenn J. Martyna, Mark E. Tuckerman, Douglas J. Tobias, and Michael L. Klein,
+       "Explicit Reversible Integrators for Extended Systems Dynamics",
+       Mol. Phys. 87, 1117–57 (1996)
+       https://doi.org/10.1080/00268979600100761
     """
 
     def __init__(self, temperature, tau: float, pressure, tau_p : float, dt: float) -> None: 

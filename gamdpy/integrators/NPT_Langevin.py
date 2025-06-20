@@ -10,9 +10,10 @@ from .integrator import Integrator
 class NPT_Langevin(Integrator):
     """ Constant NPT Langevin integrator with isotropic volume fluctuations.
 
-    This integrator is a Leap-Frog implementation of the GJ-F Langevin equations of motion present in Ref. [1]_.
+    This integrator is a Leap-Frog implementation of the GJ-F Langevin equations of motion present
+    in Ref. [Grønbech2014b]_ .
     Let :math:`f` be the conservative force field, :math:`\\alpha` is a friction parameter, and
-    :math:`\\beta` be Gaussian distributed white noise:
+    :math:`\\beta` be uncorrelated Gauss distributed noise:
     :math:`\\langle \\beta(t)\\rangle=0` and :math:`\\langle \\beta(t)\\beta(t')\\rangle=2\\alpha k_B T\delta(t-t')`
     where :math:`T` is the target temperature.
     The Langevin equation of motion for a given particle is
@@ -33,28 +34,62 @@ class NPT_Langevin(Integrator):
 
     .. math:: f_P = W + \\frac{Nk_B T}{V} - P
 
-    where :math:`P` is the target pressure.
+    where :math:`P` is the target pressure. To set the barstat parameters :math:`Q` and :math:`\\alpha_V` it can be
+    instructive to note that equations of motions for the volume resemble that of a damped harmonic oscillator.
+    If :math:`K=-VdP/dV` is the bulk modulus of the system,
+    then the "spring constant" of the oscillator is :math:`k=K/V`, then the natural frequency
+    is :math:`\omega_0=\sqrt{k/Q}` and damping ratio is :math:`\zeta=\\alpha_V/2\sqrt{Qk}`
+    (:math:`\zeta<1` for underdamped oscillation).
+    If a characteristic timescale is defined as :math:`\\tau_V\equiv 1/\omega_0`, then
+
+    .. math:: \\alpha_V = 2 K \\tau_v/V
+
+    .. math:: Q = K (\zeta \\tau_v)^2 / V
 
     Parameters
     ----------
-    temperature : float or
+    temperature : float or function
+        Target temperature, :math:`T`
+
+    pressure : float or function
+        Target pressure, :math:`P`
+
+    alpha : float
+        Friction coefficient of the thermostat, :math:`\\alpha`
+
+    alpha_baro : float
+        Friction coefficient of the barostat, :math:`\\alpha_V`
+
+    mass_baro : float
+        Inertial coefficient (barostat mass), :math:`Q`
+
+    dt : float
+        a Time step for the Leap-Frog discretization
+
+    volume_velocity : float
+        Initial velocity of volume
+
+    seed : int
+        seed for the (pseudo) random noise
 
     Notes
     -----
-    .. [1] Niels Grønbech-Jensen and Oded Farago,
+
+    .. [Grønbech2014b] Niels Grønbech-Jensen and Oded Farago,
        "Constant pressure and temperature discrete-time Langevin molecular dynamics",
        J. Chem. Phys. 141, 194108 (2014)
        https://doi.org/10.1063/1.4901303
+
     """
 
-    def __init__(self, temperature, pressure, alpha:float, alpha_baro, mass_baro, volume_velocity, dt:float, seed:int) -> None:
+    def __init__(self, temperature, pressure, alpha: float, alpha_baro: float, mass_baro: float, dt: float, volume_velocity = 0.0, seed = 0) -> None:
         self.temperature = temperature
         self.pressure = pressure
         self.alpha = alpha 
         self.alpha_baro = alpha_baro 
         self.mass_baro = mass_baro
-        self.volume_velocity = volume_velocity
         self.dt = dt
+        self.volume_velocity = volume_velocity
         self.seed = seed
 
     def get_params(self, configuration: gp.Configuration, interactions_params: tuple, verbose=False) -> tuple:

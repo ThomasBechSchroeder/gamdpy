@@ -10,16 +10,22 @@ from .integrator import Integrator
 
 
 class NVT_Langevin(Integrator):
-    """ NVT Langevin Leap-frog integrator
+    """ NVT Langevin Leap-frog integrator.
 
-    The langevin thermostat is a stochastic thermostat that keeps the system at a constant temperature:
+    Leap-Frog implementation of the algorithm described in Ref. [Grønbech2014]_.
+    This integrator is a stochastic thermostat that keeps the system at a constant temperature,
+    via the Langevin equations of motion
 
     .. math::
-        m a = f - \\alpha v + \\beta
+        m \ddot x = f - \\alpha \dot x + \\beta
 
-    where :math:`a` is the acceleration, :math:`f` is the force, :math:`v` is the velocity, :math:`m` is the mass,
-    :math:`\\alpha` is the friction coefficient, and :math:`\\beta` is a random number drawn from a normal distribution.
-    The implementation uses the leap-frog algorithm described in reference https://arxiv.org/pdf/1303.7011.pdf
+    where :math:`f` is the force from a conservative field, :math:`m` is the particle mass,
+    :math:`\\alpha` is a friction coefficient, and :math:`\\beta` is uncorrelated Gauss distributed noise:
+    :math:`\\langle \\beta(t)\\rangle=0` and :math:`\\langle \\beta(t)\\beta(t')\\rangle=2\\alpha k_B T\delta(t-t')`
+    where :math:`T` is the target temperature.
+    For choosing the :math:`\\alpha` parameters, it is instructive to note that a characteristic timescale is given by
+
+    .. math:: \\tau = m/\\alpha
 
     Parameters
     ----------
@@ -31,7 +37,16 @@ class NVT_Langevin(Integrator):
         Friction coefficient of the thermostat.
 
     dt : float
-        Time step for the integration.
+        a time step for the integration.
+
+    Notes
+    -----
+
+    .. [Grønbech2014] Niels Grønbech-Jensen, Natha Robert Hayre, and Oded Farago,
+       "Application of the G-JF Discrete-Time Thermostat for Fast and Accurate Molecular Simulations",
+       Comput. Phys. Commun. 185, 524-527 (2014)
+       https://doi.org/10.1016/j.cpc.2013.10.006
+       https://arxiv.org/pdf/1303.7011.pdf
 
     """
   
