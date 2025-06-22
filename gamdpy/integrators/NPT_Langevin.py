@@ -73,6 +73,19 @@ class NPT_Langevin(Integrator):
     seed : int
         seed for the (pseudo) random noise
 
+    Raises
+    ------
+    TypeError
+        If the simulation box is not :class:`~gamdpy.Orthorhombic`.
+
+    References
+    ----------
+
+    .. [Grønbech2014b] Niels Grønbech-Jensen and Oded Farago,
+       "Constant pressure and temperature discrete-time Langevin molecular dynamics",
+       J. Chem. Phys. 141, 194108 (2014)
+       https://doi.org/10.1063/1.4901303
+
     Examples
     --------
 
@@ -90,14 +103,6 @@ class NPT_Langevin(Integrator):
     ...    alpha_barostat=2*K/tau_V/V,
     ...    mass_barostat=K*(zeta*tau_V)**2/V,
     ...    dt=0.004)
-
-    Notes
-    -----
-
-    .. [Grønbech2014b] Niels Grønbech-Jensen and Oded Farago,
-       "Constant pressure and temperature discrete-time Langevin molecular dynamics",
-       J. Chem. Phys. 141, 194108 (2014)
-       https://doi.org/10.1063/1.4901303
 
     """
 
