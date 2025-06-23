@@ -39,9 +39,8 @@ class NVT_Langevin(Integrator):
     dt : float
         a time step for the integration.
 
-    Notes
-    -----
-
+    References
+    ----------
     .. [Grønbech2014] Niels Grønbech-Jensen, Natha Robert Hayre, and Oded Farago,
        "Application of the G-JF Discrete-Time Thermostat for Fast and Accurate Molecular Simulations",
        Comput. Phys. Commun. 185, 524-527 (2014)
