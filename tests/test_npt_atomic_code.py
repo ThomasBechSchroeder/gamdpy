@@ -36,5 +36,38 @@ def test_npt_atomic() -> None:
             verbose=True)
     return
 
+def test_NPT_Langevin_LeesEdwards_TypeError_not_Orthorhombic():
+    # Test that code raise an error for Lees Edwards Simulation cell
+    import gamdpy as gp
+    import pytest
+
+    configuration = gp.Configuration(D=3, N=1000)
+    configuration.make_positions(1000, 1.0)
+    configuration.simbox = gp.LeesEdwards(configuration.D, configuration.simbox.get_lengths())
+    interactions = [gp.PairPotential(gp.harmonic_repulsion, params=[1.0, 1.0], max_num_nbs=1000), ]
+    integrator = gp.integrators.NPT_Atomic(temperature=2.0, tau=0.4, pressure=1.0, tau_p=20, dt=0.001)
+    runtime_actions = []
+
+    with pytest.raises(TypeError,
+                       match="The NPT Langevin integrator expected Orthorhombic simulation box but got .*LeesEdwards.*"):
+        sim = gp.Simulation(configuration, interactions, integrator, runtime_actions,
+                            num_timeblocks=3, steps_per_timeblock=128, storage='memory')
+
+def test_NPT_Langevin_LeesEdwards_ValueError_D3():
+    # Test that an error is raised if the spatial dimension in not D=3
+    import gamdpy as gp
+    import pytest
+
+    configuration = gp.Configuration(D=2, N=1000)
+    configuration.make_positions(1000, 1.0)
+    interactions = [gp.PairPotential(gp.harmonic_repulsion, params=[1.0, 1.0], max_num_nbs=1000), ]
+    integrator = gp.integrators.NPT_Atomic(temperature=2.0, tau=0.4, pressure=1.0, tau_p=20, dt=0.001)
+    runtime_actions = []
+
+    with pytest.raises(ValueError,
+                       match="This integrator expected a simulation box with D=3 but got 2."):
+        sim = gp.Simulation(configuration, interactions, integrator, runtime_actions,
+                            num_timeblocks=3, steps_per_timeblock=128, storage='memory')
+
 if __name__ == '__main__':
     test_npt_atomic()
