@@ -5,30 +5,20 @@ from numba import cuda
 from .integrator import Integrator
 
 
-class NVE(Integrator):
-    """Total energy conserving integrator.
-
-    Consider a conservative force field :math:`f`.
-    In this integrator, Newton's equation of motion
-
-    .. math:: m\ddot x = f
-
-    are discretized using the Leap-Frog algorithm
+class GradientDescent(Integrator):
+    """ Gradient descent algorithm, minimizing the potential energy.
 
     .. math::
 
-        v(t+dt/2) &= v(t-dt/2) + f(t) dt / m
+        v(t+dt/2) &= f(t)
 
         x(t+dt) &= x(t) + v(t+dt/2) dt
-
-    where :math:`v=\dot x`.
-    This algorithm conserves the total energy up to numerical accuracy of floating point operations.
 
     Parameters
     ----------
 
     dt : float
-        Time step for discretization
+        Time step for discretization / Learning rate 
 
     """
     def __init__(self, dt: float):
@@ -44,12 +34,6 @@ class NVE(Integrator):
         D, num_part = configuration.D, configuration.N
         pb, tp, gridsync = [compute_plan[key] for key in ['pb', 'tp', 'gridsync']] 
         num_blocks = (num_part - 1) // pb + 1
-
-        if verbose:
-            print(f'Generating NVE kernel for {num_part} particles in {D} dimensions:')
-            print(f'\tpb: {pb}, tp:{tp}, num_blocks:{num_blocks}')
-            print(f'\tNumber (virtual) particles: {num_blocks * pb}')
-            print(f'\tNumber of threads {num_blocks * pb * tp}')
 
         # Unpack indices for vectors and scalars
         compute_k = compute_flags['K']
@@ -86,21 +70,11 @@ class NVE(Integrator):
                 for k in range(D):
                     if compute_fsq:
                         my_fsq += my_f[k] * my_f[k]
-                    v_mean = numba.float32(0.0)
 
-                    # square before mean to get KE, part 1
-                    #my_k += numba.float32(0.25) * my_m * my_v[k] * my_v[k]
-
-                    v_mean += my_v[k]  # v(t-dt/2)
-                    my_v[k] += my_f[k] / my_m * dt
-                    v_mean += my_v[k]  # v(t+dt/2)
-                    v_mean /= numba.float32(2.0)  # v(t) = (v(t-dt/2) + v(t+dt/2))/2
-                    # square before mean,part 2
-                    #my_k += numba.float32(0.25) * my_m * my_v[k] * my_v[k]
-
-                    #  Basic: square the mean velocity
+                    my_v[k] = my_f[k]
+                    
                     if compute_k:
-                        my_k += numba.float32(0.5) * my_m * v_mean * v_mean
+                        my_k += numba.float32(0.5) * my_m * my_v[k] * my_v[k]
 
                     my_r[k] += my_v[k] * dt
 

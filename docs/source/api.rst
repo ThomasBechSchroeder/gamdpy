@@ -65,6 +65,10 @@ Other integrators
    :members:
    :exclude-members: get_kernel, get_params
 
+.. autoclass:: gamdpy.GradientDescent
+   :members:
+   :exclude-members: get_kernel, get_params
+
 
 Interactions
 ************
