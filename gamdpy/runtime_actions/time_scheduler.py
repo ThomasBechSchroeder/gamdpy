@@ -69,10 +69,12 @@ class TimeScheduler():
 
         # `npoints` kwarg is required
         elif self.schedule=='geom':
-            self.npoints = self._kwargs.get('npoints', None)
+            npoints = self._kwargs.get('npoints', None)
             if npoints is not None:
                 self.npoints = npoints
                 self.stepcheck_func = self._get_stepcheck_geom()
+            else:
+                raise TypeError("'npoints' is required for schedule 'geom'")
 
         # TODO: using custom steps would require passing arrays to stepcheck functions, which is a potential issue
         # elif self.schedule=='custom':
