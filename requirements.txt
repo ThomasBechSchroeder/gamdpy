@@ -26,4 +26,7 @@ nbformat
 nbclient
 
 # Build documentation
--r docs/requirements.txt
+sphinx
+myst_nb
+pydata_sphinx_theme
+PyStemmer
