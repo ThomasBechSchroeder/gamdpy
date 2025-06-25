@@ -77,6 +77,7 @@ class TrajectorySaver(RuntimeAction):
         output['trajectory_saver'].attrs['compression_info'] = f"{self.compression} with opts {self.compression_opts}"
         output['trajectory_saver'].attrs['steps'] = self.time_scheduler.steps
         output['trajectory_saver'].attrs['num_timeblocks'] = self.num_timeblocks
+        output['trajectory_saver'].attrs['steps_per_timeblock'] = self.steps_per_timeblock
 
         #output.attrs['vectors_names'] = list(self.sid.keys())
         if self.include_simbox:
