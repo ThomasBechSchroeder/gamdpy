@@ -12,6 +12,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 import h5py
+from scipy.optimize import minimize
+
+Tconf_switch = 1e-3 # Do gradient descent until Tconf_switch is reached
+include_cg = True   # ... and then do conjugate gradient if this flaf is True
+steps_between_output=32 # For gd integrator
 
 gp.select_gpu()
 
@@ -24,6 +29,16 @@ if __name__ == "__main__":
         filename = 'Data/LJ_r0.973_T0.70_toread.h5' # Used in testing
 else:
     filename = 'Data/LJ_r0.973_T0.70_toread.h5' # Used in testing
+
+# function to interface with minimize function from scipy
+def calc_u(Rflat):
+        configuration2['r'] = Rflat.reshape(N,D).astype('float32')
+        evaluator.evaluate(configuration2)
+        return np.sum(configuration2['U'].astype('float64'))
+def calc_du(Rflat):
+        configuration2['r'] = Rflat.reshape(N,D).astype('float32')
+        evaluator.evaluate(configuration2)
+        return -configuration2['f'].astype('float64').flatten()
 
 # Load existing configuration, twice for convenience 
 with h5py.File(filename, 'r') as f:
@@ -52,7 +67,7 @@ assert(np.allclose(configuration1['f'], configuration2['f'], atol=0.0001)), f"({
 integrator = gp.integrators.GradientDescent(dt=0.00001) # v = f*dt
 
 # Setup runtime actions, i.e., actions performed during simulation of timeblocks
-runtime_actions = [gp.ScalarSaver(compute_flags={'lapU':True, 'Fsq':True}),]
+runtime_actions = [gp.ScalarSaver(steps_between_output=32, compute_flags={'lapU':True, 'Fsq':True}),]
 
 # Setup Simulation. 
 sim = gp.Simulation(configuration1, [pair_pot], integrator, runtime_actions,
@@ -74,27 +89,62 @@ axs['du'].set_ylabel('F**2/N')
 axs['du'].grid(linestyle='--', alpha=0.5)
 axs['Tc'].set_ylabel('Tconf = F**2 / lapU')
 axs['Tc'].grid(linestyle='--', alpha=0.5)
-axs['Tc'].set_xlabel('Iteration')
+axs['Tc'].set_xlabel(f'Iteration (1 iteration = {steps_between_output} gradient descent steps)')
 
-for restart in range(3):
+for restart in range(5):
     with h5py.File(filename, 'r') as f:
         configuration2 = gp.Configuration.from_h5(f, f"restarts/restart{restart:04d}", compute_flags={'lapU':True})
 
     configuration1['r'] = configuration2['r']
 
     # Run simulation
+    print(f'{restart=}')
     for timeblock in sim.run_timeblocks():
-        print(sim.status(per_particle=True))
-    print(sim.summary())
+        Fsq_ = np.sum(configuration1['f'].astype(np.float64)**2)/configuration1.N
+        lapU_ = np.sum(configuration1['lapU'].astype(np.float64))/configuration1.N
+        Tconf_ = Fsq_ / lapU_
+        print(sim.status(per_particle=True), f'{Tconf_=:.3e}')
+        if Tconf_ < Tconf_switch:
+            break
+    #print(sim.summary()) # Does not work when using 'break' ...
    
-    U, Fsq, lapU = gp.ScalarSaver.extract(sim.output, columns=['U', 'Fsq', 'lapU'], first_block=0)
-    iteration = np.arange(len(U))*sim.output['scalar_saver'].attrs['steps_between_output']
-    Tconf = Fsq / lapU
+    U_gd, Fsq_gd, lapU_gd = gp.ScalarSaver.extract(sim.output, columns=['U', 'Fsq', 'lapU'], first_block=0, last_block=timeblock+1)
+    iteration_gd = np.arange(len(U_gd))
+    Tconf_gd = Fsq_gd / lapU_gd
 
-    axs['u'].plot(iteration, U, '-', label=f'Umin/N = {U[-1]:.10f}')
-    axs['lu'].semilogy(iteration, U-U[-1], '-')
-    axs['du'].semilogy(iteration, Fsq, '-')
-    axs['Tc'].semilogy(iteration, Tconf, '-', label=f'{Tconf[0]:.2e} -> {Tconf[-1]:.3e}')
+    u_min = U_gd[-1]
+    Tconf_min = Tconf_gd[-1]
+
+    if include_cg:
+        R0flat = configuration1['r'].astype('float64').flatten()
+        res = minimize(calc_u, R0flat, method='CG', jac=calc_du, options={'gtol': 1e-9, 'disp': True, 'return_all':True})
+        configuration2['r'] = res.x.reshape(N,D).astype('float32')
+        evaluator.evaluate(configuration2)
+
+        U_cg = []
+        Fsq_cg = []
+        Tconf_cg = []
+
+        for x in res.allvecs:
+            U_cg.append(calc_u(x)/N)
+            Fsq_cg.append(np.sum(calc_du(x)**2)/N)
+            Tconf_cg.append( Fsq_cg[-1] / np.sum(configuration2['lapU']/N) )
+        
+        u_min = U_cg[-1]
+        Tconf_min = Tconf_cg[-1]
+
+    axs['u'].plot(iteration_gd, U_gd, '-', label=f'Umin/N = {u_min:.10f}')
+    axs['lu'].semilogy(iteration_gd, U_gd-u_min, '-')
+    axs['du'].semilogy(iteration_gd, Fsq_gd, '-')
+    axs['Tc'].semilogy(iteration_gd, Tconf_gd, '-', label=f'{Tconf_gd[0]:.2e} -> {Tconf_min:.3e}')
+
+    if include_cg:
+        iteration_cg = np.arange(len(U_cg)) + iteration_gd[-1]
+        axs['u'].plot(iteration_cg, U_cg, '.-')
+        axs['lu'].semilogy(iteration_cg, U_cg-u_min, '.-')
+        axs['du'].semilogy(iteration_cg, Fsq_cg, '.-')
+        axs['Tc'].semilogy(iteration_cg, Tconf_cg, '.-')
+
 
 axs['u'].legend()
 axs['Tc'].legend()
