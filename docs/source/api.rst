@@ -47,6 +47,10 @@ Constant temperature and volume
    :members:
    :exclude-members: get_kernel, get_params
 
+.. autoclass:: gamdpy.Brownian
+   :members:
+   :exclude-members: get_kernel, get_params
+
 Constant temperature and pressure
 =================================
 

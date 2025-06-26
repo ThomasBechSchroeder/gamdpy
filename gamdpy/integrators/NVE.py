@@ -6,7 +6,7 @@ from .integrator import Integrator
 
 
 class NVE(Integrator):
-    """Total energy conserving integrator.
+    r"""Total energy conserving integrator.
 
     Consider a conservative force field :math:`f`.
     In this integrator, Newton's equation of motion

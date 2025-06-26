@@ -29,7 +29,7 @@ from .simulation.get_default_compute_plan import get_default_compute_plan
 from .simulation.get_default_compute_flags import get_default_compute_flags
 
 # Import from integrators subpackage
-from .integrators import integrator, NVE, NVT, NVT_Langevin, NPT_Atomic, NPT_Langevin, SLLOD, NVU_RT, GradientDescent
+from .integrators import integrator, NVE, NVT, NVT_Langevin, Brownian, NPT_Atomic, NPT_Langevin, SLLOD, NVU_RT, GradientDescent
 
 # Import from interactions subpackage
 from .interactions import interaction, add_interactions_list, NbList2, NbListLinkedLists

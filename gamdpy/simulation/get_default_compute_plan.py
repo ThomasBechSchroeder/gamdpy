@@ -81,7 +81,7 @@ def get_default_compute_plan(configuration):
         gridsync = False
 
     nblist = 'N squared'
-    if N > 6_000:  # Heuristic
+    if N > 8_000:  # Heuristic
         nblist = 'linked lists'
         skin = 0.5
 
