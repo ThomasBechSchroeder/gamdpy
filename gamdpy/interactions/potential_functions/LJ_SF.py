@@ -1,4 +1,6 @@
 
+import numba
+
 def LJ_SF(dist, params):
     """ The 12-6 Lennard-Jones potential + Shifted force Coulomb potential
 
@@ -34,7 +36,7 @@ def LJ_SF(dist, params):
     u_vw = numba.float32(4.0) * epsilon * (sigmaOdist ** 12 - sigmaOdist ** 6)
     s_vw = numba.float32(24.0) * epsilon * (numba.float32(2.0) * sigmaOdist ** 12 - sigmaOdist ** 6) * OneOdist ** 2
     
-    u_q = q*Onedist
+    u_q = q*OneOdist
     s_q = q*OneOdist*(one/(dist**2) - one/(cutoff**2))
 
     d2u_vw = numba.float32(24.0) * epsilon * (numba.float32(26.0) * sigmaOdist ** 12 - numba.float32(7.0) * sigmaOdist ** 6) * OneOdist ** 2
