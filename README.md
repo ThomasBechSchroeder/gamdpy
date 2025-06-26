@@ -32,6 +32,7 @@ Classes implementing a simulation algorithm. Currently implemented:
 - class NVT_Langevin
 - class NPT_Atomic
 - class NPT_Langevin
+- class GradientDescent
 - class NVU_RT (Experimental)
 
 Temperature/Pressure can be controlled by a user-supplied function, see examples/kablj.py
