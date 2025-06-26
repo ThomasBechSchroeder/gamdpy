@@ -14,7 +14,7 @@ import sys
 import h5py
 from scipy.optimize import minimize
 
-Tconf_switch = 1e-3 # Do gradient descent until Tconf_switch is reached
+Tconf_switch = 1e-4 # Do gradient descent until Tconf_switch is reached
 include_cg = True   # ... and then do conjugate gradient if this flaf is True
 steps_between_output=32 # For gd integrator
 
@@ -53,6 +53,16 @@ pair_func = gp.apply_shifted_potential_cutoff(gp.LJ_12_6_sigma_epsilon)
 #pair_func = gp.apply_shifted_force_cutoff(gp.LJ_12_6_sigma_epsilon)
 sig, eps, cut = 1.0, 1.0, 2.5
 pair_pot = gp.PairPotential(pair_func, params=[sig, eps, cut], max_num_nbs=1000)
+
+# Setup pair potential: Kob & Andersen Binary Lennard-Jones Mixture
+#pair_func = gp.apply_shifted_force_cutoff(gp.LJ_12_6_sigma_epsilon)
+#sig = [[1.00, 0.80],
+#       [0.80, 0.88]]
+#eps = [[1.00, 1.50],
+#       [1.50, 0.50]]
+#cut = np.array(sig)*2.5
+#pair_pot = gp.PairPotential(pair_func, params=[sig, eps, cut], max_num_nbs=1000)
+
 
 evaluator = gp.Evaluator(configuration2, pair_pot)
 evaluator.evaluate(configuration2)
@@ -144,7 +154,6 @@ for restart in range(5):
         axs['lu'].semilogy(iteration_cg, U_cg-u_min, '.-')
         axs['du'].semilogy(iteration_cg, Fsq_cg, '.-')
         axs['Tc'].semilogy(iteration_cg, Tconf_cg, '.-')
-
 
 axs['u'].legend()
 axs['Tc'].legend()

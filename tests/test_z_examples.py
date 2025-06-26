@@ -156,5 +156,5 @@ class Test_examples:
     def test_molecules_polydisperse(self):
         self.make_one("molecules_polydisperse", ["Data/chains_poly.h5", "Data/dump.lammps", "Data/dump_compress.lammps", "chain10.pdf", "chain5.pdf"])
 
-    def test_quench_restarts_gradient_descent(self): 
-        self.make_one("quench_restarts_gradient_descent")
+    def test_quench_restarts(self): 
+        self.make_one("quench_restarts")
