@@ -4,6 +4,7 @@ from .LJ_12_6_sigma_epsilon import LJ_12_6_sigma_epsilon
 from .SAAP import SAAP
 from .harmonic_repulsion import harmonic_repulsion
 from .hertzian import hertzian
+from .LJ_SF import LJ_SF
 
 # Intra-molecular potentials
 from .harmonic_bond_function import harmonic_bond_function
