@@ -33,7 +33,7 @@ from .integrators import integrator, NVE, NVT, NVT_Langevin, NPT_Atomic, NPT_Lan
 
 # Import from interactions subpackage
 from .interactions import interaction, add_interactions_list, NbList2, NbListLinkedLists
-from .interactions import PairPotential
+from .interactions import PairPotential, TabulatedPairPotential
 from .interactions import Bonds, Angles, Dihedrals
 from .interactions import make_fixed_interactions, make_planar_calculator, setup_planar_interactions
 from .interactions import Gravity, Relaxtemp, Tether
