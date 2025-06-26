@@ -31,11 +31,13 @@ Open Todo's have been transfered to issues after developer meeting 4/6-25. For r
 - Systematic benchmarking. Substantial degradation in performance will be considered a bug.
 
 ## Checklist for developing a new feature
+- Make or comment on an issue (on GitHub) about the new feature.
 - Copy code that resembles what you want to do and modify it to your needs.
 - Write tests in a file placed in tests (run pytest to check that it works).
 - Write an example and place it in examples, add it to the examples/README.md
 - Write documentation in the docstrings of the code (run doctests to check that it works).
 - Include the new feature in the documentation, e.g., you may need to edit docs/source/api.rst
+- Close issue.
 
 ## Some git cmd which might be useful
 
