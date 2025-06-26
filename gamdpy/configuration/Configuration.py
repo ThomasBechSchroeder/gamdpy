@@ -2,10 +2,12 @@ import numpy as np
 import numba
 import math
 from numba import cuda
+
 from .colarray import colarray
 from ..simulation_boxes import Orthorhombic, LeesEdwards
 from .topology import Topology, duplicate_topology, replicate_topologies
 from ..simulation.get_default_compute_flags import get_default_compute_flags
+
 
 # IO
 import h5py
@@ -24,12 +26,14 @@ class Configuration:
     D : int
         Spatial dimension for the configuration.
     
-    N : int [Optional]
+    N : int, optional
         Number of particles. 
         If not set, this will be determined the first time particle data is written to the configuration. 
-        
+
+
+
     Examples
-    -------
+    --------
 
     >>> import gamdpy as gp
     >>> conf = gp.Configuration(D=3, N=1000)
@@ -238,8 +242,8 @@ class Configuration:
             return self.scalars[:, self.sid[key]]
         raise ValueError(f'Unknown key {key}. Vectors: {self.vector_columns}, Scalars: {self.scalar_columns}')
 
-    def copy_to_device(self):
-        """ Copy all data to device memory """
+    def copy_to_device(self) -> None:
+        """ Copy all data from host to device memory (CPU to GPU)."""
         self.d_vectors = cuda.to_device(self.vectors.array)
         self.d_scalars = cuda.to_device(self.scalars)
         self.d_r_im = cuda.to_device(self.r_im)
@@ -247,8 +251,8 @@ class Configuration:
         self.simbox.copy_to_device()
         return
 
-    def copy_to_host(self):
-        """ Copy all data to host memory """
+    def copy_to_host(self) -> None:
+        """ Copy all data from device to host memory (GPU to CPU)."""
         self.vectors.array = self.d_vectors.copy_to_host()
         self.scalars = self.d_scalars.copy_to_host()
         self.r_im = self.d_r_im.copy_to_host()
@@ -267,11 +271,26 @@ class Configuration:
         """ Get total potential energy of the configuration """
         return float(np.sum(self['U']))
 
-    def get_volume(self):
+    def get_volume(self) -> float:
         """ Get volume of simulation box associated with configuration """
         return self.simbox.get_volume()
 
-    def set_kinetic_temperature(self, temperature, ndofs=None):
+    def set_kinetic_temperature(self, temperature: float, ndofs=None) -> None:
+        """ Rescale velocities so magnitude correspond to a given temperature.
+
+        Parameters
+        ----------
+        temperature : float
+            Temperature after rescaling of velocities.
+        ndofs : int, optional
+            Degrees of freedom. If not provided, ndofs = D*(N-1)
+
+        Raises
+        ------
+        ValueError
+             If the current temperature is zero (velocities are zero).
+
+        """
         if ndofs is None:
             ndofs = self.D * (self.N - 1)
 
@@ -280,8 +299,28 @@ class Configuration:
             raise ValueError('Cannot rescale velocities when all equal to zero')
         self['v'] *= (temperature / T_) ** 0.5
 
-    def randomize_velocities(self, temperature, seed=None, ndofs=None):
-        """ Randomize velocities according to a given temperature. If T <= 0, set all velocities to zero. """
+    def randomize_velocities(self, temperature: float, seed=None, ndofs=None) -> None:
+        """ Randomize velocities according to a given temperature.
+
+        Parameters
+        ----------
+        temperature : float
+            Temperature to randomize velocities by. If <= 0, set all velocities to zero.
+
+        seed : int, optional
+            Seed for random number generator
+
+        ndofs : int, optional
+            Number of degrees of freedom
+
+        Raises
+        ------
+        ValueError
+            If spatial dimention (D) is None
+        ValueError
+            If any mass is zero. Set masses before randomizing velocities.
+
+        """
         if self.D is None:
             raise ValueError('Cannot randomize velocities. Start by assigning positions.')
         masses = self['m']
@@ -300,8 +339,20 @@ class Configuration:
         The lattice is constructed by replicating the unit cell in all directions.
         Unit cell is a dictonary with `fractional_coordinates` for particles, and
         the `lattice_constants` as a list of unit cell lengths in all directions.
+        The simulation box is :class:`~gamdpy.Orthorhombic`.
 
-        Unit cells are available in gamdpy.unit_cells
+        Unit cells directories are available in :obj:`gamdpy.unit_cells`.
+
+        Parameters
+        ----------
+        unit_cell : dict
+            Dictionary with `fractional_coordinates` for particles and `lattice_constants`
+
+        cells : list[int]
+            Number of unit cells in each direction
+
+        rho : float
+            Number density
 
         Example
         -------
@@ -319,19 +370,27 @@ class Configuration:
         self.simbox = Orthorhombic(self.D, box_vector)
         return
 
-    def make_positions(self, N, rho):
-        """
-        Generate particle positions in D dimensions.
+    def make_positions(self, N, rho: float) -> None:
+        """ Generate particle positions in D dimensions.
 
         Positions are generated in a simple cubic configuration in D dimensions.
-        Takes the number of particles N and the density rho as inputs
+        Takes the number of particles N and the density rho as inputs.
+        The simulation box type is :class:`~gamdpy.Orthorhombic` and cubic.
+
+        Parameters
+        ----------
+        N : int
+            Number of particles
+
+        rho : float
+            Number density of particles
 
         Example
         -------
 
         >>> import gamdpy as gp
-        >>> conf = gp.Configuration(D=3)
-        >>> conf.make_positions(N=27, rho=0.2)
+        >>> configuration = gp.Configuration(D=3)
+        >>> configuration.make_positions(N=1000, rho=1.2)
         """
 
         D = self.D
@@ -375,12 +434,19 @@ class Configuration:
 
         return
     
-    def atomic_scale(self, density):
+    def atomic_scale(self, density: float) -> None:
+        """ Scale atom positions and simulation box to a given density.
+
+         Parameters
+         ----------
+         density : float
+            Number density of particles after scaling.
+
+         """
         actual_rho = self.N / self.get_volume()
         scale_factor = (actual_rho / density)**(1/3)
         self.vectors['r'] *= scale_factor
         self.simbox.scale(scale_factor)
-
 
     def save(self, output: h5py.File, group_name: str, mode: str="w", include_topology: bool=False) -> None:
         """ Write a configuration to a HDF5 file
@@ -388,7 +454,7 @@ class Configuration:
         Parameters
         ----------
 
-        configuration : gamdpy.Configuration
+        configuration : ~gamdpy.Configuration
             a gamdpy configuration object
 
         output : h5py.File
@@ -471,7 +537,7 @@ class Configuration:
     # The following is equivalent to overloading in c++ : https://stackoverflow.com/questions/12179271/meaning-of-classmethod-and-staticmethod-for-beginner
     # cls stands for class, in this case the Configuration class
     @classmethod
-    def from_h5(cls, h5file: h5py.File, group_name: str, reset_images: bool=False, compute_flags: dict=get_default_compute_flags()):
+    def from_h5(cls, h5file: h5py.File, group_name: str, reset_images: bool=False, compute_flags: dict=get_default_compute_flags()) -> "Configuration":
         """ Read a configuration from an open HDF5 file identified by group-name
 
         Parameters
@@ -492,12 +558,12 @@ class Configuration:
         Returns
         -------
 
-        configuration : gamdpy.Configuration
+        configuration : ~gamdpy.Configuration
             a gamdpy configuration object
 
 
-        Example:
-        --------
+        Example
+        -------
 
         >>> import gamdpy as gp
         >>> output_file = h5py.File('examples/Data/LJ_r0.973_T0.70_toread.h5')
