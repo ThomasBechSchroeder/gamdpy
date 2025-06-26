@@ -102,27 +102,54 @@ class TimeScheduler():
             return flag, idx
         return stepcheck
 
+    # def _get_stepcheck_log(self):
+    #     base = self.base
+    #     def stepcheck(step):
+    #         if step==0 or step==1:
+    #             return True, step
+    #         prev_int = 1
+    #         current = 1.0
+    #         idx = 1
+    #         while True:
+    #             current *= base
+    #             curr_int = int(current)
+    #             if curr_int != prev_int:
+    #                 idx += 1
+    #                 if curr_int == step:
+    #                     return True, idx
+    #                 if curr_int > step:
+    #                     break
+    #                 prev_int = curr_int            
+    #         return False, -1
+    #     return stepcheck
+
     def _get_stepcheck_log(self):
         base = self.base
         def stepcheck(step):
+            # determine flag
+            flag = False
             if step==0 or step==1:
-                return True, step
-            prev_int = 1
-            current = 1.0
-            idx = 1
-            while True:
-                current *= base
-                curr_int = int(current)
-                if curr_int != prev_int:
+                flag = True
+            else:
+                virtual_index = int(np.log(step+1)/np.log(base))
+                virtual_step = int(base**virtual_index)
+                if virtual_step==step:
+                    flag = True
+            if not flag:
+                return False, -1
+            idx = 0
+            # find the save index by counting previous true flags
+            for i in range(1, step+1):
+                if i==0 or i==1:
                     idx += 1
-                    if curr_int == step:
-                        return True, idx
-                    if curr_int > step:
-                        break
-                    prev_int = curr_int            
-            return False, -1
+                else:
+                    virtual_index = int(np.log(i+1)/np.log(base))
+                    virtual_step = int(base**virtual_index)
+                    if virtual_step==i:
+                        idx += 1
+            return True, idx
         return stepcheck
-
+    
     def _get_stepcheck_lin(self):
         deltastep = self.deltastep
         def stepcheck(step):
