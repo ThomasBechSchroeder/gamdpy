@@ -76,6 +76,9 @@ Reset all changes.
 git reset HEAD --hard
 ```
 
+[Handling pull-requests](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/checking-out-pull-requests-locally)
+
+
 ## How to test the code
 Running `pytest` in root (gamdpy) directory will run all tests.
 This will use the settings in the file `pytest.ini`.
