@@ -16,6 +16,7 @@ from scipy.optimize import minimize
 Tconf_switch = 1e-4 # Do gradient descent until Tconf_switch is reached
 include_cg = True   # ... and then do conjugate gradient if this flag is True
 steps_between_output=32 # For gd integrator
+num_restarts = 2 # Number of restarts to quench 
 
 gp.select_gpu()
 
@@ -93,7 +94,7 @@ axs['Tc'].set_ylabel('Tconf = F**2 / lapU')
 axs['Tc'].grid(linestyle='--', alpha=0.5)
 axs['Tc'].set_xlabel(f'Iteration (1 iteration = {steps_between_output} gradient descent steps)')
 
-for restart in range(5):
+for restart in range(num_restarts):
     with h5py.File(filename, 'r') as f:
         configuration2 = gp.Configuration.from_h5(f, f"restarts/restart{restart:04d}", compute_flags={'lapU':True})
 
