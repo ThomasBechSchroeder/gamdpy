@@ -26,32 +26,30 @@ class Simulation():
     Parameters
     ----------
 
-    configuration : gamdpy.Configuration
+    configuration : ~gamdpy.Configuration
         The configuration to simulate.
 
-    interactions : list of interactions
-        Interactions such as pair potentials, bonds, external fields, etc.
+    interactions : one or a list of interactions
+        One or a list of interactions such as pair potentials, bonds, external fields, etc. See the :ref:`interactions` section for more.
 
     integrator : an integrator
-        The integrator to use for the simulation.
+        The integrator to use for the simulation. See the :ref:`integrators` section for more.
 
     runtime_actions : list of runtime actions
-        Runtime actions such as ScalarSaver, TrajectorySaver or MomentumReset
+        List of runtime actions.
+        See the :ref:`runtime_actions` section for more.
 
     num_timeblocks : int
-        Number of timeblocks to run the simulation. If not 0, then steps_per_timeblock should be set.
+        Number of timeblocks of run the simulation.
 
     steps_per_timeblock : int
-        Number of steps per timeblock.
+        Number of steps in each timeblock.
 
     compute_plan : dict
         A dictionary with the compute plan for the simulation. If None, a default compute plan is used.
 
     storage : str
         Storage for the simulation output. Can be 'memory' or a filename with extension '.h5'.
-
-    verbose : bool
-        If True, print verbose output.
 
     timing : bool
         If True, timing information is saved.
@@ -70,8 +68,7 @@ class Simulation():
                  runtime_actions: list[RuntimeAction],
                  num_timeblocks, steps_per_timeblock,
                  storage: str,
-                 compute_plan=None, 
-                 verbose=False, 
+                 compute_plan=None,
                  timing=True,
                  steps_in_kernel_test=1):
 
@@ -332,13 +329,9 @@ class Simulation():
 
         # simple run function
 
-    def run(self, verbose=True):
-        """ Run the simulation.
-
-        See also
-        --------
-
-        :func:`gamdpy.Simulation.timeblocks`
+    def run(self, verbose=True) -> None:
+        """ Run all blocks of the simulation.
+        See :func:`gamdpy.Simulation.run_timeblocks` for an open loop version.
 
         """
         for _ in self.run_timeblocks():
@@ -350,23 +343,36 @@ class Simulation():
     # generator for running simulation one block at a time
     def run_timeblocks(self, num_timeblocks=-1):
         """ Generator for running the simulation one block at a time.
+        The state of the simulation object is updated between block,
+        and data is copied to the host for (optional) data analysis.
 
         Parameters
         ----------
 
         num_timeblocks : int
-            Number of blocks to run. If -1, all blocks are run.
+            Number of blocks to run. All blocks are run if -1 (recommended).
+
+        Yields
+        ------
+        int
+            Index of the current block.
 
         Examples
         --------
 
         >>> import gamdpy as gp
-        >>> sim = gp.get_default_sim()
-        >>> for block in sim.run_timeblocks(num_timeblocks=3):
-        ...     print(f'{block=}')  # Replace with code to analyze the current configuration
+        >>> sim = gp.get_default_sim()  # Replace this with your own simulation object
+        >>> for block in sim.run_timeblocks():
+        ...     print(f'{block=}')  # Replace this with code to analyze the current configuration
         block=0
         block=1
         block=2
+        block=3
+        block=4
+        block=5
+        block=6
+        block=7
+
 
         See also
         --------
@@ -621,6 +627,7 @@ class Simulation():
 
 
     def autotune(self):
+        """ Autotune the simulation parameters for most efficient calculations on the current machine """
         flag = cuda.config.CUDA_LOW_OCCUPANCY_WARNINGS
         cuda.config.CUDA_LOW_OCCUPANCY_WARNINGS = False
 

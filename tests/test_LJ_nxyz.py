@@ -38,7 +38,7 @@ def LJ(nx, ny, nz, rho=0.8442, pb=None, tp=None, skin=None, gridsync=None, Utili
     sig, eps, cut = 1.0, 1.0, 2.5
     pairpot = gp.PairPotential(pairfunc, params=[sig, eps, cut], max_num_nbs=1000)  
 
-    # Setup the integrator
+    # Set up the integrator
     dt = 0.005
 
     if integrator=='NVE':
@@ -55,10 +55,10 @@ def LJ(nx, ny, nz, rho=0.8442, pb=None, tp=None, skin=None, gridsync=None, Utili
                    gp.ScalarSaver(8, {'Fsq':True, 'lapU':True, 'stresses':False}), ]
 
 
-    # Setup the Simulation
+    # Set up the Simulation
     sim = gp.Simulation(configuration, pairpot, integrator, runtime_actions,
                         num_timeblocks=2, steps_per_timeblock=1024 * 4,
-                        storage='memory', verbose=False)
+                        storage='memory')
 
     # Run simulation one block at a time
     for block in sim.run_timeblocks():
