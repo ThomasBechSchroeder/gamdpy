@@ -30,7 +30,9 @@ class Configuration:
         Number of particles. 
         If not set, this will be determined the first time particle data is written to the configuration. 
 
-
+    compute_flags : dict, optional
+        Dictionary specifying which quantities to compute (volume, energies, stresses, etc.).
+        If `None` the defaults are processed, see :func:`~gamdpy.get_default_compute_flags`:.
 
     Examples
     --------
@@ -69,6 +71,15 @@ class Configuration:
     >>> conf['r'] = np.zeros((400, 3))
     >>> print(conf['r'].shape)
     (400, 3)
+
+    The ``compute_flags`` paramter can be used if there should be allocated memory for storing volume data (or other data).
+
+    >>> configuration = gp.Configuration(D=3, compute_flags={'Vol':True})
+
+    The default values can be seen with :func:`~gamdpy.get_default_compute_flags`:
+
+    >>> gp.get_default_compute_flags()
+    {'U': True, 'W': True, 'K': True, 'lapU': False, 'Fsq': False, 'stresses': False, 'Vol': False, 'Ptot': False}
 
     """
 
@@ -377,7 +388,7 @@ class Configuration:
         Takes the number of particles N and the density rho as inputs.
         The simulation box type is :class:`~gamdpy.Orthorhombic` and cubic.
 
-        Parameters
+        Parametersannouced
         ----------
         N : int
             Number of particles
