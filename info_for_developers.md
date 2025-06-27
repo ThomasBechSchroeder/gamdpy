@@ -37,7 +37,8 @@ Open Todo's have been transfered to issues after developer meeting 4/6-25. For r
 - Write an example and place it in examples, add it to the examples/README.md
 - Write documentation in the docstrings of the code (run doctests to check that it works).
 - Include the new feature in the documentation, e.g., you may need to edit docs/source/api.rst
-- Close issue.
+- Close issue (if relevant)
+- Update CHANGELOG.md so it is announced in the next release.
 
 ## Some git cmd which might be useful
 
