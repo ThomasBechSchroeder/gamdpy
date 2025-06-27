@@ -474,7 +474,7 @@ class Simulation():
     def summary(self) -> str:
         """ Returns a summary string of the simulation run.
          Should be called after the simulation has been run,
-         see :func:`gamdpy.Simulation.timeblocks` or :func:`gamdpy.Simulation.run`
+         see :func:`~gamdpy.Simulation.run_timeblocks`.
          """
         if self.timing:
             time_total = self.timing_numba / 1000

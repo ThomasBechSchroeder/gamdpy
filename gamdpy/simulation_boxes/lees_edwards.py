@@ -14,14 +14,32 @@ from .simulationbox import SimulationBox
 
 
 class LeesEdwards(SimulationBox):
-    """ Simulation box class with LeesEdwards bondary conditions
+    """ Simulation box class with LeesEdwards bondary conditions.
+
+    Parameters
+    ----------
+    D : int
+        Spatial dimension
+
+    lengths : list of floats
+        Lengths of the box sides.
+
+    box_shift : float, optional
+        Shift of the box in the x-direction (the direction of shearing). The default is no shift.
+
+    box_shift_image : int
+        Image shift of the box shift. The default is no shift.
+
+    Raises
+    ------
+    ValueError
+        If ``D`` is less than 2.
 
     Example
     -------
 
     >>> import gamdpy as gp
-    >>> import numpy as np
-    >>> simbox = gp.LeesEdwards(D=3, lengths=np.array([3,4,5]), box_shift=1.0)
+    >>> simbox = gp.LeesEdwards(D=3, lengths=[3,4,5], box_shift=1.0)
 
     """
     def __init__(self, D, lengths, box_shift=0., box_shift_image=0):
@@ -62,18 +80,34 @@ class LeesEdwards(SimulationBox):
         return volume
 
     def get_lengths(self):
+        """ Return the box lengths as a numpy array
+
+         Returns
+         -------
+         numpy.ndarray
+            The box lengths in each spatial dimension.
+
+         """
         return self.data_array[:self.D].copy()
 
     def get_volume(self):
-        #self.copy_to_host()
+        """ Return the box volume, :math:`V = \prod_{i=1}^{D} L_i`
+
+        Returns
+        -------
+        float
+            Volume of the box.
+
+        """
         return self.get_volume_function()(self.data_array[:self.D])
 
-    def scale(self, scale_factor):
+    def scale(self, scale_factor: float) -> None:
+        """ Scale the box lengths by scale_factor """
         self.data_array[:self.D] *= scale_factor
 
 
     def get_dist_sq_dr_function(self):
-        """Generates function dist_sq_dr which computes displacement and distance for one neighbor """
+        # Generates function dist_sq_dr which computes displacement and distance for one neighbor
         D = self.D
 
         def dist_sq_dr_function(ri, rj, sim_box, dr):  

@@ -14,34 +14,51 @@ from .simulationbox import SimulationBox
 class Orthorhombic(SimulationBox):
     """ Standard rectangular simulation box class 
 
+    Parameters
+    ----------
+    D: int
+        Spatial dimension
+
+    lengths: list of floats
+        The box lengths in each spatial dimension.
+
+    Raises
+    ------
+    ValueError
+        If the length of ``lengths`` is not equal to ``D``.
+
     Example
     -------
 
     >>> import gamdpy as gp
-    >>> import numpy as np
-    >>> simbox = gp.Orthorhombic(D=3, lengths=np.array([3,4,5]))
+    >>> simbox = gp.Orthorhombic(D=3, lengths=[3, 4, 5])
 
     """
-    def __init__(self, D, lengths):
-        self.D = D
+    def __init__(self, D: int, lengths: list):
+        if len(lengths) != D:
+            raise ValueError("Length of lengths must be equal to D")
+
+        self.D = D  # This parameter is not needed, since it is determined by the length of the box
         self.data_array = np.array(lengths, dtype=np.float32) # ensure single precision
         self.len_sim_box_data = D # not true for other Simbox classes. Want to remove this and just use len(self.data_array)
+
         return
 
-    def get_name(self):
+    def get_name(self) -> str:
         return "Orthorhombic"
 
-
-    def copy_to_device(self):
+    def copy_to_device(self) -> None:
+        # Copy data from host to device memory (CPU to GPU).
         self.d_data = cuda.to_device(self.data_array)
 
-    def copy_to_host(self):
+    def copy_to_host(self) -> None:
+        # Copy data from device to host memory (GPU to CPU).
         self.data_array = self.d_data.copy_to_host()
 
-    def get_dist_sq_dr_function(self):
-        """Generates function dist_sq_dr which computes displacement and distance squared for one neighbor """
+    def get_dist_sq_dr_function(self) -> callable:
         D = self.D
-        def dist_sq_dr_function(ri, rj, sim_box, dr):  
+        # A function which computes displacement and distance squared for one neighbor
+        def dist_sq_dr_function(ri, rj, sim_box, dr):
 
             ''' Returns the squared distance between ri and rj applying MIC and saves ri-rj in dr '''
             dist_sq = numba.float32(0.0)
@@ -55,10 +72,10 @@ class Orthorhombic(SimulationBox):
 
         return dist_sq_dr_function
 
-    def get_dist_sq_function(self):
-        """Generates.function dist_sq_function which computes distance squared for one neighbor """
+    def get_dist_sq_function(self) -> callable:
         D = self.D
-        def dist_sq_function(ri, rj, sim_box):  
+        # Generates.function dist_sq_function which computes distance squared for one neighbor
+        def dist_sq_function(ri, rj, sim_box):
             ''' Returns the squared distance between ri and rj applying MIC'''
             dist_sq = numba.float32(0.0)
             for k in range(D):
@@ -84,17 +101,30 @@ class Orthorhombic(SimulationBox):
             return
         return apply_PBC
 
-    def get_lengths(self):
-        """ Return the box lengths as a numpy array """
+    def get_lengths(self) -> np.ndarray:
+        """ Return the box lengths as a numpy array
+
+         Returns
+         -------
+         numpy.ndarray
+            The box lengths in each spatial dimension.
+
+         """
         return self.data_array.copy()
 
-    def get_volume(self):
-        """ Return the box volume """
+    def get_volume(self) -> float:
+        """ Return the box volume, :math:`V = \prod_{i=1}^{D} L_i`
+
+        Returns
+        -------
+        float
+            Volume of the box.
+
+        """
         #self.copy_to_host() # not necessary if volume is fixed and if not fixed then presumably stuff like normalizing stress by volume should be done in the device anyway
-        return self.get_volume_function()(self.data_array)
+        return float(self.get_volume_function()(self.data_array))
 
     def get_volume_function(self):
-        """ Return the box volume """
         D = self.D
         def volume(sim_box):
             ''' Returns volume of the rectangular box '''
@@ -104,7 +134,7 @@ class Orthorhombic(SimulationBox):
             return vol
         return volume
 
-    def scale(self, scale_factor):
+    def scale(self, scale_factor: float) -> None:
         """ Scale the box lengths by scale_factor """
         self.data_array *= scale_factor
 

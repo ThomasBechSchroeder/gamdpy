@@ -10,7 +10,9 @@ from .integrator import Integrator
 class SLLOD(Integrator):
     """ The SLLOD integrator
 
-    Shear an atomic system in the xy-plane using the SLLOD equations.
+    Shear an atomic system in the xy-plane using the SLLOD equations [Edberg1986]_
+    implimented with the operator splitting algorithm, see [Pan2005]_.
+    This integrator needs a :class:`~gamdpy.LeesEdwards` simulation box.
 
     Parameters
     ----------
@@ -20,6 +22,36 @@ class SLLOD(Integrator):
 
     dt : float
         The time step of the simulation.
+
+    Raises
+    ------
+    TypeError
+        If the simulation box is not :class:`~gamdpy.LeesEdwards` simulation box.
+
+    References
+    ----------
+    .. [Edberg1986] Roger Edberg, Denis J. Evans and G. P. Morriss
+    "Constrained molecular dynamics: Simulations of liquid alkanes with a new algorithm"
+    J. Chem. Phys. 84, 6933–6939 (1986)
+    https://doi.org/10.1063/1.450613
+
+    .. [Pan2005] Guoai Pan, James F. Ely, Clare McCabe and Dennis J. Isbister
+    "Operator splitting algorithm for isokinetic SLLOD molecular dynamics"
+    J. Chem. Phys. 122, 094114 (2005)
+    https://doi.org/10.1063/1.1858861
+
+    Examples
+    --------
+
+    An example of how to set up a Lees Edwards simulation box and a SLLOD integrator in a Lennard-Jones like system.
+
+    >>> configuration = gp.Configuration(D=3, compute_flags={'stresses': True})
+    >>> configuration.make_lattice(gp.unit_cells.FCC, cells=[8, 8, 8], rho=0.973)
+    >>> configuration['m'] = 1.0
+    >>> configuration.randomize_velocities(temperature=0.7)
+    >>> configuration.simbox = gp.LeesEdwards(configuration.D, configuration.simbox.get_lengths())
+    >>> configuration.set_kinetic_temperature(temperature=0.7, ndofs=configuration.N*3-4)  # Note that we need to subtract 4
+    >>> integrator = gp.SLLOD(shear_rate=0.02, dt=0.01)
 
     """
     def __init__(self, shear_rate, dt):
@@ -48,6 +80,10 @@ class SLLOD(Integrator):
         return (dt,sr, self.d_thermostat_sums)
 
     def get_kernel(self, configuration, compute_plan, compute_flags, interactions_kernel, verbose=False):
+
+        # Expects an Less Edwards type simulation box
+        if not isinstance(configuration.simbox, gp.LeesEdwards):
+            raise ValueError(f'The SLLOD integrator requires a Lees-Edwards simulation box, but got {type(configuration.simbox)}')
 
         # Unpack parameters from configuration and compute_plan
         D, num_part = configuration.D, configuration.N

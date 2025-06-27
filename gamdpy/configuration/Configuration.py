@@ -388,7 +388,7 @@ class Configuration:
         Takes the number of particles N and the density rho as inputs.
         The simulation box type is :class:`~gamdpy.Orthorhombic` and cubic.
 
-        Parametersannouced
+        Parameters
         ----------
         N : int
             Number of particles

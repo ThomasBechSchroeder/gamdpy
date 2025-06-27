@@ -24,37 +24,30 @@ class SimulationBox(ABC):
     def copy_to_host(self):
         pass
 
-
     @abstractmethod
     def get_volume_function(self) -> callable:
-        """
-        Returns the function which calculates the volume of the simulation box
-        """
+        # Returns the function which calculates the volume of the simulation box
         pass
 
     @abstractmethod
     def get_volume(self) -> float:
-        """
-        Calculate and return the volume, on the host
-        """
+        """ Return the volume of the simulation box """
         pass
 
     @abstractmethod
     def scale(self, scale_factor):
-        """
-        Rescale the box by a factor scale_factor, in all directions, if scale_factor is a single float
-        or by a different factor in each direction if scale_factor is an array of length D
-        """
+        #Rescale the box by a factor scale_factor, in all directions, if scale_factor is a single float
+        # or by a different factor in each direction if scale_factor is an array of length D
         pass
 
     @abstractmethod
     def get_dist_sq_dr_function(self) -> callable:
-        """Generates function dist_sq_dr which computes displacement and distance for one neighbor """
+        # Generates function dist_sq_dr which computes displacement and distance for one neighbor
         pass
 
     @abstractmethod
     def get_dist_sq_function(self) -> callable:
-        """Generates.function dist_sq_function which computes distance squared for one neighbor """
+        # Generates.function dist_sq_function which computes distance squared for one neighbor
         pass
 
     @abstractmethod
