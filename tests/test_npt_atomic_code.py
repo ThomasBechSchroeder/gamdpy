@@ -36,7 +36,7 @@ def test_npt_atomic() -> None:
             verbose=True)
     return
 
-def test_NPT_Langevin_LeesEdwards_TypeError_not_Orthorhombic():
+def test_NPT_Atomic_LeesEdwards_TypeError_not_Orthorhombic():
     # Test that code raise an error for Lees Edwards Simulation cell
     import gamdpy as gp
     import pytest
@@ -49,11 +49,11 @@ def test_NPT_Langevin_LeesEdwards_TypeError_not_Orthorhombic():
     runtime_actions = []
 
     with pytest.raises(TypeError,
-                       match="The NPT Langevin integrator expected Orthorhombic simulation box but got .*LeesEdwards.*"):
+                       match="The NPT Atomic integrator expected Orthorhombic simulation box but got .*LeesEdwards.*"):
         sim = gp.Simulation(configuration, interactions, integrator, runtime_actions,
                             num_timeblocks=3, steps_per_timeblock=128, storage='memory')
 
-def test_NPT_Langevin_LeesEdwards_ValueError_D3():
+def test_NPT_Atomic_LeesEdwards_ValueError_D3():
     # Test that an error is raised if the spatial dimension in not D=3
     import gamdpy as gp
     import pytest
@@ -71,3 +71,5 @@ def test_NPT_Langevin_LeesEdwards_ValueError_D3():
 
 if __name__ == '__main__':
     test_npt_atomic()
+    test_NPT_Atomic_LeesEdwards_TypeError_not_Orthorhombic()
+    test_NPT_Atomic_LeesEdwards_ValueError_D3()
