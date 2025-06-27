@@ -50,11 +50,13 @@ angle_params = [[kangle, angle0],]
 angles = gp.Angles(angle_potential, configuration.topology.angles, angle_params)
 
 # Angle exclusions
-exclusion = np.zeros( (configuration.N, 20) , dtype=np.int32)
-for n in range(0, configuration.N, 3):
-    exclusion[n, 0], exclusion[n, 1], exclusion[n, -1] = n+1, n+2, 2
-    exclusion[n+1, 0], exclusion[n+1, 1], exclusion[n+1, -1] = n, n+2, 2
-    exclusion[n+2, 0], exclusion[n+2, 1], exclusion[n+2, -1] = n, n+1, 2
+exclusion =angles.get_exclusions(configuration)
+
+#exclusion = np.zeros( (configuration.N, 20) , dtype=np.int32)
+#for n in range(0, configuration.N, 3):
+#    exclusion[n, 0], exclusion[n, 1], exclusion[n, -1] = n+1, n+2, 2
+#    exclusion[n+1, 0], exclusion[n+1, 1], exclusion[n+1, -1] = n, n+2, 2
+#    exclusion[n+2, 0], exclusion[n+2, 1], exclusion[n+2, -1] = n, n+1, 2
     
 
 # Make pair potential
@@ -103,4 +105,4 @@ sim = gp.Simulation(configuration, [pair_pot, bonds, angles], integrator, runtim
 for block in sim.run_timeblocks():
     print("\r", block, "out of ", sim.num_blocks, end=" ")  
 
-
+print(sim.status(per_particle=True))

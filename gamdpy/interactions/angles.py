@@ -133,8 +133,8 @@ class Angles(Interaction):
                     idx = [0, 1]
 
                 for kk in idx:
-                    if angles_entry_not_exists(pidx[1], exclusions[pidx[k]],offset):
-                        exclusions[pidx[k]][offset] = pidx[1]
+                    if angles_entry_not_exists(pidx[kk], exclusions[pidx[k]], offset):
+                        exclusions[pidx[k]][offset] = pidx[kk]
                         offset += 1
                     
                 exclusions[pidx[k]][-1] = offset
