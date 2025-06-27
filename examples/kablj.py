@@ -1,6 +1,6 @@
 """ Example of a binary LJ simulation using gamdpy.
 
-NVT simulation of the Kob-Andersen mixture, and compare results with Rumd3 (rumd.org)
+NVT simulation of the Kob-Andersen mixture
 """
 
 import gamdpy as gp
@@ -8,7 +8,6 @@ import gamdpy as gp
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import os.path
 
 # Specify statepoint
 num_part = 2000
@@ -99,7 +98,7 @@ if __name__ == "__main__":
 
 dyn = gp.tools.calc_dynamics(sim.output, first_block=0, qvalues=[7.5, 5.5])
 fig, axs = plt.subplots(1, 1, figsize=(6,4))
-axs.loglog(dyn['times'], dyn['msd'], '.-', label=['A (gamdpy)', 'B (gamdpy)'])
+axs.loglog(dyn['times'], dyn['msd'], '.-', label=['A', 'B'])
 axs.set_xlabel('Time')
 axs.set_ylabel('MSD')
 
