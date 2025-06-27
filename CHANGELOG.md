@@ -3,7 +3,8 @@
 ## New in current version
 
 ### New features
-* [Add new features here and bugfixes]
+* Integrator for Brownian dynamics.
+* Integrator for gradient descent.
 
 ### Bug fixes
 
