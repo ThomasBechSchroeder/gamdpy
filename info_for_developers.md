@@ -22,8 +22,7 @@ Open Todo's have been transfered to issues after developer meeting 4/6-25. For r
 ## Various tools/strategies we will use
 - [PEP 8 – Style Guide for Python Code](https://peps.python.org/pep-0008/)
 - Git ( https://git-scm.com/doc, https://git-scm.com/book/en/v2/Git-Branching-Branches-in-a-Nutshell ).
-- Sphinx ( https://www.sphinx-doc.org/ ) for documentation, 
-- ... to be hosted on readthedocs ( https://about.readthedocs.com/ ). Model: https://numba.readthedocs.io.
+- Sphinx ( https://www.sphinx-doc.org/ ) for documentation. See https://numpydoc.readthedocs.io/en/latest/format.html for style of docstrings.
 - Hypothesis (property-based testing, https://hypothesis.readthedocs.io ).
 - doctest (no more failing examples in examples/docs!, see colarray.py for example).
 - Jupyter notebooks for tutorials. Testing: nbmake?, testbook?
