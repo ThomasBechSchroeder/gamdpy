@@ -1,21 +1,20 @@
 # Installation
 
 To install `gamdpy` you need a computer 
-with a Nvidia GPU, and the following software installed:
+with a **Nvidia GPU**, Python3, and the following software installed (Windows users: see below):
 
 1. the [CUDA toolkit](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html), and
 2. the [numba](https://numba.readthedocs.io/) python package with CUDA GPU support (install `cudatoolkit`).
 
-Ensure that this is working before proceeding with the installation of `gampdy`.
-
-## Linux
-
-Ensure that the CUDA toolkit and numba is installed (see above) by executing the below
+Ensure that this is working before proceeding with the installation (see below):
 
 ```sh
 python3 -c "import numba.cuda; print(numba.cuda.get_current_device().name)"
 ```
 
+should execute without errors.
+
+## Linux
 
 ### Install with the Python Package Index (pip)
 
@@ -74,7 +73,7 @@ The default installation is Ubuntu, for others check: <https://learn.microsoft.c
 - in the tab bar click on "v" and select ubuntu
 ```sh 
 sudo apt-get update
-sudo apt-get install python3.10  # or another version
+sudo apt-get install python3
 sudo apt-get install pip
 ```
 
@@ -102,6 +101,14 @@ sudo apt install nvidia-cuda-toolkit
 
 ### Install gamdpy
 
+For the latest stable version,
+
+```sh
+pip install gamdpy
+```
+
+and for the latest developer version
+
 ```sh
 pip install git+https://github.com/ThomasBechSchroeder/gamdpy.git
 ```
@@ -124,8 +131,21 @@ conda install anaconda::pip
 conda install anaconda::git
 conda config --set channel_priority flexible
 conda install cudatoolkit
+```
+
+Then type
+
+```sh
+pip install gamdpy
+```
+
+for the stable release, or
+
+```sh
 pip install git+https://github.com/ThomasBechSchroeder/gamdpy.git
 ```
+
+for the latest developers version.
 
 ## Known issues
 

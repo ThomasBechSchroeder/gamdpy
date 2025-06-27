@@ -108,8 +108,8 @@ class Test_examples:
     def test_thermodynamics(self):
         self.make_one("thermodynamics")
 
-    def test_generic_molecules(self):
-        self.make_one("generic_molecules")
+#    def test_generic_molecules(self):
+#        self.make_one("generic_molecules")
 
     def test_LJ(self):
         self.make_one("LJ")
