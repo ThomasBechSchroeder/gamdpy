@@ -132,6 +132,8 @@ def test_nvt(nx, ny, nz):
     return
 
 
+#from hypothesis import reproduce_failure  # Uncomment these two lines to reproduce error on CI machine (successful on Ulf's)
+#@reproduce_failure('6.130.5', b'AEEEQQRBBA==')
 @pytest.mark.slow
 @settings(deadline=200_000, max_examples = 8)
 @given(nx=st.integers(min_value=4, max_value=16), ny=st.integers(min_value=4, max_value=16), nz=st.integers(min_value=4, max_value=16))

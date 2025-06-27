@@ -120,6 +120,12 @@ Test scripts are located in the `tests` directory. Most can be executed (in a ve
 python3 tests/test_examples.py
 ```
 
+or using pytest
+
+```bash
+pytest --override-ini addopts="" tests/test_LJ_nxyz.py::test_nvt_langevin
+```
+
 Running doctest of a single file:
 
 ```bash
