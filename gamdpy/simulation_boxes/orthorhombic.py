@@ -113,7 +113,7 @@ class Orthorhombic(SimulationBox):
         return self.data_array.copy()
 
     def get_volume(self) -> float:
-        """ Return the box volume, :math:`V = \prod_{i=1}^{D} L_i`
+        r""" Return the box volume, :math:`V = \prod_{i=1}^{D} L_i`
 
         Returns
         -------

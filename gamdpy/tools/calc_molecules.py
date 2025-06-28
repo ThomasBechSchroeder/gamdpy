@@ -117,7 +117,9 @@ def calculateMolDipole(conf, qatoms, molname: str):
     Note: The positions are *not* wrapped in accordance with periodic boundary conditions 
 
     '''
-
+    # https://numba.readthedocs.io/en/stable/reference/deprecation.html
+    # LC: it seems soon numba would only accept numba.typed.List and not regular python lists
+    from numba.typed import List
 
     atom_idxs = np.array(conf.topology.molecules[molname], dtype=np.uint64)
     nmols, nuau = atom_idxs.shape[0], atom_idxs.shape[1]
@@ -125,7 +127,7 @@ def calculateMolDipole(conf, qatoms, molname: str):
     dmols = np.zeros( (nmols, 3) )
     rmols, mmols = calculateMolCenterMass(conf, molname)
 
-    __calc_moldipole__(dmols, rmols, atom_idxs, nuau, conf['r'], qatoms, conf.r_im, conf.simbox.get_lengths(), nmols)
+    __calc_moldipole__(dmols, rmols, atom_idxs, nuau, conf['r'], List(qatoms), conf.r_im, conf.simbox.get_lengths(), nmols)
 
     return dmols, rmols, mmols 
 

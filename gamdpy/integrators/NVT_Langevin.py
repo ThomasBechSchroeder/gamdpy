@@ -10,7 +10,7 @@ from .integrator import Integrator
 
 
 class NVT_Langevin(Integrator):
-    """ NVT Langevin Leap-frog integrator.
+    r""" NVT Langevin Leap-frog integrator.
 
     Leap-Frog implementation of the algorithm described in Ref. [Grønbech2014]_.
     This integrator is a stochastic thermostat that keeps the system at a constant temperature,

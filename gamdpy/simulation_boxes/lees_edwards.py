@@ -91,7 +91,7 @@ class LeesEdwards(SimulationBox):
         return self.data_array[:self.D].copy()
 
     def get_volume(self):
-        """ Return the box volume, :math:`V = \prod_{i=1}^{D} L_i`
+        r""" Return the box volume, :math:`V = \prod_{i=1}^{D} L_i`
 
         Returns
         -------

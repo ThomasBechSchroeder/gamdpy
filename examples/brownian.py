@@ -52,4 +52,5 @@ ax.set_xlim(-X/2, X/2)
 ax.set_ylim(-Y/2, Y/2)
 ax.set_xlabel('x')
 ax.set_ylabel('y')
-plt.show()
+if __name__ == "__main__":
+    plt.show()
