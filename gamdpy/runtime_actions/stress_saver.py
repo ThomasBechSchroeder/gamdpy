@@ -73,6 +73,7 @@ class StressSaver(RuntimeAction):
         zero_kernel = cuda.jit(zero_kernel)
         return zero_kernel[1,1]
 
+
     def get_params(self, configuration, compute_plan):
         D = configuration.D
         self.output_array = np.zeros((self.stress_saves_per_block, D, D), dtype=np.float32)

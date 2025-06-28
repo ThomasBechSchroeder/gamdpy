@@ -58,12 +58,10 @@ def test_SLLOD(run_NVT=False):
     # temperature since SLLOD uses an isokinetic thermostat
     configuration.set_kinetic_temperature(temperature, ndofs=configuration.N*3-4) # remove one DOF due to constraint on total KE
 
-    print(configuration.simbox.data_array)
     runtime_actions = [#gp.MomentumReset(100), 
                    gp.TrajectorySaver(include_simbox=True),
                    gp.StressSaver(sc_output),
                    gp.ScalarSaver(sc_output, {'stresses':True}), ]
-    print(f"volume {configuration.get_volume()}")
 
     # Setup Simulation. Total number of timesteps: num_blocks * steps_per_block
     sim_SLLOD = gp.Simulation(configuration, pairpot, integrator_SLLOD, runtime_actions,
@@ -78,10 +76,6 @@ def test_SLLOD(run_NVT=False):
         lengths = configuration.simbox.get_lengths()
         print(f'box-shift={box_shift:.4f}, strain = {box_shift/lengths[1]:.4f}')
     print(sim_SLLOD.summary())
-    #print('stress')
-    #print(sim_SLLOD.output['stress_saver/stress_tensor'][:])
-    #print('scalars')
-    #print(sim_SLLOD.output['scalar_saver/scalars'][:])
 
     sxy = gp.StressSaver.extract(sim_SLLOD.output)[:,0,1]
     sxy_mean = np.mean(sxy)
