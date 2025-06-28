@@ -594,11 +594,6 @@ class Configuration:
         h5_vec_col_dict = {value: index for index, value in enumerate(h5_vector_columns)}
         h5_sca_col_dict = {value: index for index, value in enumerate(h5_scalar_columns)}
 
-        # Sanity
-        assert isinstance(h5file, h5py.File), "h5file is not an open h5 file"
-        assert isinstance(group_name, str), "group_name is not a str"
-        assert isinstance(compute_flags, dict), "compute_flags is not a dict"
-
         h5_vectors_array = h5file[group_name]['vectors'][:]
         h5_scalars_array = h5file[group_name]['scalars'][:]
         simbox_name = h5file[group_name].attrs['simbox_name']
