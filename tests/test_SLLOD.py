@@ -5,8 +5,8 @@ and Lees-Edwards boundary conditions
 
 """
 
-import pytest
-@pytest.mark.gamdpy_cpu
+
+
 def test_SLLOD(run_NVT=False):
     from pathlib import Path
 
@@ -50,7 +50,7 @@ def test_SLLOD(run_NVT=False):
     # Test get_kernel
     integrator_SLLOD.get_kernel(configuration=configuration,
                                 compute_plan = gp.get_default_compute_plan(configuration),
-                                compute_flags = configuration.compute_flags, #gp.get_default_compute_flags(),
+                                compute_flags = configuration.compute_flags, 
                                 interactions_kernel=None,
                                 verbose=True)
 
@@ -59,6 +59,7 @@ def test_SLLOD(run_NVT=False):
     configuration.set_kinetic_temperature(temperature, ndofs=configuration.N*3-4) # remove one DOF due to constraint on total KE
 
     runtime_actions = [gp.MomentumReset(100),
+    runtime_actions = [gp.MomentumReset(100), 
                    gp.TrajectorySaver(include_simbox=True),
                    gp.StressSaver(sc_output),
                    gp.ScalarSaver(sc_output, {'stresses':True}), ]
