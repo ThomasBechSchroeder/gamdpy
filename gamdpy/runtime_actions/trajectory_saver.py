@@ -12,7 +12,7 @@ class TrajectorySaver(RuntimeAction):
     """
 
     def __init__(self, scheduler=Log2(), include_simbox=False, verbose=False, compression="gzip", compression_opts=4) -> None:
-        
+
         self.scheduler = scheduler
         self.include_simbox = include_simbox
         self.num_vectors = 2  # 'r' and 'r_im' (for now!)
