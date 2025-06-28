@@ -11,13 +11,7 @@ class TrajectorySaver(RuntimeAction):
     Does logarithmic saving.
     """
 
-    def __init__(self, scheduler=None, include_simbox=False, verbose=False, compression="gzip", compression_opts=4) -> None:
-        if isinstance(scheduler, TimeScheduler):
-            # in this case the user must have set up the scheduler
-            self.time_scheduler = scheduler
-        else:
-            # fallback option is log, with base 2 handled by the scheduler
-            self.time_scheduler = TimeScheduler(schedule='log')
+    def __init__(self, schedule='log2', include_simbox=False, verbose=False, compression="gzip", compression_opts=4, **kwargs) -> None:
 
         self.include_simbox = include_simbox
         self.num_vectors = 2  # 'r' and 'r_im' (for now!)

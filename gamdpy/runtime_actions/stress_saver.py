@@ -20,6 +20,7 @@ class StressSaver(RuntimeAction):
     def get_compute_flags(self):
         return self.compute_flags
 
+
     def setup(self, configuration, num_timeblocks:int, steps_per_timeblock:int, output, verbose=False) -> None:
 
         self.configuration = configuration
@@ -57,6 +58,8 @@ class StressSaver(RuntimeAction):
         self.zero_kernel = self.make_zero_kernel_3()
         config.CUDA_LOW_OCCUPANCY_WARNINGS = flag
 
+
+
     def make_zero_kernel_3(self):
         """ Returns a kernel that can zero an array with three axes """
         def zero_kernel(array):
@@ -84,11 +87,13 @@ class StressSaver(RuntimeAction):
         volume = self.configuration.get_volume()
         output_reference['stress_saver/stress_tensor'][timeblock, :] = self.d_output_array.copy_to_host() / volume
 
+
     def get_prestep_kernel(self, configuration, compute_plan):
         # Unpack parameters from configuration and compute_plan
         D, num_part = configuration.D, configuration.N
         pb, tp, gridsync = [compute_plan[key] for key in ['pb', 'tp', 'gridsync']] 
         num_blocks = (num_part - 1) // pb + 1
+
 
         m_id = configuration.sid['m']
         v_id = configuration.vectors.indices['v']
