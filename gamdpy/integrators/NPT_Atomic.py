@@ -109,8 +109,8 @@ class NPT_Atomic(Integrator):
         compute_fsq = compute_flags['Fsq']
         r_id, v_id, f_id = [configuration.vectors.indices[key] for key in ['r', 'v', 'f']]
         m_id = configuration.sid['m']
-        if not compute_flags['W']:
-            raise ValueError("NPT_Atomic requires virial")
+        if not compute_flags['W'] or not configuration.compute_flags['W']:
+            raise ValueError("The NPT_Atomic requires virial flag to be True in the configuration object")
         else:
             w_id = configuration.sid['W']
 

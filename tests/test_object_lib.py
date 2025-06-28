@@ -9,7 +9,7 @@ def test_object_lib():
     assert np.unique(configuration_SC.ptype)==0, "Problem with configuration_SC.ptypes"
     assert configuration_SC.N == 1000, "Problem with configuration_SC.N"
     assert configuration_SC.D == 3, "Problem with configuration_SC.D"
-    assert configuration_SC.compute_flags == {'U': True, 'W': True, 'K': True, 'lapU': False, 'Fsq': False, 'stresses': False, 'Vol': False, 'Ptot': False}, "Problem with configuration_SC.compute_flags"
+    assert configuration_SC.compute_flags == {'U': True, 'W': True, 'K': True, 'lapU': False, 'Fsq': True, 'stresses': False, 'Vol': False, 'Ptot': False}, "Problem with configuration_SC.compute_flags"
 
     # Test pairpot_LJ
     from object_lib import pairpot_LJ

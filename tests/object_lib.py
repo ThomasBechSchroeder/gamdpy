@@ -4,7 +4,7 @@ __all__ = ["configuration_SC",
 
 from gamdpy import Configuration as _Configuration
 # Set up a 3d configuration for a single component system
-configuration_SC = _Configuration(D=3, compute_flags={'W':True})
+configuration_SC = _Configuration(D=3, compute_flags={'W':True, 'Fsq':True})
 configuration_SC.make_positions(N=1000, rho=0.754)
 configuration_SC['m'] = 1.0  # Set all masses to 1.0
 configuration_SC.randomize_velocities(temperature=2.0)
