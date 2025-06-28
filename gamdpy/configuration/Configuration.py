@@ -118,14 +118,18 @@ class Configuration:
         '''
         # only keys present in the default are processed
         default_compute_flags = get_default_compute_flags()
-        for k in default_compute_flags.keys():
-            if default_compute_flags[k]==True:          # if k is computed by default is activated in self.compute_flags()
-                self.compute_flags[k]=True
-            elif k not in self.compute_flags.keys():    # if k is not present in self.compute_flags.keys() is set to False
-                self.compute_flags[k]=False
-        for k in self.compute_flags.keys():             # check if the key k is an unknown key
+        # check if the key k is an unknown key
+        for k in self.compute_flags.keys():
             if k in self.compute_flags.keys() and k not in default_compute_flags.keys():
                 raise ValueError('Unknown key in compute_flags:%s' %k)
+        # expand self.compute_flags to include an entry for every key in get_default_compute_flags()
+        for k in default_compute_flags.keys():
+            # if k is computed by default is activated in self.compute_flags() unless explicitely asked otherwise
+            if default_compute_flags[k]==True and k not in self.compute_flags.keys():
+                self.compute_flags[k]=True
+            # if k is not present in self.compute_flags.keys() is set to False
+            elif k not in self.compute_flags.keys():
+                self.compute_flags[k]=False
         
         self.vector_columns = ['r', 'v', 'f']  # Should be user modifiable
         #if 'stresses' in self.compute_flags.keys() and self.compute_flags['stresses']:

@@ -72,7 +72,7 @@ class NPT_Atomic(Integrator):
         return (dt, mass_t, mass_p, degrees, self.d_thermostat_state, self.d_barostat_state)   # Needs to be compatible with unpacking in
                                                                                                # step() and update_thermostat_state() below.
 
-    def get_kernel(self, configuration: Configuration, compute_plan: dict, compute_flags:dict, interactions_kernel, verbose=False):
+    def get_kernel(self, configuration: Configuration, compute_plan: dict, compute_flags: dict, interactions_kernel, verbose=False):
 
         # This integrator is designed for an Orthorhombic simulation box
         if not isinstance(configuration.simbox, Orthorhombic):
