@@ -30,7 +30,7 @@ def LJ(nx, ny, nz, rho=0.8442, pb=None, tp=None, skin=None, gridsync=None, Utili
     if UtilizeNIII!=None:
         compute_plan['UtilizeNb'] = UtilizeNIII
     if verbose:
-        print('simbox lengths:', configuration.simbox.get_lengths())
+        print('simbox lengths: ', configuration.simbox.get_lengths())
         print('compute_plan: ', compute_plan)
    
     # Make the pair potential.
@@ -103,12 +103,13 @@ def test_nve(nx, ny, nz):
     D = 3
     df = LJ(nx, ny, nz, integrator='NVE', cut=2.5, verbose=False)
     var_e, Tkin, Tconf, R, Gamma = get_results_from_df(df, N, D)
-    print(N, '\t', nx, '\t', ny, '\t', nz, '\t', var_e, '\t', Tkin, '\t',Tconf, '\t',R, '\t',Gamma)
+    #print(N, '\t', nx, '\t', ny, '\t', nz, '\t', var_e, '\t', Tkin, '\t',Tconf, '\t',R, '\t',Gamma)
+    print(f'{N}\t{nx}\t{ny}\t{nz}\t{var_e}\t{Tkin}\t{Tconf}\t{R}\t{Gamma}')
     assert var_e < 1e-4
-    assert 0.67 < Tkin  < 0.72, print(f'{Tkin=}')
-    assert 0.67 < Tconf < 0.72, print(f'{Tkin=}')
-    assert 0.86 <   R   < 0.99, print(f'{R=}')
-    assert 5.1  < Gamma < 6.6,  print(f'{Gamma=}')
+    assert 0.67 < Tkin  < 0.72, f'{Tkin=}'
+    assert 0.67 < Tconf < 0.72, f'{Tkin=}'
+    assert 0.86 <   R   < 0.99, f'{R=}'
+    assert 5.1  < Gamma < 6.6,  f'{Gamma=}'
     
     return
 @pytest.mark.slow
@@ -122,12 +123,13 @@ def test_nvt(nx, ny, nz):
     D = 3
     df = LJ(nx, ny, nz, integrator='NVT', verbose=False)
     var_e, Tkin, Tconf, R, Gamma = get_results_from_df(df, N, D)
-    print(N, '\t', nx, '\t', ny, '\t', nz, '\t', var_e, '\t', Tkin, '\t',Tconf, '\t',R, '\t',Gamma)
+    #print(N, '\t', nx, '\t', ny, '\t', nz, '\t', var_e, '\t', Tkin, '\t',Tconf, '\t',R, '\t',Gamma)
+    print(f'{N}\t{nx}\t{ny}\t{nz}\t{var_e}\t{Tkin}\t{Tconf}\t{R}\t{Gamma}')
     # assert var_e < 0.001
-    assert 0.67 < Tkin  < 0.73, print(f'{Tkin=}')
-    assert 0.67 < Tconf < 0.73, print(f'{Tkin=}')
-    assert 0.90 <   R   < 1.00, print(f'{R=}')
-    assert 4.9  < Gamma < 7.2,  print(f'{Gamma=}')
+    assert 0.67 < Tkin  < 0.73, f'{Tkin=}'
+    assert 0.67 < Tconf < 0.73, f'{Tkin=}'
+    assert 0.90 <   R   < 1.00, f'{R=}'
+    assert 4.9  < Gamma < 7.2 , f'{Gamma=}'
     
     return
 
@@ -144,12 +146,13 @@ def test_nvt_langevin(nx, ny, nz):
     D = 3
     df = LJ(nx, ny, nz, integrator='NVT_Langevin', verbose=False)
     var_e, Tkin, Tconf, R, Gamma = get_results_from_df(df, N, D)
-    print(N, '\t', nx, '\t', ny, '\t', nz, '\t', var_e, '\t', Tkin, '\t',Tconf, '\t',R, '\t',Gamma)
+    #print(N, '\t', nx, '\t', ny, '\t', nz, '\t', var_e, '\t', Tkin, '\t',Tconf, '\t',R, '\t',Gamma)
+    print(f'{N}\t{nx}\t{ny}\t{nz}\t{var_e}\t{Tkin}\t{Tconf}\t{R}\t{Gamma}')
     # assert var_e < 0.001
-    assert 0.62 < Tkin  < 0.78, print(f'{Tkin=}')
-    assert 0.62 < Tconf < 0.78, print(f'{Tconf=}')
-    assert 0.85 <   R   < 1.00, print(f'{R=}')
-    assert 4.8  < Gamma < 6.8,  print(f'{Gamma=}')
+    assert 0.62 < Tkin  < 0.78, f'{Tkin=}'
+    assert 0.62 < Tconf < 0.78, f'{Tconf=}'
+    assert 0.85 <   R   < 1.00, f'{R=}'
+    assert 4.8  < Gamma < 6.8 , f'{Gamma=}'
     
     return
     

@@ -54,6 +54,9 @@ class Test_examples:
     def test_minimal_NPT(self):
         self.make_one("minimal_NPT")
 
+    def test_minimal_NVU(self):
+        self.make_one("minimal_NVU")
+
     def test_yukawa(self):
         self.make_one("yukawa")
 

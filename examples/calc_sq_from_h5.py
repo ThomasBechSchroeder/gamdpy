@@ -1,4 +1,4 @@
-""" Minimal example for calculing rdf from existing data """
+""" Minimal example for calculing structure factor from existing data """
 
 import os
 

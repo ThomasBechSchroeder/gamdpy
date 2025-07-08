@@ -1,11 +1,11 @@
-""" 
-"""
+""" Example of simulation for a LJ system using NVU integrator """
 
 import gamdpy as gp
 import pandas as pd
 import numpy as np
 from numba import config
 import matplotlib.pyplot as plt
+plt.rcParams.update({'figure.max_open_warning': 0}) # Removes "RuntimeWarning: More than 20 figures have been opened."
 config.CUDA_LOW_OCCUPANCY_WARNINGS = False
 
 dl = 0.03

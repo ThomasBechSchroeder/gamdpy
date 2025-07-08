@@ -4,7 +4,7 @@ from numba import cuda
 import math
 
 def make_function_constant(value: float) -> callable:
-    """ Return a function that returns a constant value.
+    r""" Return a function that returns a constant value.
 
     .. math::
         f(x) = y_0,
@@ -70,7 +70,7 @@ def make_function_ramp(value0: float, x0: float, value1: float, x1: float) -> ca
 
 
 def make_function_sin(period: float, amplitude: float, offset: float) -> callable:
-    """ Return a function that returns a sin function,
+    r""" Return a function that returns a sin function,
 
     .. math::
         f(x) = y_0 + A \sin(2 \pi x / T),
