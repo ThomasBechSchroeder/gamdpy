@@ -22,8 +22,6 @@ class RuntimeAction(ABC):
         The generated kernel is called after evaluation of interactions, before intergration step is performed, see class Simulation
         """
 
-        pass
-
     @abstractmethod   
     def get_poststep_kernel(self, configuration: Configuration, compute_plan: dict) -> Callable:
         """
@@ -31,29 +29,21 @@ class RuntimeAction(ABC):
         The generated kernel is called immediately after evaluation intergration step is performed, see class Simulation
         """
 
-        pass
-
     @abstractmethod
     def get_params(self, configuration: Configuration, compute_plan: dict) -> tuple :
         """
         Get a tuple with the parameters expected by the associated kernel
         """
 
-        pass
-
     def update_at_end_of_timeblock(self, timeblock: int, output_reference):
         """
         Method to be called at the end of a timeblock, for e.g. saving data to a file if needed
         """
-
-        pass
    
     def initialize_before_timeblock(self, timeblock: int, output_reference):
         """
         Method to be called before each timeblock 
         """
-
-        pass
 
 def merge_runtime_actions(configuration: Configuration, prestep_kernelA: Callable, poststep_kernelA: Callable, paramsA: tuple, actionB: RuntimeAction, compute_plan: dict) -> tuple[Callable, Callable, tuple] :
     paramsB = actionB.get_params(configuration, compute_plan)

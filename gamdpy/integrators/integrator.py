@@ -12,12 +12,9 @@ class Integrator(ABC):
         Get a kernel (or python function depending on compute_plan["gridsync"]) that implements performing a number of steps of the integrator
         """
 
-        pass
-
     @abstractmethod
     def get_params(self, configuration: Configuration, interactions_params: dict) -> tuple :
         """
         Get a tuple with the parameters expected by the associated kernel
         """
 
-        pass

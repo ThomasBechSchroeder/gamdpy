@@ -15,15 +15,11 @@ class Interaction(ABC):
         Get a kernel (or python function depending on compute_plan["gridsync"]) that implements calculation of the interaction
         """
 
-        pass
-
     @abstractmethod
     def get_params(self, configuration: Configuration, compute_plan: dict) -> tuple:
         """
         Get a tuple with the parameters expected by the associated kernel
         """
-
-        pass
 
     def check_datastructure_validity(self) -> bool:
         """
