@@ -6,7 +6,6 @@ and Lees-Edwards boundary conditions
 """
 
 
-
 def test_SLLOD(run_NVT=False):
     from pathlib import Path
 
@@ -31,8 +30,6 @@ def test_SLLOD(run_NVT=False):
         if Path(path).is_file():
             with h5py.File(path, "r") as fin:
                 configuration = gp.Configuration.from_h5(fin, "configuration", compute_flags={'stresses':True, 'Vol':True})
-                print("configuration read using gp.Configuration.from_h5", configuration.compute_flags)
-                print(f"volume {configuration.get_volume()}")
             break
     if configuration is None:
         raise FileNotFoundError(f'Could not find configuration file in {possible_file_paths}')
@@ -58,7 +55,6 @@ def test_SLLOD(run_NVT=False):
     # temperature since SLLOD uses an isokinetic thermostat
     configuration.set_kinetic_temperature(temperature, ndofs=configuration.N*3-4) # remove one DOF due to constraint on total KE
 
-    runtime_actions = [gp.MomentumReset(100),
     runtime_actions = [gp.MomentumReset(100), 
                    gp.TrajectorySaver(include_simbox=True),
                    gp.StressSaver(sc_output),
@@ -69,8 +65,8 @@ def test_SLLOD(run_NVT=False):
                             num_timeblocks=3, steps_per_timeblock=128,
                             storage='memory', compute_plan=compute_plan)
 
-# To generate Data/sllod_data.h5 for use in testing calc_dynamics with LEBC, set storage='Data/sllod_data.h5'
-# and set num_timeblocks=30
+    # To generate Data/sllod_data.h5 for use in testing calc_dynamics with LEBC, set storage='Data/sllod_data.h5'
+    # and set num_timeblocks=30
 
     # Run simulation one block at a time
     for block in sim_SLLOD.run_timeblocks():
@@ -84,9 +80,8 @@ def test_SLLOD(run_NVT=False):
     sxy = gp.StressSaver.extract(sim_SLLOD.output)[:,0,1]
     sxy_mean = np.mean(sxy)
     print(f'{sr:.2g} {sxy_mean:.6f}')
-    assert (np.isclose(sxy_mean, 2.71, atol=0.005 )), f"sxy_mean should be 2.71 but is {sxy_mean}"
-    assert (np.isclose(pairpot.nblist.d_nbflag[2], 51, atol=1)), f"pairpot.nblist.d_nbflag[2] should be 51 but is {pairpot.nblist.d_nbflag[2]}"
-
+    assert np.isclose(sxy_mean, 2.71, atol=0.005 ), f"sxy_mean should be 2.71 but is {sxy_mean}"
+    assert np.isclose(pairpot.nblist.d_nbflag[2], 51, atol=1), f"pairpot.nblist.d_nbflag[2] should be 51 but is {pairpot.nblist.d_nbflag[2]}"
 
 
 if __name__ == '__main__':

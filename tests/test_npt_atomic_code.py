@@ -38,7 +38,7 @@ def test_npt_atomic() -> None:
             verbose=True)
     return
 
-def test_NPT_Atomic_no_virial():
+def test_npt_atomic_no_virial():
     # Test that code raise an error if configuration object has no virial flag set True
     import gamdpy as gp
     import pytest
@@ -48,14 +48,14 @@ def test_NPT_Atomic_no_virial():
     from object_lib import pairpot_LJ
     itg = gp.integrators.NPT_Atomic(temperature=2.0, tau=0.4, pressure=1.0, tau_p=20, dt=0.001)
     with pytest.raises(ValueError,
-                       match="The NPT_Atomic requires virial flag to be True in the configuration object"):
+                       match="The NPT_Atomic requires virial flag to be True in the configuration object."):
         itg.get_kernel(configuration=configuration,
                 compute_plan = gp.get_default_compute_plan(configuration),
                 compute_flags = gp.get_default_compute_flags(),
                 interactions_kernel = None,
                 verbose=True)
 
-def test_NPT_Atomic_LeesEdwards_TypeError_not_Orthorhombic():
+def test_npt_atomic_not_Orthorhombic():
     # Test that code raise an error for Lees Edwards Simulation cell
     import gamdpy as gp
     import pytest
@@ -68,11 +68,11 @@ def test_NPT_Atomic_LeesEdwards_TypeError_not_Orthorhombic():
     runtime_actions = []
 
     with pytest.raises(TypeError,
-                       match="The NPT Atomic integrator expected Orthorhombic simulation box but got .*LeesEdwards.*"):
+                       match="The NPT Atomic integrator expected Orthorhombic simulation box but got .*LeesEdwards.*."):
         sim = gp.Simulation(configuration, interactions, integrator, runtime_actions,
                             num_timeblocks=3, steps_per_timeblock=128, storage='memory')
 
-def test_NPT_Atomic_LeesEdwards_ValueError_D3():
+def test_npt_atomic_not_3d():
     # Test that an error is raised if the spatial dimension in not D=3
     import gamdpy as gp
     import pytest
@@ -90,6 +90,6 @@ def test_NPT_Atomic_LeesEdwards_ValueError_D3():
 
 if __name__ == '__main__':
     test_npt_atomic()
-    test_NPT_Atomic_no_virial()
-    test_NPT_Atomic_LeesEdwards_TypeError_not_Orthorhombic()
-    test_NPT_Atomic_LeesEdwards_ValueError_D3()
+    test_npt_atomic_no_virial()
+    test_npt_atomic_not_Orthorhombic()
+    test_npt_atomic_not_3d()

@@ -76,7 +76,7 @@ class NPT_Atomic(Integrator):
 
         # This integrator is designed for an Orthorhombic simulation box
         if not isinstance(configuration.simbox, Orthorhombic):
-            raise TypeError(f"The NPT Atomic integrator expected Orthorhombic simulation box but got {type(configuration.simbox)}")
+            raise TypeError(f"The NPT Atomic integrator expected Orthorhombic simulation box but got {type(configuration.simbox)}.")
 
         # Unpack parameters from configuration and compute_plan
         D, num_part = configuration.D, configuration.N
@@ -110,7 +110,7 @@ class NPT_Atomic(Integrator):
         r_id, v_id, f_id = [configuration.vectors.indices[key] for key in ['r', 'v', 'f']]
         m_id = configuration.sid['m']
         if not compute_flags['W'] or not configuration.compute_flags['W']:
-            raise ValueError("The NPT_Atomic requires virial flag to be True in the configuration object")
+            raise ValueError("The NPT_Atomic requires virial flag to be True in the configuration object.")
         else:
             w_id = configuration.sid['W']
 
