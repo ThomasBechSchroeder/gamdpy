@@ -1,7 +1,5 @@
 """ Test the class TrajectoryIO. """
 
-import pytest
-@pytest.mark.gamdpy_cpu
 def test_TrajectoryIO():
     import os
     import pytest
@@ -17,7 +15,6 @@ def test_TrajectoryIO():
     configuration.randomize_velocities(temperature=temperature)
 
     # Setup pair potential: Single component 12-6 Lennard-Jones
-    pair_func = gp.apply_shifted_force_cutoff(gp.LJ_12_6_sigma_epsilon)
     pair_func = gp.apply_shifted_potential_cutoff(gp.LJ_12_6_sigma_epsilon)
     sig, eps, cut = 1.0, 1.0, 2.5
     pair_pot = gp.PairPotential(pair_func, params=[sig, eps, cut], max_num_nbs=1000)
@@ -32,7 +29,7 @@ def test_TrajectoryIO():
 
     # Setup Simulation      # Note: useless reducing steps_per_timeblock, the time is spent by the jit not by the run
     sim = gp.Simulation(configuration, pair_pot, integrator, runtime_actions,
-                        num_timeblocks=1, steps_per_timeblock=128, 
+                        num_timeblocks=2, steps_per_timeblock=64, 
                         storage='memory')
 
     # Run simulation
@@ -41,9 +38,10 @@ def test_TrajectoryIO():
 
     ## Save output to .h5 file
     output = gp.tools.TrajectoryIO()
-    assert output.h5 == None, "Error with no input initialization"
+    assert output.h5 == None, "Error with TrajectoryIO constructor when no input given"
     output.h5 = sim.output
     output.save_h5(f"LJ_r{density}_T{temperature}.h5")
+    print(os.listdir('.'))
 
     ## Test read from h5
     output = gp.tools.TrajectoryIO(f"LJ_r{density}_T{temperature}.h5").get_h5()

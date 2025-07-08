@@ -4,10 +4,8 @@
 import sys
 import os
 import time
-
-import numpy as np
 import h5py
-
+import numpy as np
 
 # This class is a wrapper for several possible inputs/output
 class TrajectoryIO():
@@ -73,14 +71,15 @@ class TrajectoryIO():
         # The class is initialized with some default compression settings depending on what is available.
         # These parameters can be changed by the user by changing the class attributes
 
+        # Following might be relevant when .save_h5 would modify compression when writing to disk
         # Checks if hdf5plugin lib is available
-        if importlib.util.find_spec("hdf5plugin")==None: 
-            self.compression_type = "gzip"
-            self.compression_opts = 6           # seems the best option in terms of compression and timing
-        else:
-            import hdf5plugin
+#        if importlib.util.find_spec("hdf5plugin")==None: 
+#            self.compression_type = "gzip"
+#            self.compression_opts = 6           # seems the best option in terms of compression and timing
+#        else:
+#            import hdf5plugin
             # if hdf5plugin is available use BZip2 compression (slightly better and faster)
-            self.compression_type = hdf5plugin.BZip2()
+#            self.compression_type = hdf5plugin.BZip2()
 
     def get_h5(self) -> h5py.File:
         """ Returns self.h5 """
@@ -145,7 +144,7 @@ class TrajectoryIO():
                 num_types = int(meta_data['numTypes'])
                 masses = [float(x) for x in  meta_data['mass'].split(',')]
                 assert len(masses) == num_types
-                if meta_data['ioformat'] == '1':
+                if meta_data['ioformat'] == '1': # old rumd format
                     lengths = np.array([float(x) for x in meta_data['boxLengths'].split(',')], dtype=np.float32)
                 else:
                     assert meta_data['ioformat'] == '2'
@@ -157,11 +156,9 @@ class TrajectoryIO():
                     integrator_data = meta_data['integrator'].split(',')
                     timestep = integrator_data[1]
             # Loop over the files and read them assuming each line is type, x, y, z, imx, imy, imz
-            #ntrajinblock = int(1+np.log2(blocksize))
             toskip1 = np.array([  (npart+2)*x for x in range(1+ntrajinblock)])
             toskip2 = np.array([1+(npart+2)*x for x in range(1+ntrajinblock)])
             toskip  = sorted(list(np.concatenate((toskip1, toskip2))))
-            #print(f"Found informations about trajectory files: {nblocks=} {blocksize=} {ntrajinblock=}")
             positions = list()
             images    = list()
             for trajectory in traj_files:
@@ -174,7 +171,6 @@ class TrajectoryIO():
             # Saving data in output h5py
             output.attrs['dt'] =  timestep 
             output.attrs['simbox_initial'] = lengths 
-            #output.attrs['vectors_names'] = ["r", "r_im"]
             output.create_group('trajectory_saver')
             output['trajectory_saver'].create_dataset('positions', shape=(len(traj_files), 1+ntrajinblock, npart, dim), dtype=np.float32)
             output['trajectory_saver/positions'][:,:,:,:] = np.array(positions) 
@@ -217,94 +213,20 @@ class TrajectoryIO():
 
         return output
 
-    def save_h5(self, name:str):
+    def save_h5(self, name:str, mode="w"):
         """ 
         This method saves self.h5 to disk.
-        It can be used to save sim.output to file if class is initialized without arguments and then self.h5 = sim.output . 
-        By default output is compressed. This can be avoided setting self.compression_type = "gzip" and self.compression_opts=0 .
+        It can be used to save sim.output to file if TrajectoryIO class is initialized without arguments and then using self.h5 = sim.output. 
+
+        LC: By default each runtime action has a compression setting. Would be nice if this function can change that when saving.
         """
 
-        # LC: This monster needs to be re-structured
         import h5py
-        import importlib.util
-        if importlib.util.find_spec("hdf5plugin")!=None:
-            import hdf5plugin
-        fout = h5py.File(name, "w") 
-        #fout.attrs.update(self.h5.attrs)
-        print(self.h5.keys())
-        for key in self.h5.keys():
-            fout.copy(source=self.h5[key], dest="/")
-            print(f"{key} {fout.keys()}")
-        fout.close()
-        return
-        for key in self.h5.keys():
-            if isinstance(self.h5[key], h5py.Group):
-                print(f"Writing Group {key} to {name}")
-                fout.create_group(f"/{key}")
-                fout.copy(self.h5[key], f"/{key}")
-                continue
-                #print(self.h5.keys(), key, fout.keys())
-                for subkey in self.h5[key].keys():
-                    if isinstance(self.h5[key][subkey], h5py.Group):
-                        #print(self.h5[key].keys(), subkey, self.h5[key][subkey], fout[key].keys())
-                        #print(f"Writing dataset {key}/{subkey} to {name}")
-                        fout.create_group(f"/{key}/{subkey}")
-                        for subsubkey in self.h5[key][subkey].keys():
-                            print(key, subkey, subsubkey)
-                            if importlib.util.find_spec("hdf5plugin")!=None:
-                                if self.compression_type == "gzip":
-                                    fout[f"{key}/{subkey}"].create_dataset(subsubkey, data=self.h5[f"{key}/{subkey}"][subsubkey], chunks=True, 
-                                            compression=self.compression_type, compression_opts=self.compression_opts, shuffle=True)
-                                else:
-                                    fout[f"{key}/{subkey}"].create_dataset(subsubkey, data=self.h5[f"{key}/{subkey}"][subsubkey], chunks=True, 
-                                            compression=self.compression_type, shuffle=True)
-                            elif self.compression_type == "gzip":
-                                fout[f"{key}/{subkey}"].create_dataset(subsubkey, data=self.h5[f"{key}/{subkey}"][subsubkey], chunks=True, 
-                                        compression=self.compression_type, compression_opts=self.compression_opts, shuffle=True)
-                            else:
-                                fout[f"{key}/{subkey}"].create_dataset(subsubkey, data=self.h5[f"{key}/{subkey}"][subsubkey], chunks=True, 
-                                        compression=self.compression_type)
-                            #print(f"Writing attributes {key}/{subkey} to {name}")
-                            fout[f"{key}/{subkey}"][subsubkey].attrs.update(self.h5[key][subkey].attrs)
-                            #print(f"Done dataset {key}/{subkey} to {name}")
-                    else:
-                        #print(self.h5[key].keys(), subkey, self.h5[key][subkey], fout[key].keys())
-                        #print(f"Writing dataset {key}/{subkey} to {name}")
-                        if importlib.util.find_spec("hdf5plugin")!=None:
-                            if self.compression_type == "gzip":
-                                fout[key].create_dataset(subkey, data=self.h5[key][subkey], chunks=True,
-                                        compression=self.compression_type, compression_opts=self.compression_opts, shuffle=True)
-                            else:
-                                fout[key].create_dataset(subkey, data=self.h5[key][subkey], chunks=True,
-                                        compression=self.compression_type, shuffle=True)
-                        elif self.compression_type == "gzip":
-                            fout[key].create_dataset(subkey, data=self.h5[key][subkey], chunks=True,
-                                    compression=self.compression_type, compression_opts=self.compression_opts, shuffle=True)
-                        else:
-                            fout[key].create_dataset(subkey, data=self.h5[key][subkey], chunks=True,
-                                    compression=self.compression_type)
-                        #print(f"Writing attributes {key}/{subkey} to {name}")
-                        fout[key][subkey].attrs.update(self.h5[key][subkey].attrs)
-                        #print(f"Done dataset {key}/{subkey} to {name}")
-                fout[key].attrs.update(self.h5[key].attrs)
-                #print(f"Done Group {key} to {name}")
-            elif isinstance(self.h5[key], h5py.Dataset):
-                print(f"Writing dataset {key} to {name}")
-                if importlib.util.find_spec("hdf5plugin")!=None:
-                    if self.compression_type == "gzip":
-                        fout.create_dataset(key, data=self.h5[key], chunks=True, compression=self.compression_type, compression_opts=self.compression_opts, shuffle=True)
-                    else:
-                        fout.create_dataset(key, data=self.h5[key], chunks=True, compression=self.compression_type, shuffle=True)
-                elif self.compression_type == "gzip":
-                    fout.create_dataset(key, data=self.h5[key], chunks=True, compression=self.compression_type, compression_opts=self.compression_opts, shuffle=True)
-                else:
-                    fout.create_dataset(key, data=self.h5[key], chunks=True, compression=self.compression_type)
-                fout[key].attrs.update(self.h5[key].attrs)
-            else:
-                print("Problem")
-
-        print(f"All written using {self.compression_type}")
-        fout.close()
-        print("Output file closed")
+        #import importlib.util # These lines will be relevant when .save_h5 can modify compression of saved output
+        #if importlib.util.find_spec("hdf5plugin")!=None:
+        #    import hdf5plugin
+        with h5py.File(name, mode=mode) as fout:
+            for key in self.h5.keys():
+                self.h5.copy(source=self.h5[key], dest=fout, name=key)
         return
 
