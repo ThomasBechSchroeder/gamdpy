@@ -76,6 +76,12 @@ Reset all changes.
 git reset HEAD --hard
 ```
 
+Show how many commits your branch is ahead or behind master (local/remote)
+```sh
+git rev-list --left-right --count master...test-branch
+git rev-list --left-right --count origin/master...origin/test-branch
+```
+
 [Handling pull-requests](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/checking-out-pull-requests-locally)
 
 
