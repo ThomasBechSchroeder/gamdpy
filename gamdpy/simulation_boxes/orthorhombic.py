@@ -175,6 +175,6 @@ class Orthorhombic(SimulationBox):
 
     def get_loop_x_shift_function(self):
 
-       def loop_x_shift_function(sim_box, cell_length_x):
+       def loop_x_shift_function(sim_box, cell_length_x): # pragma: no cover
             return 0
        return loop_x_shift_function

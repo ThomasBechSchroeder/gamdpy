@@ -184,7 +184,7 @@ class LeesEdwards(SimulationBox):
 
     def get_update_box_shift(self):
         D = self.D
-        def update_box_shift(sim_box, shift):
+        def update_box_shift(sim_box, shift): # pragma: no cover
             # carry out the addition in double precision
             sim_box[D] = numba.float32(sim_box[D] + numba.float64(shift))
             Lx = sim_box[0]
@@ -291,7 +291,7 @@ class LeesEdwards(SimulationBox):
 
     def get_loop_x_shift_function(self):
         D = self.D
-        def loop_x_shift_function(sim_box, cell_length_x):
+        def loop_x_shift_function(sim_box, cell_length_x): # pragma: no cover
             box_shift = sim_box[D]
             return -int(math.ceil(box_shift/cell_length_x))
 

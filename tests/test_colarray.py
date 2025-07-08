@@ -21,6 +21,11 @@ def test_colarray():
     for col in ca3.column_names:
         assert np.all(ca3[col]==ca[col])
 
+    # check __repr__
+    first_part = ca.__repr__().split("\n")[0]+"\n"
+    assert first_part=="colarray(('r', 'v', 'f'), (100, 2))\n", "Problem with first part of colarray.__repr__"
+    assert ca.__repr__().split(first_part)[1]==ca.array.__repr__(), "Problem with array part of colarray.__repr__"
+
     # clean up
     gp.colarray.remove_files('my_colarray')
 
