@@ -3,15 +3,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def calc_dynamics_(positions, images, ptype, simbox, block0, conf_index0, block1, conf_index1, time_index,  msd, m4d, qvalues=None, Fs=None):
+def calc_dynamics_(positions, images, ptype, simbox, block0, conf_index0, block1, conf_index1, time_index,  msd, m4d, qvalues=None, Fs=None, simbox_name
+                   ='Orthorhombic'):
     """
     Calculate contribution to dynamical properties from conf_index1 in block1 using conf_index0 in block0
     as initial time, and add it at time_index in appropiate arrays.
 
     TODO: Allow more than one q-value per type
     """
-    dR = positions[block1, conf_index1, :, :] - positions[block0, conf_index0, :, :]
-    dR += (images[block1, conf_index1, :, :] - images[block0, conf_index0, :, :]) * simbox
+    init_coord = {False: 0, True: 1} [simbox_name == 'LeesEdwards']
+    dR = positions[block1, conf_index1, :, init_coord:] - positions[block0, conf_index0, :, init_coord:]
+    dR += (images[block1, conf_index1, :, init_coord:] - images[block0, conf_index0, :, init_coord:]) * simbox[init_coord]
+
     for i in range(np.max(ptype) + 1):
         dR_type = dR[ptype == i, :]
         dR_i_sq = np.sum( dR_type**2, axis=1)
@@ -65,13 +68,22 @@ def calc_dynamics(trajectory, first_block, qvalues=None):
     ptype = trajectory['initial_configuration/ptype'][:].copy()
     attributes = trajectory.attrs
     
-    simbox = trajectory['initial_configuration'].attrs['simbox_data'].copy()
+    simbox_name = trajectory['initial_configuration'].attrs['simbox_name']
+    simbox_data = trajectory['initial_configuration'].attrs['simbox_data'].copy()
+
     num_types = np.max(ptype) + 1
     if isinstance(qvalues, float):
         qvalues = np.ones(num_types)*qvalues
     num_blocks, conf_per_block, N, D = trajectory['trajectory_saver/positions'].shape
     blocks = trajectory['trajectory_saver/positions']  # If picking out dataset in inner loop: Very slow!
     images = trajectory['trajectory_saver/images']
+    if simbox_name == "Orthorhombic":
+        simbox = simbox_data
+    elif simbox_name == "LeesEdwards":
+        simbox = simbox_data[:D]
+    else:
+        raise ValueError('Simbox not recognized: ', simbox_name)
+
 
     #print(num_types, first_block, num_blocks, conf_per_block, _, N, D, qvalues)
     if first_block > num_blocks - 1:
@@ -90,7 +102,7 @@ def calc_dynamics(trajectory, first_block, qvalues=None):
     for block in range(first_block, num_blocks):
         for i in range(conf_per_block - 1):
             count[i] += 1
-            calc_dynamics_(blocks, images, ptype, simbox, block, i + 1, block, 0, i, msd, m4d, qvalues, Fs)
+            calc_dynamics_(blocks, images, ptype, simbox, block, i + 1, block, 0, i, msd, m4d, qvalues, Fs, simbox_name)
 
     # Compute times longer than blocks
     for block in range(first_block, num_blocks):
@@ -100,12 +112,17 @@ def calc_dynamics(trajectory, first_block, qvalues=None):
             # print(other_block, end=' ')
             if other_block < num_blocks:
                 count[index] += 1
-                calc_dynamics_(blocks, images, ptype, simbox, other_block, 0, block, 0, index, msd, m4d, qvalues, Fs)
+                calc_dynamics_(blocks, images, ptype, simbox, other_block, 0, block, 0, index, msd, m4d, qvalues, Fs, simbox_name)
 
     msd /= count
     m4d /= count
     Fs  /= count
-    alpha2 = 3 * m4d / (5 * msd ** 2) - 1
+    Deff = D
+    if simbox_name == 'LeesEdwards':
+        Deff -= 1
+
+    alpha2 = Deff * m4d / ((Deff+2) * msd ** 2) - 1
+
     return {'times': times, 'msd': msd, 'alpha2': alpha2, 'qvalues':qvalues, 'Fs':Fs, 'count': count}
 
 
