@@ -168,8 +168,9 @@ class Test_examples:
     def test_NVU_example(self):
         self.make_one("NVU_example")
 
-    def test_quench_restarts(self): 
+    def test_quench_restarts(self):
         self.make_one("quench_restarts")
 
     def test_quench_trajectory(self): 
         self.make_one("quench_trajectory", ['Data/KABLJ_Rho1.200_T0.400_toread_quench.h5', ])
+
