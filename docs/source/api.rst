@@ -157,7 +157,7 @@ Generators
 
 
 Bond functions
-^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^
 
 A *bond potential* is needed for the :class:`~gamdpy.Bonds` class.
 

@@ -155,8 +155,3 @@ def calculate_molecular_dipoles(configuration: gamdpy.Configuration, atom_charge
     __calc_moldipole__(dmols, rmols, atom_idxs, nuau, configuration['r'], List(atom_charges), configuration.r_im, configuration.simbox.get_lengths(), nmols)
 
     return dmols, rmols, mmols 
-
-
-
-
-

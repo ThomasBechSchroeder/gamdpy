@@ -48,7 +48,6 @@ runtime_actions.append(gp.TrajectorySaver(scheduler=gp.Log2()))
 # Geometric schedule: logarithmic spacing with base chosen to get `npoints` saves
 #runtime_actions.append(gp.TrajectorySaver(scheduler=gp.Geom(npoints=10)))
 
-
 #############################################################################
 
 # Setup Simulation. 
