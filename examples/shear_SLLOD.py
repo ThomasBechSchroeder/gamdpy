@@ -116,7 +116,7 @@ for block in sim_SLLOD.run_timeblocks():
 print(sim_SLLOD.summary())
 
 
-U, K, W, V_sxy = gp.extract_scalars(sim_SLLOD.output, ['U', 'K', 'W', 'Sxy'])
+U, K, W, V_sxy = gp.ScalarSaver.extract(sim_SLLOD.output, ['U', 'K', 'W', 'Sxy'])
 N = configuration.N
 u, k, sxy = U/N,K/N, V_sxy / configuration.get_volume()
 

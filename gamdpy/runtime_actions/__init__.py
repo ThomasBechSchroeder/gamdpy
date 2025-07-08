@@ -4,5 +4,5 @@ from .scalar_saver import ScalarSaver
 from .trajectory_saver import TrajectorySaver, TimeScheduler
 from .restart_saver import RestartSaver
 from .momentum_reset import MomentumReset
-from .stress_saver import StressSaver, extract_stress_tensor
+from .stress_saver import StressSaver
 from .time_scheduler import *

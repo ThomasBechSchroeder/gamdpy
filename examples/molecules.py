@@ -152,8 +152,8 @@ for block in sim.run_timeblocks():
 print(sim.summary()) 
 print(configuration)
 
-W = gp.extract_scalars(sim.output, 'W')
-full_stress_tensor = gp.extract_stress_tensor(sim.output)
+W = gp.ScalarSaver.extract(sim.output, columns=['W'])
+full_stress_tensor = gp.StressSaver.extract(sim.output)
 mean_diagonal_sts = (full_stress_tensor[:,0,0] + full_stress_tensor[:,1,1] + full_stress_tensor[:,2,2])/3
 
 print("Mean diagonal stress", np.mean(mean_diagonal_sts) )

@@ -166,32 +166,3 @@ class StressSaver(RuntimeAction):
         num_timeblock, saves_per_timeblock = h5file['stress_saver']['stress_tensor'][first_block:last_block,:,0,0].shape
         times_array = np.arange(0,num_timeblock*saves_per_timeblock, step=subsample)*h5file.attrs['dt']
         return times_array
-
-def extract_stress_tensor(data, first_block=0, D=3):
-    """ Extracts stress tensor data from simulation output.
-
-    Parameters
-    ----------
-
-    data : dict
-        Output from a Simulation object.
-
-
-
-    first_block : int
-        Index of the first timeblock to extract data from.
-
-    D : int
-        Dimension of the simulation.
-
-    Returns
-    -------
-
-    array
-        three-dimensional numpy array containing the extracted tensor data.
-
-    """
-    stress_data = data['stress_saver/stress_tensor']
-    nblocks, per_block, _, _ = stress_data.shape
-    final_rows = (nblocks-first_block) * per_block
-    return stress_data[first_block:,:,:].reshape(final_rows, D, D)
