@@ -60,7 +60,7 @@ class SLLOD(Integrator):
   
     def get_params(self, configuration, interactions_params, verbose=False):
         dt = np.float32(self.dt)
-        sr = np.float32(self.shear_rate)
+        #sr = np.float32(self.shear_rate)
 
         # three 'groups' of three sum variables
         self.thermostat_sums = np.zeros(9, dtype=np.float32)
@@ -77,11 +77,11 @@ class SLLOD(Integrator):
 
         self.d_thermostat_sums = cuda.to_device(self.thermostat_sums)
 
-        return (dt,sr, self.d_thermostat_sums)
+        return (dt, self.d_thermostat_sums)
 
     def get_kernel(self, configuration, compute_plan, compute_flags, interactions_kernel, verbose=False):
 
-        # Expects an Less Edwards type simulation box
+        # Expects a Lees Edwards type simulation box
         if not isinstance(configuration.simbox, gp.LeesEdwards):
             raise ValueError(f'The SLLOD integrator requires a Lees-Edwards simulation box, but got {type(configuration.simbox)}')
 
@@ -89,6 +89,11 @@ class SLLOD(Integrator):
         D, num_part = configuration.D, configuration.N
         pb, tp, gridsync = [compute_plan[key] for key in ['pb', 'tp', 'gridsync']] 
         num_blocks = (num_part - 1) // pb + 1
+
+        if callable(self.shear_rate):
+            shear_rate_function = self.shear_rate
+        else:
+            shear_rate_function = gp.make_function_constant(value=float(self.shear_rate))
 
         if verbose:
             print(f'Generating SLLOD kernel for {num_part} particles in {D} dimensions:')
@@ -106,24 +111,16 @@ class SLLOD(Integrator):
             k_id = configuration.sid['K']
         if compute_fsq:
             fsq_id = configuration.sid['Fsq']
-        # was thinking that using a function could avoid synchronization
-        # issues for updating the boxshift. But now I'm not sure if it really
-        # makes sense to use a function (the same way that NVT
-        # does for temperature). There the temperature isn't stored anywhere.
-        # Here I'm pretty sure the box_shift has to be stored together with the
-        # other box details so interactions can always access it. So any
-        # function has to update that one location and then we have to worry
-        # about synchronization anyway
-        #def strain_function(time):
-        #    strain = self.shear_rate*time
- 
+
+
         # JIT compile functions to be compiled into kernel
+        shear_rate_function = numba.njit(shear_rate_function)
         apply_PBC = numba.njit(configuration.simbox.get_apply_PBC())
         update_box_shift = numba.njit(configuration.simbox.get_update_box_shift())
 
-
-        def call_update_box_shift(sim_box, integrator_params):                              # pragma: no cover
-            dt, sr, thermostat_sums = integrator_params
+        def call_update_box_shift(sim_box, integrator_params, time):                              # pragma: no cover
+            dt, thermostat_sums = integrator_params
+            sr = shear_rate_function(time)
             global_id, my_t = cuda.grid(2)
             if global_id == 0 and my_t == 0:
                 delta_shift = sim_box[1] * sr * dt
@@ -131,7 +128,8 @@ class SLLOD(Integrator):
 
 
         def integrate_sllod_b1(grid, vectors, scalars, integrator_params, time):            # pragma: no cover
-            dt, sr, thermostat_sums = integrator_params
+            dt, thermostat_sums = integrator_params
+            sr = shear_rate_function(time)
 
             global_id, my_t = cuda.grid(2)
             if global_id < num_part and my_t == 0:
@@ -174,7 +172,8 @@ class SLLOD(Integrator):
 
 
         def integrate_sllod_b2(grid, vectors, scalars, integrator_params, time):            # pragma: no cover
-            dt,sr, thermostat_sums = integrator_params
+            dt, thermostat_sums = integrator_params
+            sr = shear_rate_function(time)
             
             global_id, my_t = cuda.grid(2)
             if global_id < num_part and my_t == 0:
@@ -226,7 +225,9 @@ class SLLOD(Integrator):
 
 
         def integrate_sllod_a_b1(grid, vectors, scalars, r_im, sim_box, integrator_params, time):   # pragma: no cover
-            dt,sr, thermostat_sums = integrator_params
+            dt, thermostat_sums = integrator_params
+            sr = shear_rate_function(time)
+
             global_id, my_t = cuda.grid(2)
             if global_id < num_part and my_t == 0:
                 my_r = vectors[r_id][global_id]
@@ -291,7 +292,7 @@ class SLLOD(Integrator):
                 grid.sync()
                 integrate_sllod_b2(grid, vectors, scalars, integrator_params, time)
                 grid.sync()
-                call_update_box_shift(sim_box, integrator_params)
+                call_update_box_shift(sim_box, integrator_params, time)
                 grid.sync()
                 integrate_sllod_a_b1(grid, vectors, scalars, r_im, sim_box, integrator_params, time)
                 return
@@ -300,7 +301,7 @@ class SLLOD(Integrator):
             def kernel(grid, vectors, scalars, r_im, sim_box, integrator_params, time, ptype):
                 integrate_sllod_b1[num_blocks, (pb, 1)](grid, vectors, scalars, integrator_params, time)
                 integrate_sllod_b2[num_blocks, (pb, 1)](grid, vectors, scalars, integrator_params, time)
-                call_update_box_shift[1, (1, 1)](sim_box, integrator_params)
+                call_update_box_shift[1, (1, 1)](sim_box, integrator_params, time)
                 integrate_sllod_a_b1[num_blocks, (pb, 1)](grid, vectors, scalars, r_im, sim_box, integrator_params, time)
                 return
 

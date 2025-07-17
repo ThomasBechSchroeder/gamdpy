@@ -55,15 +55,20 @@ class SimulationBox(ABC):
     #def get_dist_moved_sq_function(self) -> callable:
     #    pass
 
-    # LC: The following three methods could be not abstract because they are specific to SLLOD
     @abstractmethod
     def get_dist_moved_exceeds_limit_function(self) -> callable:
-        """ Does something SLLODish. """
+        """ For use in neighbor list : Single-particle criterion for whether the neighbor list needs to be rebuilt. """
 
     @abstractmethod
     def get_loop_x_addition(self) -> int:
-        """ Does something SLLODish. """
+        """
+        For use in linked list implementation for neighbor list when Lees-Edwards (shearing) boundary conditions apply.
+        In non-shearing cases zero should be returned.
+        """
 
     @abstractmethod
     def get_loop_x_shift_function(self) -> callable:
-        """ Does something SLLODish. """
+        """
+        For use in linked list implementation for neighbor list when Lees-Edwards (shearing) boundary conditions apply. 
+        In non-shearing cases the function should return zero.
+        """

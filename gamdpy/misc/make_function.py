@@ -102,3 +102,37 @@ def make_function_sin(period: float, amplitude: float, offset: float) -> callabl
     return function
 
 
+
+def make_function_cos(period: float, amplitude: float, offset: float) -> callable:
+    r""" Return a function that returns a cos function,
+
+    .. math::
+        f(x) = y_0 + A \cos(2 \pi x / T),
+
+    with given period (:math:`T`), amplitude (:math:`A`) and offset (:math:`y_0`)
+
+    Parameters
+    ----------
+    T : float
+        The period, :math:`T`.
+    amplitude : float
+        The amplitude, :math:`A`.
+    offset : float
+        The offset :math:`y_0`.
+
+    Returns
+    -------
+    callable
+        A function that can be compiled to the device.
+
+    """
+
+    from math import cos, pi
+    period, amplitude, offset = np.float32(period), np.float32(amplitude), np.float32(offset)
+
+    def function(x):
+        return offset + amplitude * cos(2 * pi * x / period)
+
+    return function
+
+

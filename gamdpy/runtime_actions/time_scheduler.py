@@ -36,6 +36,7 @@ class BaseScheduler():
                 def __init__(self, mykeyword):
                     super().__init__()
                     self.mykeyword = mykeyword
+                    self.kwargs = super().get_kwargs()
 
                 def _get_stepcheck(self):
                     # here all attributes can be retrieved
@@ -59,6 +60,13 @@ class BaseScheduler():
 
         self.stepcheck_func = self._get_stepcheck()
         self.steps, self.indexes = self._compute_steps()
+
+    def get_kwargs(self):
+        import inspect
+        frame = inspect.currentframe()
+        args, _, _, values = inspect.getargvalues(frame)
+        kwargs = {arg: values[arg] for arg in args if arg != 'self'}
+        return kwargs
 
     def _get_stepcheck(self):
         # This method should be implemented by subclasses
@@ -84,6 +92,7 @@ class Log2(BaseScheduler):
 
     def __init__(self):
         super().__init__()
+        self.kwargs = super().get_kwargs()
 
     def _get_stepcheck(self):
         def stepcheck(step):

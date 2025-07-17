@@ -162,7 +162,7 @@ class StressSaver(RuntimeAction):
         final_rows = (nblocks-first_block) * per_block
         return h5grp['stress_tensor'][first_block:last_block,:,:, :].reshape(final_rows, D, D)[::subsample]
 
-    def get_times(h5file, first_block=0, last_block=-1, reset_time=True, subsample=1):
+    def get_times(h5file, first_block=0, last_block=None, reset_time=True, subsample=1):
         num_timeblock, saves_per_timeblock = h5file['stress_saver']['stress_tensor'][first_block:last_block,:,0,0].shape
         times_array = np.arange(0,num_timeblock*saves_per_timeblock, step=subsample)*h5file.attrs['dt']
         return times_array

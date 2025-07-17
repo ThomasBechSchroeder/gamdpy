@@ -69,7 +69,7 @@ def print_h5_attributes(obj, path="/"):
         - compression_info: gzip with opts 4
         - num_timeblocks: 8
         - scheduler: Log2
-        - steps: [   0    1    2    4    8   16   32   64  128  256  512 1024]
+        - scheduler_info: {}
         - steps_per_timeblock: 1024
 
     """

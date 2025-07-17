@@ -48,7 +48,7 @@ from .calculators import CalculatorRadialDistribution, CalculatorStructureFactor
 
 # Import from tools subpackage
 # To make type checking work (e.g. pylance): 
-from .tools import TrajectoryIO, calc_dynamics, save_configuration
+from .tools import TrajectoryIO, calc_dynamics, save_configuration, calc_conductivity
 # Side effect gp.calc_dynamics does also work! Same problem for integrators
 # TrajectoryIO, save_configuration and calc_dynamics are not directly imported and are called via gp.tools.*
 
@@ -59,7 +59,7 @@ from .tools.Evaluator import Evaluator
 # Misc folder contains scripts that have no better place in the code
 from .misc.select_gpu import select_gpu
 from .misc.plot_scalars import plot_scalars
-from .misc.make_function import make_function_constant, make_function_ramp, make_function_sin
+from .misc.make_function import make_function_constant, make_function_ramp, make_function_sin, make_function_cos
 from .misc.extract_scalars import extract_scalars
 from .misc.plot_molecule import plot_molecule
 
