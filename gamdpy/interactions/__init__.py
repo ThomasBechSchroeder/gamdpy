@@ -8,6 +8,8 @@ from .nblist_linked_lists import NbListLinkedLists
 # Pair potential
 from .pair_potential import PairPotential
 from .pair_potential_nsquared import PairPotentialNsquared
+from .electrostatics_base import Electrostatics
+
 from .tabulated_pair_potential import TabulatedPairPotential
 
 # Fixed interactions
@@ -22,4 +24,3 @@ from .gravity import Gravity
 from .bonds import Bonds
 from .angles import Angles
 from .dihedrals import Dihedrals
-
