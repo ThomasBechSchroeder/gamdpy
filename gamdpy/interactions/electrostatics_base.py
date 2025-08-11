@@ -14,56 +14,45 @@ class Electrostatics(Interaction):
         
     Parameters
     ----------
-    params : list of floats or nested list of floats
-        Interaction parameters for the pair potential function. Use a nested list for multiple types of particles.
-        The last element of each list is the cutoff distance of the pair potential.
-    exclusions
-        List of particle indices to exclude from interactions for each particle.
+    charges : list
+        List (of length number of particle types) assigning a charge to each type.
+    cutoff : nested list
+        Cutoff radius specified for each type of electrostatic interaction.
     """
 
-    def __init__(self, params, exclusions=None):
+    def __init__(self, charges, cutoff):
         def params_function(i_type, j_type, params):
-            result = params[i_type, j_type]            # default: read from params array
+            result = params[i_type, j_type]
             return result            
-    
+
         self.vanilla_coulomb = gp.make_IPL_n(n=1, first_parameter=0)
         self.params_function = params_function
-        self.params_user = params
-        self.exclusions = exclusions
+        self.set_coulomb_params(charges, cutoff)
     
-    def convert_user_params(self):
-        # Upgrade any scalar parameters to 1x1 numpy array
-        num_params = len(self.params_user)
-        params_list = []
-        for parameter in self.params_user:
-            if np.isscalar(parameter):
-                params_list.append(np.ones((1,1))*parameter)
-            else:
-                params_list.append(np.array(parameter, dtype=np.float32))
+    def set_coulomb_params(self, charges, cutoff):
+        charges_product = np.outer(charges, charges, dtype=np.float32)
+        self.coulomb_params = [charges_product, np.array(cutoff, dtype=np.float32)]
 
-        # Ensure all parameters are the right format (num_types x num_types) numpy arrays
-        num_types = params_list[0].shape[0]
-        for parameter in params_list:
-            assert len(parameter.shape) == 2
-            assert parameter.shape[0] == num_types
-            assert parameter.shape[1] == num_types
+    def prepare_params_format(self):
+        num_types = self.coulomb_params[0].shape[0]
+        num_params = len(self.coulomb_params)
 
         # Convert params to the format required by kernels (num_types x num_types) array of tuples (p0, p1, ..., cutoff)
         params = np.zeros((num_types, num_types), dtype="f,"*num_params)
         for i in range(num_types):
             for j in range(num_types):
                 plist = []
-                for parameter in params_list:
+                for parameter in self.coulomb_params:
                     plist.append(parameter[i,j])
                 params[i,j] = tuple(plist)
 
-        max_cut = np.float32(np.max(params_list[-1]))
+        max_cut = np.float32(np.max(self.coulomb_params[-1]))
 
         return params, max_cut
                
     def get_params(self) -> tuple:
         
-        self.params, max_cut = self.convert_user_params()
+        self.params, max_cut = self.prepare_params_format()
         self.d_params = cuda.to_device(self.params)
 
         return (self.d_params, )
