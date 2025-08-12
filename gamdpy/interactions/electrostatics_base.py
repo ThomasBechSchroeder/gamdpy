@@ -51,7 +51,7 @@ class Electrostatics(Interaction):
 
         return params, max_cut
                
-    def get_params(self) -> tuple:
+    def get_params(self, configuration: gp.Configuration, compute_plan: dict, verbose=False) -> tuple:
         
         self.params, max_cut = self.prepare_params_format()
         self.d_params = cuda.to_device(self.params)
