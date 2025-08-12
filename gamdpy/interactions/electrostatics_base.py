@@ -30,7 +30,7 @@ class Electrostatics(Interaction):
         self.set_coulomb_params(charges, cutoff)
     
     def set_coulomb_params(self, charges, cutoff):
-        charges_product = np.outer(charges, charges, dtype=np.float32)
+        charges_product = np.outer(charges, charges).astype(np.float32)
         self.coulomb_params = [charges_product, np.array(cutoff, dtype=np.float32)]
 
     def prepare_params_format(self):
