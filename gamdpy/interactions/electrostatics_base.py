@@ -25,7 +25,8 @@ class Electrostatics(Interaction):
             result = params[i_type, j_type]
             return result            
 
-        self.vanilla_coulomb = gp.make_IPL_n(n=1, first_parameter=0)
+        vanilla_coulomb = gp.make_IPL_n(n=1, first_parameter=0)
+        self.shifted_coulomb = gp.apply_shifted_force_cutoff(vanilla_coulomb)
         self.params_function = params_function
         self.set_coulomb_params(charges, cutoff)
     
@@ -81,7 +82,7 @@ class Electrostatics(Interaction):
 
         virial_factor = numba.float32( 0.5/configuration.D )
         def coulomb_calculator(ij_dist, ij_params, dr, my_f, cscalars, my_stress, f, other_id):
-            u, s, umm = self.vanilla_coulomb(ij_dist, ij_params)
+            u, s, umm = self.shifted_coulomb(ij_dist, ij_params)
             half = numba.float32(0.5)
             for k in range(D):
                 my_f[k] = my_f[k] - dr[k]*s                         # Force
