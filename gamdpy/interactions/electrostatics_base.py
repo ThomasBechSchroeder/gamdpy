@@ -80,9 +80,11 @@ class Electrostatics(Interaction):
         if compute_lap:
             lap_id = configuration.sid['lapU']
 
+        shifted_coulomb = self.shifted_coulomb
+
         virial_factor = numba.float32( 0.5/configuration.D )
         def coulomb_calculator(ij_dist, ij_params, dr, my_f, cscalars, my_stress, f, other_id):
-            u, s, umm = self.shifted_coulomb(ij_dist, ij_params)
+            u, s, umm = shifted_coulomb(ij_dist, ij_params)
             half = numba.float32(0.5)
             for k in range(D):
                 my_f[k] = my_f[k] - dr[k]*s                         # Force
