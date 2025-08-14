@@ -32,8 +32,9 @@ class Electrostatics(Interaction):
         self.set_coulomb_params(int_params[0], int_params[-1])
         self.decay_rate = ewald_params[0]
         self.nk = ewald_params[1] 
-        
+
     def set_coulomb_params(self, charges, cutoff):
+        self.charges_per_type = charges # format [q_type0, q_type1, ...]
         charges_product = np.outer(charges, charges).astype(np.float32)
         self.coulomb_params = [charges_product, np.array(cutoff, dtype=np.float32)]
 
@@ -72,7 +73,7 @@ class Electrostatics(Interaction):
         D, num_part = configuration.D, configuration.N
         pb, tp, gridsync = [compute_plan[key] for key in ['pb', 'tp', 'gridsync']] 
         num_blocks = (num_part - 1) // pb + 1  
-
+        
         # Unpack indices for vectors and scalars to be compiled into kernel
         r_id, f_id = [configuration.vectors.indices[key] for key in ['r', 'f']]
 
@@ -84,6 +85,7 @@ class Electrostatics(Interaction):
             lap_id = configuration.sid['lapU']
 
         shifted_coulomb = self.shifted_coulomb
+        charges_per_type = self.charges_per_type
 
         virial_factor = numba.float32( 0.5/configuration.D )
         def coulomb_calculator(ij_dist, ij_params, dr, my_f, cscalars, my_stress, f, other_id):
@@ -121,16 +123,18 @@ class Electrostatics(Interaction):
             my_cscalars = cuda.local.array(shape=num_cscalars, dtype=numba.float32)
             
             if global_id < num_part:
+                my_type = ptype_function(global_id, ptype)
+            
+            if global_id < num_part and charges_per_type[my_type] != numba.float32(0.0):
                 for k in range(D):
                     #my_r[k] = vectors[r_id][global_id,k]
                     my_f[k] = numba.float32(0.0)
                 for k in range(num_cscalars):
                     my_cscalars[k] = numba.float32(0.0)
-                my_type = ptype_function(global_id, ptype)
             
             cuda.syncthreads() # Make sure initializing global variables to zero is done
 
-            if global_id < num_part:
+            if global_id < num_part and charges_per_type[my_type] != numba.float32(0.0):
                 for other_id in range(my_t, num_part, tp):
                     if other_id != global_id:
                         other_type = ptype_function(other_id, ptype)
