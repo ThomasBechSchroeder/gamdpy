@@ -10,17 +10,18 @@ class Electrostatics(Interaction):
     """Electrostatic point-like Coulomb interactions.
     
     This interaction is separated from the normal PairPotential class because 
-    it uses a brute-force O(N^2) algorithm as a basis for future Ewald stuff.
+    it uses a brute-force O(N^2) algorithm as a basis for the long-range part of Ewald sums.
         
     Parameters
     ----------
-    charges : list
-        List (of length number of particle types) assigning a charge to each type.
-    cutoff : nested list
-        Cutoff radius specified for each type of electrostatic interaction.
+    int_params : nested list of floats
+        Interaction parameters - charges per type (list) and real-space cutoff (nested list)
+
+    ewald_params : list of floats
+        Ewald-related parameters - screening decay rate (float) and number of wavevectors to consider (list)
     """
 
-    def __init__(self, charges, cutoff):
+    def __init__(self, int_params, ewald_params):
         def params_function(i_type, j_type, params):
             result = params[i_type, j_type]
             return result            
@@ -28,13 +29,15 @@ class Electrostatics(Interaction):
         vanilla_coulomb = gp.make_IPL_n(n=1, first_parameter=0)
         self.shifted_coulomb = gp.apply_shifted_force_cutoff(vanilla_coulomb)
         self.params_function = params_function
-        self.set_coulomb_params(charges, cutoff)
-    
+        self.set_coulomb_params(int_params[0], int_params[-1])
+        self.decay_rate = ewald_params[0]
+        self.nk = ewald_params[1] 
+        
     def set_coulomb_params(self, charges, cutoff):
         charges_product = np.outer(charges, charges).astype(np.float32)
         self.coulomb_params = [charges_product, np.array(cutoff, dtype=np.float32)]
 
-    def prepare_params_format(self):
+    def prepare_coulomb_params(self):
         num_types = self.coulomb_params[0].shape[0]
         num_params = len(self.coulomb_params)
 
@@ -53,7 +56,7 @@ class Electrostatics(Interaction):
                
     def get_params(self, configuration: gp.Configuration, compute_plan: dict, verbose=False) -> tuple:
         
-        self.params, max_cut = self.prepare_params_format()
+        self.params, max_cut = self.prepare_coulomb_params()
         self.d_params = cuda.to_device(self.params)
 
         return (self.d_params, )
