@@ -5,6 +5,7 @@ from .SAAP import SAAP
 from .harmonic_repulsion import harmonic_repulsion
 from .hertzian import hertzian
 from .LJ_SF import LJ_SF
+from .screened_coulomb import gaussian_screened_coulomb
 
 # Intra-molecular potentials
 from .harmonic_bond_function import harmonic_bond_function

@@ -14,29 +14,33 @@ class Electrostatics(Interaction):
         
     Parameters
     ----------
-    int_params : nested list of floats
-        Interaction parameters - charges per type (list) and real-space cutoff (nested list)
-
-    ewald_params : list of floats
-        Ewald-related parameters - screening decay rate (float) and number of wavevectors to consider (list)
+    params : nested list of floats
+        Interaction parameters - charges per type (list), screening decay rate (float) and real-space cutoff (nested list)
     """
 
-    def __init__(self, int_params, ewald_params):
+    def __init__(self, params):
         def params_function(i_type, j_type, params):
             result = params[i_type, j_type]
             return result            
 
-        vanilla_coulomb = gp.make_IPL_n(n=1, first_parameter=0)
-        self.shifted_coulomb = gp.apply_shifted_force_cutoff(vanilla_coulomb)
+        self.shifted_damped_coulomb = gp.apply_shifted_potential_cutoff(gp.gaussian_screened_coulomb)
         self.params_function = params_function
-        self.set_coulomb_params(int_params[0], int_params[-1])
-        self.decay_rate = ewald_params[0]
-        self.nk = ewald_params[1] 
+        self.set_coulomb_params(params)
+        self.ewald = False
 
-    def set_coulomb_params(self, charges, cutoff):
-        self.charges_per_type = charges # format [q_type0, q_type1, ...]
-        charges_product = np.outer(charges, charges).astype(np.float32)
-        self.coulomb_params = [charges_product, np.array(cutoff, dtype=np.float32)]
+    def set_coulomb_params(self, params):
+        self.charges_per_type = params[0] # format [q_type0, q_type1, ...]
+        charges_product = np.outer(params[0], params[0]).astype(np.float32)
+        # Need to change this: decay rate is not a type-of-pairs quantity
+        # Keeping it like that atm because it fits the current params format
+        decay_rate = np.full_like(charges_product, params[1], dtype=np.float32)
+        cutoff = np.array(params[2], dtype=np.float32)
+
+        self.coulomb_params = [charges_product, decay_rate, cutoff]
+
+    def set_ewald(self, nk):
+        self.nk = nk # [nkx, nky, nkz] number of wavevectors in each direction
+        self.ewald = True
 
     def prepare_coulomb_params(self):
         num_types = self.coulomb_params[0].shape[0]
@@ -84,12 +88,12 @@ class Electrostatics(Interaction):
         if compute_lap:
             lap_id = configuration.sid['lapU']
 
-        shifted_coulomb = self.shifted_coulomb
+        shifted_damped_coulomb = self.shifted_damped_coulomb
         charges_per_type = self.charges_per_type
 
         virial_factor = numba.float32( 0.5/configuration.D )
         def coulomb_calculator(ij_dist, ij_params, dr, my_f, cscalars, my_stress, f, other_id):
-            u, s, umm = shifted_coulomb(ij_dist, ij_params)
+            u, s, umm = shifted_damped_coulomb(ij_dist, ij_params)
             half = numba.float32(0.5)
             for k in range(D):
                 my_f[k] = my_f[k] - dr[k]*s                         # Force
