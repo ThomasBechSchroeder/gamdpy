@@ -264,6 +264,17 @@ class Configuration:
 
         return ptype_function
 
+    def reorder_particles(self, order):
+        """
+        Reorder all per-particle data using a permutation.
+
+        :WARNING: this is probably must be generalized for the topology class
+        """
+        self.vectors.array = self.vectors.array[:, order, :]
+        self.scalars = self.scalars[order]
+        self.r_im = self.r_im[order]
+        self.ptype = self.ptype[order]
+
     def get_potential_energy(self) -> float:
         """ Get total potential energy of the configuration """
         return float(np.sum(self['U']))
