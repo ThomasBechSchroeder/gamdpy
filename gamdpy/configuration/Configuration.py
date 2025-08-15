@@ -280,10 +280,15 @@ class Configuration:
     
     def reorder_particles(self, order):
         """
-        Reorder all per-particle data using a permutation.
+        Reorder all per-particle data using a new indexing.
 
         :WARNING: this probably must be generalized for the topology class
         """
+        if order.shape != (self.N, ):
+            raise ValueError(f"New order must have shape ({self.N},), got {order.shape}")
+        if set(order) != set(range(self.N)):
+            raise ValueError("New order is not a permutation of particles")
+
         self.vectors.array = self.vectors.array[:, order, :]
         self.scalars = self.scalars[order]
         self.r_im = self.r_im[order]
