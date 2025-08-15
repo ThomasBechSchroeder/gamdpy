@@ -35,7 +35,7 @@ class Electrostatics(Interaction):
         # Keeping it like that atm because it fits the current params format
         decay_rate = np.full_like(charges_product, params[1], dtype=np.float32)
         cutoff = np.array(params[2], dtype=np.float32)
-
+        
         self.coulomb_params = [charges_product, decay_rate, cutoff]
 
     def set_ewald(self, nk):
@@ -74,10 +74,19 @@ class Electrostatics(Interaction):
         compute_lap = compute_flags['lapU']
 
         # Unpack parameters from configuration and compute_plan
-        D, num_part = configuration.D, configuration.N
-        pb, tp, gridsync = [compute_plan[key] for key in ['pb', 'tp', 'gridsync']] 
-        num_blocks = (num_part - 1) // pb + 1  
+        D, N = configuration.D, configuration.N
+
+        # Reorder charged particles to only loop over them
+        new_order, num_charged = configuration.order_charged_system(self.charges_per_type, reorder=True)
         
+        if gridsync:
+            num_part = N
+        else:
+            num_part = num_charged
+
+        pb, tp, gridsync = [compute_plan[key] for key in ['pb', 'tp', 'gridsync']] 
+        num_blocks = (num_part - 1) // pb + 1 
+
         # Unpack indices for vectors and scalars to be compiled into kernel
         r_id, f_id = [configuration.vectors.indices[key] for key in ['r', 'f']]
 
@@ -89,7 +98,6 @@ class Electrostatics(Interaction):
             lap_id = configuration.sid['lapU']
 
         shifted_damped_coulomb = self.shifted_damped_coulomb
-        charges_per_type = self.charges_per_type
 
         virial_factor = numba.float32( 0.5/configuration.D )
         def coulomb_calculator(ij_dist, ij_params, dr, my_f, cscalars, my_stress, f, other_id):
@@ -126,9 +134,8 @@ class Electrostatics(Interaction):
             my_dr = cuda.local.array(shape=D,dtype=numba.float32)
             my_cscalars = cuda.local.array(shape=num_cscalars, dtype=numba.float32)
 
-            if global_id < num_part:
+            if global_id < num_charged:
                 my_type = ptype_function(global_id, ptype)
-                global_has_charge = charges_per_type[my_type] != 0
                 for k in range(D):
                     #my_r[k] = vectors[r_id][global_id,k]
                     my_f[k] = numba.float32(0.0)
@@ -137,18 +144,15 @@ class Electrostatics(Interaction):
             
             cuda.syncthreads() # Make sure initializing global variables to zero is done
 
-            if global_id < num_part and global_has_charge:
-                for other_id in range(my_t, num_part, tp):
+            if global_id < num_charged:
+                for other_id in range(my_t, num_charged, tp):
                     if other_id != global_id:
                         other_type = ptype_function(other_id, ptype)
-                        if charges_per_type[other_type] != 0:
-                            dist_sq = dist_sq_dr_function(vectors[r_id][other_id], vectors[r_id][global_id], sim_box, my_dr)
-                            ij_params = params_function(my_type, other_type, params)
-                            cut = ij_params[-1]
-                            if dist_sq < cut*cut:
-                                coulomb_calculator(math.sqrt(dist_sq), ij_params, my_dr, my_f, my_cscalars, 0, vectors[f_id], other_id)
-                        else:
-                            continue
+                        dist_sq = dist_sq_dr_function(vectors[r_id][other_id], vectors[r_id][global_id], sim_box, my_dr)
+                        ij_params = params_function(my_type, other_type, params)
+                        cut = ij_params[-1]
+                        if dist_sq < cut*cut:
+                            coulomb_calculator(math.sqrt(dist_sq), ij_params, my_dr, my_f, my_cscalars, 0, vectors[f_id], other_id)
                 for k in range(D):
                     cuda.atomic.add(vectors[f_id], (global_id, k), my_f[k])
                     
