@@ -78,13 +78,12 @@ class Electrostatics(Interaction):
 
         # Reorder charged particles to only loop over them
         new_order, num_charged = configuration.order_charged_system(self.charges_per_type, reorder=True)
-        
+
+        pb, tp, gridsync = [compute_plan[key] for key in ['pb', 'tp', 'gridsync']] 
         if gridsync:
             num_part = N
         else:
             num_part = num_charged
-
-        pb, tp, gridsync = [compute_plan[key] for key in ['pb', 'tp', 'gridsync']] 
         num_blocks = (num_part - 1) // pb + 1 
 
         # Unpack indices for vectors and scalars to be compiled into kernel
