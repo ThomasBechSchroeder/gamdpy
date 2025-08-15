@@ -264,11 +264,25 @@ class Configuration:
 
         return ptype_function
 
+    def order_charged_system(self, charges_per_type, reorder=False):
+        """Create a new ordering such as the particles are organized into charged ones first."""
+        charges_array = np.array([charges_per_type[t] for t in self.ptype], dtype=np.float32)
+        charged_idx = np.argwhere(charges_array != 0).flatten()
+        neutral_idx = np.argwhere(charges_array == 0).flatten()
+        new_order = np.concatenate([charged_idx, neutral_idx])
+        num_charged = len(charged_idx)
+
+        if reorder:
+            # THIS MUST BE CAREFULLY CHECKED
+            self.reorder_particles(new_order)
+
+        return new_order, num_charged
+    
     def reorder_particles(self, order):
         """
         Reorder all per-particle data using a permutation.
 
-        :WARNING: this is probably must be generalized for the topology class
+        :WARNING: this probably must be generalized for the topology class
         """
         self.vectors.array = self.vectors.array[:, order, :]
         self.scalars = self.scalars[order]
