@@ -8,7 +8,7 @@ from .nblist_linked_lists import NbListLinkedLists
 # Pair potential
 from .pair_potential import PairPotential
 from .pair_potential_nsquared import PairPotentialNsquared
-from .electrostatics_base import Electrostatics
+from .electrostatics import Electrostatics
 
 from .tabulated_pair_potential import TabulatedPairPotential
 
