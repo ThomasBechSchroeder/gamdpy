@@ -289,10 +289,10 @@ class Configuration:
         if set(order) != set(range(self.N)):
             raise ValueError("New order is not a permutation of particles")
 
-        self.vectors.array = self.vectors.array[:, order, :]
-        self.scalars = self.scalars[order]
-        self.r_im = self.r_im[order]
-        self.ptype = self.ptype[order]
+        self.vectors.array = np.ascontiguousarrray(self.vectors.array[:, order, :])
+        self.scalars = np.ascontiguousarray(self.scalars[order])
+        self.r_im = np.ascontiguousarray(self.r_im[order])
+        self.ptype = np.ascontiguousarray(self.ptype[order])
 
     def get_potential_energy(self) -> float:
         """ Get total potential energy of the configuration """
