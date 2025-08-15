@@ -128,7 +128,7 @@ class Electrostatics(Interaction):
 
             if global_id < num_part:
                 my_type = ptype_function(global_id, ptype)
-                global_has_charge = charges_per_type != 0
+                global_has_charge = charges_per_type[my_type] != 0
                 if global_has_charge:
                     for k in range(D):
                         #my_r[k] = vectors[r_id][global_id,k]
