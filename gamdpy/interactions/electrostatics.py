@@ -29,7 +29,7 @@ class Electrostatics(Interaction):
         self.ewald = False
 
     def set_coulomb_params(self, params):
-        self.charges_per_type = params[0] # format [q_type0, q_type1, ...]
+        self.charges_per_type = np.array(params[0], dtype=np.float32) # format [q_type0, q_type1, ...]
         charges_product = np.outer(params[0], params[0]).astype(np.float32)
         # Need to change this: decay rate is not a type-of-pairs quantity
         # Keeping it like that atm because it fits the current params format
@@ -58,7 +58,7 @@ class Electrostatics(Interaction):
         max_cut = np.float32(np.max(self.coulomb_params[-1]))
 
         return params, max_cut
-               
+
     def get_params(self, configuration: gp.Configuration, compute_plan: dict, verbose=False) -> tuple:
         
         self.params, max_cut = self.prepare_coulomb_params()
@@ -125,28 +125,33 @@ class Electrostatics(Interaction):
             my_f = cuda.local.array(shape=D,dtype=numba.float32)
             my_dr = cuda.local.array(shape=D,dtype=numba.float32)
             my_cscalars = cuda.local.array(shape=num_cscalars, dtype=numba.float32)
-            
+
             if global_id < num_part:
                 my_type = ptype_function(global_id, ptype)
-            
-            if global_id < num_part and charges_per_type[my_type] != numba.float32(0.0):
-                for k in range(D):
-                    #my_r[k] = vectors[r_id][global_id,k]
-                    my_f[k] = numba.float32(0.0)
-                for k in range(num_cscalars):
-                    my_cscalars[k] = numba.float32(0.0)
+                global_has_charge = charges_per_type != 0
+                if global_has_charge:
+                    for k in range(D):
+                        #my_r[k] = vectors[r_id][global_id,k]
+                        my_f[k] = numba.float32(0.0)
+                    for k in range(num_cscalars):
+                        my_cscalars[k] = numba.float32(0.0)
+                else:
+                    pass
             
             cuda.syncthreads() # Make sure initializing global variables to zero is done
 
-            if global_id < num_part and charges_per_type[my_type] != numba.float32(0.0):
+            if global_id < num_part and global_has_charge:
                 for other_id in range(my_t, num_part, tp):
                     if other_id != global_id:
                         other_type = ptype_function(other_id, ptype)
-                        dist_sq = dist_sq_dr_function(vectors[r_id][other_id], vectors[r_id][global_id], sim_box, my_dr)
-                        ij_params = params_function(my_type, other_type, params)
-                        cut = ij_params[-1]
-                        if dist_sq < cut*cut:
-                            coulomb_calculator(math.sqrt(dist_sq), ij_params, my_dr, my_f, my_cscalars, 0, vectors[f_id], other_id)
+                        if charges_per_type[other_type] != 0:
+                            dist_sq = dist_sq_dr_function(vectors[r_id][other_id], vectors[r_id][global_id], sim_box, my_dr)
+                            ij_params = params_function(my_type, other_type, params)
+                            cut = ij_params[-1]
+                            if dist_sq < cut*cut:
+                                coulomb_calculator(math.sqrt(dist_sq), ij_params, my_dr, my_f, my_cscalars, 0, vectors[f_id], other_id)
+                        else:
+                            continue
                 for k in range(D):
                     cuda.atomic.add(vectors[f_id], (global_id, k), my_f[k])
                     
