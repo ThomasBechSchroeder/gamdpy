@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import gamdpy as gp
 from .interaction import Interaction
 
+pi = numba.float32(math.pi)
+
 class Electrostatics(Interaction):
     """Electrostatic point-like Coulomb interactions.
     
@@ -33,6 +35,7 @@ class Electrostatics(Interaction):
         charges_product = np.outer(params[0], params[0]).astype(np.float32)
         # Need to change this: decay rate is not a type-of-pairs quantity
         # Keeping it like that atm because it fits the current params format
+        self.decay_rate = numba.float32(params[1])
         decay_rate = np.full_like(charges_product, params[1], dtype=np.float32)
         cutoff = np.array(params[2], dtype=np.float32)
         
@@ -75,6 +78,8 @@ class Electrostatics(Interaction):
 
         # Unpack parameters from configuration and compute_plan
         D, N = configuration.D, configuration.N
+        vol = numba.float32(configuration.get_volume())
+        decay_rate = self.decay_rate
 
         # Reorder charged particles to only loop over them
         new_order, num_charged = configuration.order_charged_system(self.charges_per_type, reorder=True)
@@ -99,7 +104,7 @@ class Electrostatics(Interaction):
         shifted_damped_coulomb = self.shifted_damped_coulomb
 
         virial_factor = numba.float32( 0.5/configuration.D )
-        def coulomb_calculator(ij_dist, ij_params, dr, my_f, cscalars, my_stress, f, other_id):
+        def real_space_calculator(ij_dist, ij_params, dr, my_f, cscalars, my_stress, f, other_id):
             u, s, umm = shifted_damped_coulomb(ij_dist, ij_params)
             half = numba.float32(0.5)
             for k in range(D):
@@ -112,9 +117,16 @@ class Electrostatics(Interaction):
                 cscalars[lap_id] += numba.float32(1-D)*s + umm          # Laplacian 
                 return
 
+        def fourier_space_calculator(dr, fourier_k, my_f, cscalars, my_stress, f, other_id):
+            rec_term = eval_poisson_kernel(dr, fourier_k, decay_rate, vol)
+            for k in range(D):
+                my_f[k] = my_f[k] + rec_term * fourier_k[k]
+                
+
         ptype_function = numba.njit(configuration.ptype_function)
         params_function = numba.njit(self.params_function)
-        coulomb_calculator = numba.njit(coulomb_calculator)
+        real_space_calculator = numba.njit(real_space_calculator)
+        fourier_space_calculator = numba.njit(fourier_space_calculator)
         dist_sq_dr_function = numba.njit(configuration.simbox.get_dist_sq_dr_function())
     
         @cuda.jit( device=gridsync )  
@@ -132,6 +144,7 @@ class Electrostatics(Interaction):
             my_f = cuda.local.array(shape=D,dtype=numba.float32)
             my_dr = cuda.local.array(shape=D,dtype=numba.float32)
             my_cscalars = cuda.local.array(shape=num_cscalars, dtype=numba.float32)
+            k = cuda.local.array(shape=D, dtype=numba.float32)
 
             if global_id < num_charged:
                 my_type = ptype_function(global_id, ptype)
@@ -151,7 +164,7 @@ class Electrostatics(Interaction):
                         ij_params = params_function(my_type, other_type, params)
                         cut = ij_params[-1]
                         if dist_sq < cut*cut:
-                            coulomb_calculator(math.sqrt(dist_sq), ij_params, my_dr, my_f, my_cscalars, 0, vectors[f_id], other_id)
+                            real_space_calculator(math.sqrt(dist_sq), ij_params, my_dr, my_f, my_cscalars, 0, vectors[f_id], other_id)
                 for k in range(D):
                     cuda.atomic.add(vectors[f_id], (global_id, k), my_f[k])
                     
@@ -177,4 +190,20 @@ class Electrostatics(Interaction):
                 return
             return compute_interactions
 
+def eval_poisson_kernel(dr, fourier_k, kappa, V):
+    # Helper variables
+    two = numba.float32(2.0)
+    four = numba.float32(4.0)
+    kappa2 = kappa * kappa
+    k2 = numba.float32(0.0)
+    fk = numba.float32(0.0)
+    
+    # Building dot products
+    for d in range(dr.size()):
+        k2 = k2 + fourier_k[d] * fourier_k[d]
+        fk = fk + dr[d] * fourier_k[d]
 
+    # Green's kernel
+    green = four * pi * math.exp(-k2 / (four * kappa2)) / k2
+
+    return two * green * math.cos(fk) / V
