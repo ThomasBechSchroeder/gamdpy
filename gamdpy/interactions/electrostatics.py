@@ -16,73 +16,67 @@ class Electrostatics(Interaction):
         
     Parameters
     ----------
-    params : nested list of floats
-        Interaction parameters - charges per type (list) and real-space cutoff (nested list)
     damping : float
         Decay rate of the electrostatic gaussian screening. 
         If 0, the normal Coulomb potential is used.
+
+    cutoff : nested list of floats
+        Cutoff associated to pair-wise interactions between charges classes.
+        Rows and columns MUST be sorted in ascending charges.
+        :TODO: Add a check of this.
     """
 
-    def __init__(self, params, damping):
+    def __init__(self, damping, cutoff):
         def params_function(i_type, j_type, params):
             result = params[i_type, j_type]
             return result
         self.params_function = params_function
         self.damping = numba.float32(damping)
-        self.set_pot_params(params)
+        self.cutoff = cutoff
+
         if self.damping != 0.0:
             self.real_space_pot = gp.apply_shifted_potential_cutoff(gp.gaussian_screened_coulomb)
         else:
             self.real_space_pot = gp.apply_shifted_force_cutoff(gp.make_IPL_n(n=1))
-        self.ewald = False
 
-    def set_pot_params(self, params):
-        self.charges_per_type = np.array(params[0], dtype=np.float32) # format [q_type0, q_type1, ...]
-        charges_product = np.outer(params[0], params[0]).astype(np.float32)
-        cutoff = np.array(params[-1], dtype=np.float32)
-        if self.damping != 0.0:
-            self.pot_params = [charges_product, cutoff]
-        else:
-            # Need to change this: decay rate is not a type-of-pairs quantity
-            # Keeping it like that atm because it fits the current params format
-            decay_rate = np.full_like(charges_product, self.damping, dtype=np.float32)
-            self.pot_params = [charges_product, decay_rate, cutoff]
+        self.ewald = False
 
     def set_ewald(self, nk):
         self.nk = np.array(nk, dtype=np.float32) # [nkx, nky, nkz] number of wavevectors in each direction
         self.ewald = True
 
-    def format_pot_params(self):
-        num_types = self.pot_params[0].shape[0]
-        num_params = len(self.pot_params)
-
-        # Convert params to the format required by kernels (num_types x num_types) array of tuples (p0, p1, ..., cutoff)
-        params = np.zeros((num_types, num_types), dtype="f,"*num_params)
-        for i in range(num_types):
-            for j in range(num_types):
-                plist = []
-                for parameter in self.pot_params:
-                    plist.append(parameter[i,j])
-                params[i,j] = tuple(plist)
-
-        max_cut = np.float32(np.max(self.pot_params[-1]))
-
-        return params, max_cut
-
     def get_params(self, configuration: gp.Configuration, compute_plan: dict, verbose=False) -> tuple:
-        self.params, max_cut = self.format_pot_params()
+        # Gathering charges properties
+        charges, self.charged_idx = configuration.get_charged_particles()
+        coulomb_matrix, unique_charges, self.charges_types = self.build_pair_coulomb_matrix(charges)
+        if self.damping != 0.0:
+            params = [coulomb_matrix, self.cutoff]
+        else:
+            # Need to change this: decay rate is not a type-of-pairs quantity
+            # Keeping it like that atm because it fits the current params format
+            decay_rate = np.full_like(coulomb_matrix, self.damping, dtype=np.float32)
+            params = [coulomb_matrix, decay_rate, self.cutoff]
+    
+        # Formatting params for kernels
+        self.params, max_cut = self.format_pot_params(params)
+
+        # Building reciprocal space constant attributes
         if self.ewald:
             self.kpoints = self.gen_k_grid(self.nk, configuration.simbox.get_lengths())
             self.poisson = self.compute_poisson_grid(self.kpoints, self.damping, configuration.get_volume())
             self.num_kpoints = self.kpoints.size()
+
         self.copy_to_device()
         if self.ewald:
-            return (self.d_params, self.d_kpoints, self.d_poisson, )
+            return (self.d_params, self.d_charged_idx, self.d_charges_types, \
+                    self.self.d_kpoints, self.d_poisson, )
         else:
-            return (self.d_params, )
+            return (self.d_params, self.d_charged_idx, self.d_charges_types, )
 
     def copy_to_device(self):
         self.d_params = cuda.to_device(self.params)
+        self.d_charged_idx = cuda.to_device(self.charged_idx)
+        self.d_charges_types = cuda.to_device(self.charges_types)
         if self.ewald:
             self.d_kpoints = cuda.to_device(self.kpoints)
             self.d_poisson = cuda.to_device(self.poisson)
@@ -97,9 +91,7 @@ class Electrostatics(Interaction):
         # Unpack parameters
         D, N = configuration.D, configuration.N
         num_kpoints = self.num_kpoints
-
-        # Reorder charged particles to only loop over them
-        new_order, num_charged = configuration.order_charged_system(self.charges_per_type, reorder=True)
+        num_charged = self.charged_idx.size()
 
         pb, tp, gridsync = [compute_plan[key] for key in ['pb', 'tp', 'gridsync']] 
         if gridsync:
@@ -143,14 +135,13 @@ class Electrostatics(Interaction):
                 my_f[d] = my_f[d] + two * kpoint[d] * poisson_k * math.cos(dot_rk)
             return
 
-        ptype_function = numba.njit(configuration.ptype_function)
         params_function = numba.njit(self.params_function)
         real_space_calculator = numba.njit(real_space_calculator)
         fourier_space_calculator = numba.njit(fourier_space_calculator)
         dist_sq_dr_function = numba.njit(configuration.simbox.get_dist_sq_dr_function())
 
         @cuda.jit( device=gridsync )  
-        def calc_real_space(vectors, cscalars, ptype, sim_box, params):
+        def calc_real_space(vectors, cscalars, sim_box, charges_idx, charges_types, params):
             """ 
             Calculate real space Ewald term.
             """
@@ -166,7 +157,6 @@ class Electrostatics(Interaction):
             my_cscalars = cuda.local.array(shape=num_cscalars, dtype=numba.float32)
 
             if global_id < num_charged:
-                my_type = ptype_function(global_id, ptype)
                 for k in range(D):
                     #my_r[k] = vectors[r_id][global_id,k]
                     my_f[k] = numba.float32(0.0)
@@ -176,24 +166,27 @@ class Electrostatics(Interaction):
             cuda.syncthreads() # Make sure initializing global variables to zero is done
 
             if global_id < num_charged:
+                part_id = charges_idx[global_id]
+                my_charge_type = charges_types[global_id]
                 for other_id in range(my_t, num_charged, tp):
-                    if other_id != global_id:
-                        other_type = ptype_function(other_id, ptype)
-                        dist_sq = dist_sq_dr_function(vectors[r_id][other_id], vectors[r_id][global_id], sim_box, my_dr)
-                        ij_params = params_function(my_type, other_type, params)
+                    other_part_id = charges_idx[other_id]
+                    other_charge_type = charges_types[other_id]
+                    if part_id != other_part_id:
+                        dist_sq = dist_sq_dr_function(vectors[r_id][other_part_id], vectors[r_id][part_id], sim_box, my_dr)
+                        ij_params = params_function(my_charge_type, other_charge_type, params)
                         cut = ij_params[-1]
                         if dist_sq < cut*cut:
-                            real_space_calculator(math.sqrt(dist_sq), ij_params, my_dr, my_f, my_cscalars, 0, vectors[f_id], other_id)
+                            real_space_calculator(math.sqrt(dist_sq), ij_params, my_dr, my_f, my_cscalars, 0, vectors[f_id], other_part_id)
                 for k in range(D):
-                    cuda.atomic.add(vectors[f_id], (global_id, k), my_f[k])
+                    cuda.atomic.add(vectors[f_id], (part_id, k), my_f[k])
                     
                 for k in range(num_cscalars):
-                    cuda.atomic.add(cscalars, (global_id, k), my_cscalars[k])
+                    cuda.atomic.add(cscalars, (part_id, k), my_cscalars[k])
 
             return 
 
         @cuda.jit( device=gridsync )  
-        def calc_fourier_space(vectors, sim_box, kpoints, poisson_grid):
+        def calc_fourier_space(vectors, sim_box, charges_idx, charges_types, kpoints, poisson_grid):
             """ 
             Calculate reciprocal space Ewald term.
             """
@@ -214,15 +207,19 @@ class Electrostatics(Interaction):
             cuda.syncthreads() # Make sure initializing global variables to zero is done
 
             if global_id < num_charged:
+                part_id = charges_idx[global_id]
+                my_charge_type = charges_types[global_id]
                 for other_id in range(my_t, num_charged, tp):
-                    if other_id != global_id:
+                    other_part_id = charges_idx[other_id]
+                    other_charge_type = charges_types[other_id]
+                    if part_id != other_part_id:
                         for k_idx in range(num_kpoints):
                             kpoint = kpoints[k_idx]
                             poisson_k = poisson_grid[k_idx]
-                            dist_sq = dist_sq_dr_function(vectors[r_id][other_id], vectors[r_id][global_id], sim_box, my_dr)
+                            dist_sq = dist_sq_dr_function(vectors[r_id][other_part_id], vectors[r_id][part_id], sim_box, my_dr)
                             fourier_space_calculator(my_dr, kpoint, poisson_k, my_f)
                 for k in range(D):
-                    cuda.atomic.add(vectors[f_id], (global_id, k), my_f[k])
+                    cuda.atomic.add(vectors[f_id], (part_id, k), my_f[k])
 
             return 
 
@@ -230,20 +227,49 @@ class Electrostatics(Interaction):
             # A device function, 
             @cuda.jit( device=gridsync )
             def compute_interactions(grid, vectors, scalars, ptype, sim_box, interaction_parameters):
-                params, kpoints, poisson_grid, = interaction_parameters
-                calc_real_space(vectors, scalars, ptype, sim_box, params)
-                calc_fourier_space(vectors, sim_box, kpoints, poisson_grid)
+                params, charged_idx, charges_types, kpoints, poisson_grid, = interaction_parameters
+                calc_real_space(vectors, scalars, ptype, sim_box, charged_idx, charges_types, params)
+                calc_fourier_space(vectors, sim_box, charged_idx, charges_types, kpoints, poisson_grid)
                 return
             return compute_interactions
         
         else:
             # A python function, 
             def compute_interactions(grid, vectors, scalars, ptype, sim_box, interaction_parameters):
-                params, kpoints, poisson_grid, = interaction_parameters
-                calc_real_space[num_blocks, (pb, tp)](vectors, scalars, ptype, sim_box, params)
-                calc_fourier_space[num_blocks, (pb, tp)](vectors, sim_box, kpoints, poisson_grid)
+                params, charged_idx, charges_types, kpoints, poisson_grid, = interaction_parameters
+                calc_real_space[num_blocks, (pb, tp)](vectors, scalars, ptype, sim_box, \
+                                                      charged_idx, charges_types, params)
+                calc_fourier_space[num_blocks, (pb, tp)](vectors, sim_box, charged_idx, \
+                                                         charges_types, kpoints, poisson_grid)
                 return
             return compute_interactions
+
+    @staticmethod
+    def build_pair_coulomb_matrix(charges):
+        """
+        Build the matrix of all unique charges-pair products.
+
+        Parameters
+        ----------
+        charges : numpy array
+            Assigning a charge to each particle
+        
+        Returns
+        -------
+        coulomb_matrix : numpy array
+            Matrix of all unique q_i*q_j products
+        
+        unique_charges : numpy array
+            Sorted array of unique charges composing the coulomb_matrix
+
+        charges_types : numpy array
+            Charge class associated to each particle.
+            A particle with class i and another with class j refer to the (ij) entry
+            of the coulomb_matrix.
+        """
+        unique_charges, charges_types = np.unique(charges, return_inverse=True)
+        coulomb_matrix = np.outer(unique_charges, unique_charges)
+        return coulomb_matrix, unique_charges, charges_types
 
     @staticmethod
     def gen_k_grid(nk, box_size):
@@ -259,3 +285,20 @@ class Electrostatics(Interaction):
         kappa2 = kappa * kappa
         k2 = np.linalg.norm(k_points, axis=-1)
         return four * pi * math.exp(-k2 / (four * kappa2)) / (volume * k2)
+    
+    @staticmethod
+    def format_pot_params(params_):
+        num_classes = params_[0].shape[0]
+        num_params = len(params_)
+
+        params = np.zeros((num_classes, num_classes), dtype="f,"*num_params)
+        for i in range(num_classes):
+            for j in range(num_classes):
+                plist = []
+                for parameter in params_:
+                    plist.append(parameter[i,j])
+                params[i,j] = tuple(plist)
+
+        max_cut = np.float32(np.max(params_[-1]))
+
+        return params, max_cut
