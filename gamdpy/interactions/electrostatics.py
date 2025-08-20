@@ -126,13 +126,13 @@ class Electrostatics(Interaction):
                 cscalars[lap_id] += numba.float32(1-D)*s + umm          # Laplacian 
                 return
 
-        def fourier_space_calculator(dr, kpoint, poisson_k, my_f):
+        def fourier_space_calculator(dr, qiqj, kpoint, poisson_k, my_f):
             dot_rk = numba.float(0.0)
-            two = numba.float(0.0)
+            two = numba.float(0.0) 
             for d in range(D):
                 dot_rk = dot_rk + dr[d] * kpoint[d]
             for d in range(D):
-                my_f[d] = my_f[d] + two * kpoint[d] * poisson_k * math.cos(dot_rk)
+                my_f[d] = my_f[d] + two * qiqj * kpoint[d] * poisson_k * math.cos(dot_rk)
             return
 
         params_function = numba.njit(self.params_function)
@@ -186,7 +186,7 @@ class Electrostatics(Interaction):
             return 
 
         @cuda.jit( device=gridsync )  
-        def calc_fourier_space(vectors, sim_box, charges_idx, charges_types, kpoints, poisson_grid):
+        def calc_fourier_space(vectors, sim_box, charges_idx, charges_types, params, kpoints, poisson_grid):
             """ 
             Calculate reciprocal space Ewald term.
             """
@@ -213,11 +213,12 @@ class Electrostatics(Interaction):
                     other_part_id = charges_idx[other_id]
                     other_charge_type = charges_types[other_id]
                     if part_id != other_part_id:
+                        qiqj = params_function(my_charge_type, other_charge_type, params)[0]
                         for k_idx in range(num_kpoints):
                             kpoint = kpoints[k_idx]
                             poisson_k = poisson_grid[k_idx]
                             dist_sq = dist_sq_dr_function(vectors[r_id][other_part_id], vectors[r_id][part_id], sim_box, my_dr)
-                            fourier_space_calculator(my_dr, kpoint, poisson_k, my_f)
+                            fourier_space_calculator(my_dr, qiqj, kpoint, poisson_k, my_f)
                 for k in range(D):
                     cuda.atomic.add(vectors[f_id], (part_id, k), my_f[k])
 
@@ -229,7 +230,7 @@ class Electrostatics(Interaction):
             def compute_interactions(grid, vectors, scalars, ptype, sim_box, interaction_parameters):
                 params, charged_idx, charges_types, kpoints, poisson_grid, = interaction_parameters
                 calc_real_space(vectors, scalars, ptype, sim_box, charged_idx, charges_types, params)
-                calc_fourier_space(vectors, sim_box, charged_idx, charges_types, kpoints, poisson_grid)
+                calc_fourier_space(vectors, sim_box, charged_idx, charges_types, params, kpoints, poisson_grid)
                 return
             return compute_interactions
         
@@ -240,7 +241,7 @@ class Electrostatics(Interaction):
                 calc_real_space[num_blocks, (pb, tp)](vectors, scalars, ptype, sim_box, \
                                                       charged_idx, charges_types, params)
                 calc_fourier_space[num_blocks, (pb, tp)](vectors, sim_box, charged_idx, \
-                                                         charges_types, kpoints, poisson_grid)
+                                                         charges_types, params, kpoints, poisson_grid)
                 return
             return compute_interactions
 
