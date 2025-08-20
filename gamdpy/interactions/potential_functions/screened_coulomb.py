@@ -17,7 +17,7 @@ def gaussian_screened_coulomb(dist, params):
         Distance between particles
         
     params : array-like
-        Q (product of charges), kappa
+        Q (product of charges), kappa (screening decay rate)
     """
     Q = params[0]
     kappa = params[1]

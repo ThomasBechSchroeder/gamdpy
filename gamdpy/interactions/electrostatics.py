@@ -17,56 +17,63 @@ class Electrostatics(Interaction):
     Parameters
     ----------
     params : nested list of floats
-        Interaction parameters - charges per type (list), screening decay rate (float) and real-space cutoff (nested list)
+        Interaction parameters - charges per type (list) and real-space cutoff (nested list)
+    damping : float
+        Decay rate of the electrostatic gaussian screening. 
+        If 0, the normal Coulomb potential is used.
     """
 
-    def __init__(self, params):
+    def __init__(self, params, damping):
         def params_function(i_type, j_type, params):
             result = params[i_type, j_type]
-            return result            
-
-        self.shifted_damped_coulomb = gp.apply_shifted_potential_cutoff(gp.gaussian_screened_coulomb)
+            return result
         self.params_function = params_function
-        self.set_coulomb_params(params)
+        self.damping = numba.float32(damping)
+        self.set_pot_params(params)
+        if self.damping != 0.0:
+            self.real_space_pot = gp.apply_shifted_potential_cutoff(gp.gaussian_screened_coulomb)
+        else:
+            self.real_space_pot = gp.apply_shifted_force_cutoff(gp.make_IPL_n(n=1))
         self.ewald = False
 
-    def set_coulomb_params(self, params):
+    def set_pot_params(self, params):
         self.charges_per_type = np.array(params[0], dtype=np.float32) # format [q_type0, q_type1, ...]
         charges_product = np.outer(params[0], params[0]).astype(np.float32)
-        # Need to change this: decay rate is not a type-of-pairs quantity
-        # Keeping it like that atm because it fits the current params format
-        self.decay_rate = numba.float32(params[1])
-        decay_rate = np.full_like(charges_product, params[1], dtype=np.float32)
-        cutoff = np.array(params[2], dtype=np.float32)
-        
-        self.coulomb_params = [charges_product, decay_rate, cutoff]
+        cutoff = np.array(params[-1], dtype=np.float32)
+        if self.damping != 0.0:
+            self.pot_params = [charges_product, cutoff]
+        else:
+            # Need to change this: decay rate is not a type-of-pairs quantity
+            # Keeping it like that atm because it fits the current params format
+            decay_rate = np.full_like(charges_product, self.damping, dtype=np.float32)
+            self.pot_params = [charges_product, decay_rate, cutoff]
 
     def set_ewald(self, nk):
         self.nk = np.array(nk, dtype=np.float32) # [nkx, nky, nkz] number of wavevectors in each direction
         self.ewald = True
 
-    def prepare_coulomb_params(self):
-        num_types = self.coulomb_params[0].shape[0]
-        num_params = len(self.coulomb_params)
+    def format_pot_params(self):
+        num_types = self.pot_params[0].shape[0]
+        num_params = len(self.pot_params)
 
         # Convert params to the format required by kernels (num_types x num_types) array of tuples (p0, p1, ..., cutoff)
         params = np.zeros((num_types, num_types), dtype="f,"*num_params)
         for i in range(num_types):
             for j in range(num_types):
                 plist = []
-                for parameter in self.coulomb_params:
+                for parameter in self.pot_params:
                     plist.append(parameter[i,j])
                 params[i,j] = tuple(plist)
 
-        max_cut = np.float32(np.max(self.coulomb_params[-1]))
+        max_cut = np.float32(np.max(self.pot_params[-1]))
 
         return params, max_cut
 
     def get_params(self, configuration: gp.Configuration, compute_plan: dict, verbose=False) -> tuple:
-        self.params, max_cut = self.prepare_coulomb_params()
+        self.params, max_cut = self.format_pot_params()
         if self.ewald:
             self.kpoints = self.gen_k_grid(self.nk, configuration.simbox.get_lengths())
-            self.poisson = self.compute_poisson_grid(self.kpoints, self.decay_rate, configuration.get_volume())
+            self.poisson = self.compute_poisson_grid(self.kpoints, self.damping, configuration.get_volume())
             self.num_kpoints = self.kpoints.size()
         self.copy_to_device()
         if self.ewald:
@@ -111,11 +118,11 @@ class Electrostatics(Interaction):
         if compute_lap:
             lap_id = configuration.sid['lapU']
 
-        shifted_damped_coulomb = self.shifted_damped_coulomb
+        real_space_pot = self.real_space_pot
 
         virial_factor = numba.float32( 0.5/configuration.D )
         def real_space_calculator(ij_dist, ij_params, dr, my_f, cscalars, my_stress, f, other_id):
-            u, s, umm = shifted_damped_coulomb(ij_dist, ij_params)
+            u, s, umm = real_space_pot(ij_dist, ij_params)
             half = numba.float32(0.5)
             for k in range(D):
                 my_f[k] = my_f[k] - dr[k]*s                         # Force
