@@ -42,7 +42,7 @@ class Electrostatics(Interaction):
         self.coulomb_params = [charges_product, decay_rate, cutoff]
 
     def set_ewald(self, nk):
-        self.nk = nk # [nkx, nky, nkz] number of wavevectors in each direction
+        self.nk = np.array(nk, dtype=np.float32) # [nkx, nky, nkz] number of wavevectors in each direction
         self.ewald = True
 
     def prepare_coulomb_params(self):
@@ -63,11 +63,22 @@ class Electrostatics(Interaction):
         return params, max_cut
 
     def get_params(self, configuration: gp.Configuration, compute_plan: dict, verbose=False) -> tuple:
-        
         self.params, max_cut = self.prepare_coulomb_params()
-        self.d_params = cuda.to_device(self.params)
+        if self.ewald:
+            self.kpoints = self.gen_k_grid(self.nk, configuration.simbox.get_lengths())
+            self.poisson = self.compute_poisson_grid(self.kpoints, self.decay_rate, configuration.get_volume())
+            self.num_kpoints = self.kpoints.size()
+        self.copy_to_device()
+        if self.ewald:
+            return (self.d_params, self.d_kpoints, self.d_poisson, )
+        else:
+            return (self.d_params, )
 
-        return (self.d_params, )
+    def copy_to_device(self):
+        self.d_params = cuda.to_device(self.params)
+        if self.ewald:
+            self.d_kpoints = cuda.to_device(self.kpoints)
+            self.d_poisson = cuda.to_device(self.poisson)
 
     def get_kernel(self, configuration: gp.Configuration, compute_plan: dict, compute_flags: dict[str,bool], verbose=False):
         num_cscalars = configuration.num_cscalars
@@ -76,10 +87,9 @@ class Electrostatics(Interaction):
         compute_w = compute_flags['W']
         compute_lap = compute_flags['lapU']
 
-        # Unpack parameters from configuration and compute_plan
+        # Unpack parameters
         D, N = configuration.D, configuration.N
-        vol = numba.float32(configuration.get_volume())
-        decay_rate = self.decay_rate
+        num_kpoints = self.num_kpoints
 
         # Reorder charged particles to only loop over them
         new_order, num_charged = configuration.order_charged_system(self.charges_per_type, reorder=True)
@@ -117,22 +127,25 @@ class Electrostatics(Interaction):
                 cscalars[lap_id] += numba.float32(1-D)*s + umm          # Laplacian 
                 return
 
-        def fourier_space_calculator(dr, fourier_k, my_f, cscalars, my_stress, f, other_id):
-            rec_term = eval_poisson_kernel(dr, fourier_k, decay_rate, vol)
-            for k in range(D):
-                my_f[k] = my_f[k] + rec_term * fourier_k[k]
-                
+        def fourier_space_calculator(dr, kpoint, poisson_k, my_f):
+            dot_rk = numba.float(0.0)
+            two = numba.float(0.0)
+            for d in range(D):
+                dot_rk = dot_rk + dr[d] * kpoint[d]
+            for d in range(D):
+                my_f[d] = my_f[d] + two * kpoint[d] * poisson_k * math.cos(dot_rk)
+            return
 
         ptype_function = numba.njit(configuration.ptype_function)
         params_function = numba.njit(self.params_function)
         real_space_calculator = numba.njit(real_space_calculator)
         fourier_space_calculator = numba.njit(fourier_space_calculator)
         dist_sq_dr_function = numba.njit(configuration.simbox.get_dist_sq_dr_function())
-    
+
         @cuda.jit( device=gridsync )  
-        def calc_forces(vectors, cscalars, ptype, sim_box, params):
-            """ Calculate forces as given by pairpotential_calculator() (needs to exist in outer-scope) using nblist 
-                Kernel configuration: [num_blocks, (pb, tp)]        
+        def calc_real_space(vectors, cscalars, ptype, sim_box, params):
+            """ 
+            Calculate real space Ewald term.
             """
             
             my_block = cuda.blockIdx.x
@@ -144,7 +157,6 @@ class Electrostatics(Interaction):
             my_f = cuda.local.array(shape=D,dtype=numba.float32)
             my_dr = cuda.local.array(shape=D,dtype=numba.float32)
             my_cscalars = cuda.local.array(shape=num_cscalars, dtype=numba.float32)
-            k = cuda.local.array(shape=D, dtype=numba.float32)
 
             if global_id < num_charged:
                 my_type = ptype_function(global_id, ptype)
@@ -173,37 +185,70 @@ class Electrostatics(Interaction):
 
             return 
 
+        @cuda.jit( device=gridsync )  
+        def calc_fourier_space(vectors, sim_box, kpoints, poisson_grid):
+            """ 
+            Calculate reciprocal space Ewald term.
+            """
+            
+            my_block = cuda.blockIdx.x
+            local_id = cuda.threadIdx.x 
+            global_id = my_block*pb + local_id
+            my_t = cuda.threadIdx.y
+            
+            
+            my_f = cuda.local.array(shape=D,dtype=numba.float32)
+            my_dr = cuda.local.array(shape=D,dtype=numba.float32)
+
+            if global_id < num_charged:
+                for k in range(D):
+                    my_f[k] = numba.float32(0.0)
+
+            cuda.syncthreads() # Make sure initializing global variables to zero is done
+
+            if global_id < num_charged:
+                for other_id in range(my_t, num_charged, tp):
+                    if other_id != global_id:
+                        for k_idx in range(num_kpoints):
+                            kpoint = kpoints[k_idx]
+                            poisson_k = poisson_grid[k_idx]
+                            dist_sq = dist_sq_dr_function(vectors[r_id][other_id], vectors[r_id][global_id], sim_box, my_dr)
+                            fourier_space_calculator(my_dr, kpoint, poisson_k, my_f)
+                for k in range(D):
+                    cuda.atomic.add(vectors[f_id], (global_id, k), my_f[k])
+
+            return 
+
         if gridsync:
             # A device function, 
             @cuda.jit( device=gridsync )
             def compute_interactions(grid, vectors, scalars, ptype, sim_box, interaction_parameters):
-                params, = interaction_parameters
-                calc_forces(vectors, scalars, ptype, sim_box, params)
+                params, kpoints, poisson_grid, = interaction_parameters
+                calc_real_space(vectors, scalars, ptype, sim_box, params)
+                calc_fourier_space(vectors, sim_box, kpoints, poisson_grid)
                 return
             return compute_interactions
         
         else:
             # A python function, 
             def compute_interactions(grid, vectors, scalars, ptype, sim_box, interaction_parameters):
-                params, = interaction_parameters
-                calc_forces[num_blocks, (pb, tp)](vectors, scalars, ptype, sim_box, params)
+                params, kpoints, poisson_grid, = interaction_parameters
+                calc_real_space[num_blocks, (pb, tp)](vectors, scalars, ptype, sim_box, params)
+                calc_fourier_space[num_blocks, (pb, tp)](vectors, sim_box, kpoints, poisson_grid)
                 return
             return compute_interactions
 
-def eval_poisson_kernel(dr, fourier_k, kappa, V):
-    # Helper variables
-    two = numba.float32(2.0)
-    four = numba.float32(4.0)
-    kappa2 = kappa * kappa
-    k2 = numba.float32(0.0)
-    fk = numba.float32(0.0)
-    
-    # Building dot products
-    for d in range(dr.size()):
-        k2 = k2 + fourier_k[d] * fourier_k[d]
-        fk = fk + dr[d] * fourier_k[d]
+    @staticmethod
+    def gen_k_grid(nk, box_size):
+        grid_coords = np.meshgrid(*(np.arange(0, n) for n in nk), indexing='ij')
+        k_points = 2 * pi * np.stack(grid_coords, axis=-1).reshape(-1, len(box_size))
+        k_points = np.delete(k_points, 0, axis=0) # remove k = [0, 0, 0] term
+        return k_points / box_size
 
-    # Green's kernel
-    green = four * pi * math.exp(-k2 / (four * kappa2)) / k2
-
-    return two * green * math.cos(fk) / V
+    @staticmethod
+    def compute_poisson_grid(k_points, kappa, volume):
+        # Helper variables
+        four = numba.float32(4.0)
+        kappa2 = kappa * kappa
+        k2 = np.linalg.norm(k_points, axis=-1)
+        return four * pi * math.exp(-k2 / (four * kappa2)) / (volume * k2)
