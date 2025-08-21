@@ -132,7 +132,7 @@ class Electrostatics(Interaction):
             for d in range(D):
                 dot_rk = dot_rk + dr[d] * kpoint[d]
             for d in range(D):
-                my_f[d] = my_f[d] + two * qiqj * kpoint[d] * poisson_k * math.cos(dot_rk)
+                my_f[d] = my_f[d] + two * qiqj * kpoint[d] * poisson_k * math.sin(dot_rk)
             return
 
         params_function = numba.njit(self.params_function)
