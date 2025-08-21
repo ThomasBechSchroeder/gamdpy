@@ -49,7 +49,7 @@ class Electrostatics(Interaction):
         # Gathering charges properties
         charges, self.charged_idx = configuration.get_charged_particles()
         coulomb_matrix, unique_charges, self.charges_types = self.build_pair_coulomb_matrix(charges)
-        if self.damping != 0.0:
+        if self.damping == 0.0:
             params = [coulomb_matrix, self.cutoff]
         else:
             # Need to change this: decay rate is not a type-of-pairs quantity
@@ -64,12 +64,12 @@ class Electrostatics(Interaction):
         if self.ewald:
             self.kpoints = self.gen_k_grid(self.nk, configuration.simbox.get_lengths())
             self.poisson = self.compute_poisson_grid(self.kpoints, self.damping, configuration.get_volume())
-            self.num_kpoints = self.kpoints.size()
+            self.num_kpoints = len(self.kpoints)
 
         self.copy_to_device()
         if self.ewald:
             return (self.d_params, self.d_charged_idx, self.d_charges_types, \
-                    self.self.d_kpoints, self.d_poisson, )
+                    self.d_kpoints, self.d_poisson, )
         else:
             return (self.d_params, self.d_charged_idx, self.d_charges_types, )
 
@@ -91,7 +91,7 @@ class Electrostatics(Interaction):
         # Unpack parameters
         D, N = configuration.D, configuration.N
         num_kpoints = self.num_kpoints
-        num_charged = self.charged_idx.size()
+        num_charged = len(self.charged_idx)
 
         pb, tp, gridsync = [compute_plan[key] for key in ['pb', 'tp', 'gridsync']] 
         if gridsync:
@@ -127,8 +127,8 @@ class Electrostatics(Interaction):
                 return
 
         def fourier_space_calculator(dr, qiqj, kpoint, poisson_k, my_f):
-            dot_rk = numba.float(0.0)
-            two = numba.float(0.0) 
+            dot_rk = numba.float32(0.0)
+            two = numba.float32(0.0) 
             for d in range(D):
                 dot_rk = dot_rk + dr[d] * kpoint[d]
             for d in range(D):
@@ -229,7 +229,8 @@ class Electrostatics(Interaction):
             @cuda.jit( device=gridsync )
             def compute_interactions(grid, vectors, scalars, ptype, sim_box, interaction_parameters):
                 params, charged_idx, charges_types, kpoints, poisson_grid, = interaction_parameters
-                calc_real_space(vectors, scalars, ptype, sim_box, charged_idx, charges_types, params)
+                calc_real_space(vectors, scalars, sim_box, charged_idx, charges_types, params)
+                grid.sync()
                 calc_fourier_space(vectors, sim_box, charged_idx, charges_types, params, kpoints, poisson_grid)
                 return
             return compute_interactions
@@ -238,7 +239,7 @@ class Electrostatics(Interaction):
             # A python function, 
             def compute_interactions(grid, vectors, scalars, ptype, sim_box, interaction_parameters):
                 params, charged_idx, charges_types, kpoints, poisson_grid, = interaction_parameters
-                calc_real_space[num_blocks, (pb, tp)](vectors, scalars, ptype, sim_box, \
+                calc_real_space[num_blocks, (pb, tp)](vectors, scalars, sim_box, \
                                                       charged_idx, charges_types, params)
                 calc_fourier_space[num_blocks, (pb, tp)](vectors, sim_box, charged_idx, \
                                                          charges_types, params, kpoints, poisson_grid)
@@ -285,7 +286,7 @@ class Electrostatics(Interaction):
         four = numba.float32(4.0)
         kappa2 = kappa * kappa
         k2 = np.linalg.norm(k_points, axis=-1)
-        return four * pi * math.exp(-k2 / (four * kappa2)) / (volume * k2)
+        return four * pi * np.exp(-k2 / (four * kappa2)) / (volume * k2)
     
     @staticmethod
     def format_pot_params(params_):
