@@ -216,7 +216,7 @@ class Electrostatics(Interaction):
             if global_id < num_charged:
                 part_id = charges_idx[global_id]
                 my_q = charges[global_id]
-                my_r = vectors[part_id]
+                my_r = vectors[r_id][part_id]
                 for k_id in range(my_t, num_kpoints, tp):
                     kpoint = kpoints[k_id]
                     poisson_k = poisson_grid[k_id]
@@ -258,12 +258,11 @@ class Electrostatics(Interaction):
             my_t = cuda.threadIdx.y
 
             dot_rk = numba.float32(0.0)
-            my_r = cuda.local.array(shape=D,dtype=numba.float32)
 
             if global_id < num_charged:
                 part_id = charges_idx[global_id]
                 my_q = charges[global_id]
-                my_r = vectors[part_id]
+                my_r = vectors[r_id][part_id]
                 for k_id in range(my_t, num_kpoints, tp):
                     kpoint = kpoints[k_id]
                     for d in range(D):
