@@ -65,7 +65,8 @@ class Electrostatics(Interaction):
             self.kpoints = self.gen_k_grid(self.nk, configuration.simbox.get_lengths())
             self.poisson = self.compute_poisson_grid(self.kpoints, self.damping, configuration.get_volume())
             self.num_kpoints = len(self.kpoints)
-            self.fourier_density = np.zeros(shape=(self.num_kpoints), dtype=np.complex64)
+            self.real_fourier_density = np.zeros_like(self.poisson, dtype=np.float32)
+            self.imag_fourier_density = np.zeros_like(self.poisson, dtype=np.float32)
 
         self.copy_to_device()
         if self.ewald:
@@ -76,7 +77,8 @@ class Electrostatics(Interaction):
                 self.d_charges_types,
                 self.d_kpoints,
                 self.d_poisson,
-                self.d_fourier_density
+                self.d_real_fourier_density,
+                self.d_imag_fourier_density,
             )
         else:
             return (self.d_params, self.d_charges, self.d_charged_idx, self.d_charges_types, )
@@ -89,7 +91,8 @@ class Electrostatics(Interaction):
         if self.ewald:
             self.d_kpoints = cuda.to_device(self.kpoints)
             self.d_poisson = cuda.to_device(self.poisson)
-            self.d_fourier_density = cuda.to_device(self.fourier_density)
+            self.d_real_fourier_density = cuda.to_device(self.real_fourier_density)
+            self.d_imag_fourier_density = cuda.to_device(self.imag_fourier_density)
 
     def get_kernel(self, configuration: gp.Configuration, compute_plan: dict, compute_flags: dict[str,bool], verbose=False):
         num_cscalars = configuration.num_cscalars
@@ -136,14 +139,14 @@ class Electrostatics(Interaction):
                 cscalars[lap_id] += numba.float32(1-D)*s + umm          # Laplacian 
                 return
 
-        def fourier_space_calculator(r, qi, kpoint, poisson_k, rho_k, my_f):
+        def fourier_space_calculator(r, qi, kpoint, poisson_k, real_rho_k, imag_rho_k, my_f):
             dot_rk = numba.float32(0.0)
             two = numba.float32(0.0) 
             for d in range(D):
                 dot_rk = dot_rk + r[d] * kpoint[d]
-            cross_k = rho_k.conjugate() * numba.complex64(cmath.exp(-1j * dot_rk))
+            cross_k = real_rho_k * math.cos(dot_rk) + imag_rho_k * math.sin(dot_rk)
             for d in range(D):
-                my_f[d] = my_f[d] - two * qi * kpoint[d] * poisson_k * cross_k.imag
+                my_f[d] = my_f[d] + two * qi * kpoint[d] * poisson_k * cross_k
             return
 
         params_function = numba.njit(self.params_function)
@@ -197,7 +200,7 @@ class Electrostatics(Interaction):
             return 
 
         @cuda.jit( device=gridsync )  
-        def sum_fourier_space(vectors, charges, charges_idx, kpoints, poisson_grid, fourier_density):
+        def sum_fourier_space(vectors, charges, charges_idx, kpoints, poisson_grid, real_fourier_density, imag_fourier_density):
             """ 
             Sum reciprocal-space Ewald contributions.
             """
@@ -220,15 +223,16 @@ class Electrostatics(Interaction):
                 for k_id in range(my_t, num_kpoints, tp):
                     kpoint = kpoints[k_id]
                     poisson_k = poisson_grid[k_id]
-                    rho_k = fourier_density[k_id]
-                    fourier_space_calculator(my_r, my_q, kpoint, poisson_k, rho_k, my_f)
+                    real_rho_k = real_fourier_density[k_id]
+                    imag_rho_k = imag_fourier_density[k_id]
+                    fourier_space_calculator(my_r, my_q, kpoint, poisson_k, real_rho_k, imag_rho_k, my_f)
                 for d in range(D):
                     cuda.atomic.add(vectors[f_id], (part_id, d), my_f[d])
 
             return 
 
         @cuda.jit
-        def init_fourier_density(fourier_density):
+        def init_fourier_density(real_fourier_density, imag_fourier_density):
             """
             Zeroing the fourier transform of the charge density at the start of each step.
             """
@@ -243,12 +247,13 @@ class Electrostatics(Interaction):
             step = num_blocks * threads_per_block
 
             for k_id in range(global_id, num_kpoints, step):
-                fourier_density[k_id] = numba.complex64(0.0)
+                real_fourier_density[k_id] = numba.float32(0.0)
+                imag_fourier_density[k_id] = numba.float32(0.0)
 
             return 
 
         @cuda.jit( device=gridsync )  
-        def update_fourier_density(vectors, charges, charges_idx, kpoints, fourier_density):
+        def update_fourier_density(vectors, charges, charges_idx, kpoints, real_fourier_density, imag_fourier_density):
             """
             Update the fourier transform of the charge density after the zeroing.
             """
@@ -267,23 +272,27 @@ class Electrostatics(Interaction):
                     kpoint = kpoints[k_id]
                     for d in range(D):
                         dot_rk = dot_rk + my_r[d] * kpoint[d]
-                    my_rho = my_q * numba.complex64(cmath.exp(-1j * dot_rk))
-                    cuda.atomic.add(fourier_density, k_id, my_rho)
+                    real_rho = my_q * math.cos(dot_rk)
+                    imag_rho = -my_q * math.sin(dot_rk)
+                    cuda.atomic.add(real_fourier_density, k_id, real_rho)
+                    cuda.atomic.add(imag_fourier_density, k_id, imag_rho)
+
             return 
 
         if gridsync:
             # A device function, 
             @cuda.jit( device=gridsync )
             def compute_interactions(grid, vectors, scalars, ptype, sim_box, interaction_parameters):
-                (params, charges, charged_idx, charges_types, kpoints, poisson_grid, fourier_density
+                (params, charges, charged_idx, charges_types, kpoints, poisson_grid, real_fourier_density, imag_fourier_density
                 ) = interaction_parameters
-                init_fourier_density(fourier_density)
+                init_fourier_density(real_fourier_density, imag_fourier_density)
                 update_fourier_density(
                     vectors,
                     charges,
                     charged_idx,
                     kpoints,
-                    fourier_density
+                    real_fourier_density,
+                    imag_fourier_density
                 )
                 grid.sync()
                 sum_fourier_space(
@@ -292,7 +301,8 @@ class Electrostatics(Interaction):
                     charged_idx,
                     kpoints,
                     poisson_grid,
-                    fourier_density
+                    real_fourier_density,
+                    imag_fourier_density
                 )
                 grid.sync()
                 sum_real_space(
@@ -309,15 +319,16 @@ class Electrostatics(Interaction):
         else:
             # A python function, 
             def compute_interactions(grid, vectors, scalars, ptype, sim_box, interaction_parameters):
-                (params, charges, charged_idx, charges_types, kpoints, poisson_grid, fourier_density
+                (params, charges, charged_idx, charges_types, kpoints, poisson_grid, real_fourier_density, imag_fourier_density
                 ) = interaction_parameters
-                init_fourier_density[num_blocks, (pb, tp)](fourier_density)
+                init_fourier_density[num_blocks, (pb, tp)](real_fourier_density, imag_fourier_density)
                 update_fourier_density[num_blocks, (pb, tp)](
                     vectors,
                     charges,
                     charged_idx,
                     kpoints,
-                    fourier_density
+                    real_fourier_density,
+                    imag_fourier_density
                 )
                 sum_fourier_space[num_blocks, (pb, tp)](
                     vectors, 
@@ -325,7 +336,8 @@ class Electrostatics(Interaction):
                     charged_idx, 
                     kpoints, 
                     poisson_grid, 
-                    fourier_density
+                    real_fourier_density,
+                    imag_fourier_density
                 )
                 sum_real_space[num_blocks, (pb, tp)](
                     vectors,
