@@ -371,7 +371,7 @@ class Electrostatics(Interaction):
         grid_coords = np.meshgrid(*(np.arange(0, n) for n in nk), indexing='ij')
         k_points = 2 * pi * np.stack(grid_coords, axis=-1).reshape(-1, len(box_size))
         k_points = np.delete(k_points, 0, axis=0) # remove k = [0, 0, 0] term
-        return k_points / box_size
+        return k_points.astype(np.float32) / box_size
 
     @staticmethod
     def compute_poisson_grid(k_points, kappa, volume):
