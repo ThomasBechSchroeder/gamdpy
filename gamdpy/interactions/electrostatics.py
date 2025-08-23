@@ -144,7 +144,7 @@ class Electrostatics(Interaction):
         def fourier_space_calculator(r, qi, kpoint, poisson_k, real_rho_k, imag_rho_k, my_f, cscalars):
             # Helper variables
             dot_rk = numba.float32(0.0)
-            two = numba.float32(0.0)
+            two = numba.float32(2.0)
             for d in range(D):
                 dot_rk = dot_rk + r[d] * kpoint[d]
             cos_rk = math.cos(dot_rk)
