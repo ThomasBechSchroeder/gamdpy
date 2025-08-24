@@ -297,14 +297,13 @@ class Electrostatics(Interaction):
             global_id = my_block*pb + local_id
             my_t = cuda.threadIdx.y
 
-            dot_rk = numba.float32(0.0)
-
             if global_id < num_charged:
                 part_id = charges_idx[global_id]
                 my_q = charges[global_id]
                 my_r = vectors[r_id][part_id]
                 for k_id in range(my_t, num_kpoints, tp):
                     kpoint = kpoints[k_id]
+                    dot_rk = numba.float32(0.0)
                     for d in range(D):
                         dot_rk = dot_rk + my_r[d] * kpoint[d]
                     real_rho = my_q * math.cos(dot_rk)
@@ -426,7 +425,7 @@ class Electrostatics(Interaction):
         # Helper variables
         four = numba.float32(4.0)
         kappa2 = kappa * kappa
-        k2 = np.linalg.norm(k_points, axis=-1)
+        k2 = np.linalg.norm(k_points, axis=-1)**2
         return four * pi * np.exp(-k2 / (four * kappa2)) / (volume * k2)
 
     @staticmethod

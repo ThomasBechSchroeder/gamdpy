@@ -41,7 +41,7 @@ def gaussian_screened_coulomb(dist, params):
     # u''(r)
     upp = two * Q * (erfc_kappa_dist * inv_dist3 +
                      prefactor * kappa * kappa * exp_kappa2_dist2 +
-                     prefactor * exp_kappa2_dist2)
+                     prefactor * exp_kappa2_dist2 * inv_dist2)
     
     return u, s, upp
 
