@@ -107,6 +107,7 @@ class Electrostatics(Interaction):
         num_kpoints = self.num_kpoints
         num_charged = len(self.charged_idx)
         damping = self.damping
+        vol = configuration.get_volume()
 
         pb, tp, gridsync = [compute_plan[key] for key in ['pb', 'tp', 'gridsync']] 
         if gridsync:
@@ -141,6 +142,14 @@ class Electrostatics(Interaction):
                 cscalars[lap_id] += numba.float32(1-D)*s + umm          # Laplacian 
                 return
 
+        diel_pref = numba.float32(2.0) * pi / (numba.float32(3.0) * vol)
+        def add_dielectric_drift(ri, rj, qiqj, my_f, cscalars):
+            two = numba.float32(2.0)
+            for d in range(D):
+                my_f[d] = my_f[d] - two * diel_pref * qiqj * rj[d]
+                if compute_u:
+                    cscalars[u_id] += diel_pref * qiqj * ri[d] * rj[d]
+
         def fourier_space_calculator(r, qi, kpoint, poisson_k, real_rho_k, imag_rho_k, my_f, cscalars):
             # Helper variables
             dot_rk = numba.float32(0.0)
@@ -160,6 +169,7 @@ class Electrostatics(Interaction):
 
         params_function = numba.njit(self.params_function)
         real_space_calculator = numba.njit(real_space_calculator)
+        add_dielectric_drift = numba.njit(add_dielectric_drift)
         fourier_space_calculator = numba.njit(fourier_space_calculator)
         dist_sq_dr_function = numba.njit(configuration.simbox.get_dist_sq_dr_function())
 
@@ -194,13 +204,15 @@ class Electrostatics(Interaction):
                 for other_id in range(my_t, num_charged, tp):
                     other_part_id = charges_idx[other_id]
                     other_charge_type = charges_types[other_id]
+                    ij_params = params_function(my_charge_type, other_charge_type, params)
+                    qiqj = ij_params[0]
+                    add_dielectric_drift(vectors[r_id][part_id], vectors[r_id][other_part_id], qiqj, my_f, my_cscalars)
                     if part_id != other_part_id:
                         dist_sq = dist_sq_dr_function(vectors[r_id][other_part_id], vectors[r_id][part_id], sim_box, my_dr)
-                        ij_params = params_function(my_charge_type, other_charge_type, params)
                         cut = ij_params[-1]
                         if dist_sq < cut*cut:
                             real_space_calculator(math.sqrt(dist_sq), ij_params, my_dr, my_f, my_cscalars, 0, vectors[f_id], other_part_id)
-
+                    
                 for k in range(D):
                     cuda.atomic.add(vectors[f_id], (part_id, k), my_f[k])
    
