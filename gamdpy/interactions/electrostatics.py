@@ -320,6 +320,7 @@ class Electrostatics(Interaction):
                 (params, charges, charged_idx, charges_types, kpoints, poisson_grid, real_fourier_density, imag_fourier_density
                 ) = interaction_parameters
                 init_fourier_density(real_fourier_density, imag_fourier_density)
+                grid.sync()
                 update_fourier_density(
                     vectors,
                     charges,
