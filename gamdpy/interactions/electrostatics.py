@@ -63,9 +63,13 @@ class Electrostatics(Interaction):
         if self.ewald:
             kpoints = self.gen_k_grid(self.ncut, configuration.simbox.get_lengths())
             poisson = self.compute_poisson_grid(kpoints, self.damping, configuration.get_volume())
-            # Sorting to compute bigger numbers first
+            # Sorting to compute strongest poisson points first
             new_order = np.flip(np.argsort(poisson))
-            self.kpoints, self.poisson  = [x[new_order] for x in [kpoints, poisson]]
+            kpoints, poisson  = [x[new_order] for x in [kpoints, poisson]]
+            # Filter out kpoints not giving any contribution with single precision
+            purge_zeroes = (poisson != 0.0)
+            self.kpoints, self.poisson = [x[purge_zeroes] for x in [kpoints, poisson]]
+
             self.num_kpoints = len(self.kpoints)
             self.real_fourier_density = np.zeros_like(self.poisson, dtype=np.float32)
             self.imag_fourier_density = np.zeros_like(self.poisson, dtype=np.float32)
@@ -462,17 +466,7 @@ class Electrostatics(Interaction):
         kappa2 = kappa * kappa
         k2 = np.linalg.norm(k_points, axis=-1)**2
         poisson = four * numba.float32(math.pi) * np.exp(-k2 / (four * kappa2)) / (k2 * volume)
-        poisson = poisson[poisson != 0.0]
         return poisson
-
-    @staticmethod
-    def sort_and_filter(A, B):
-        """
-        Sort array A as per sorting of array B. Filter out all non-zero elements.
-        """
-        descending_order = np.flip(np.argsort(B))
-        A, B  = [x[descending_order] for x in [A, B]]
-        return A, B
 
     @staticmethod
     def format_pot_params(params_):
