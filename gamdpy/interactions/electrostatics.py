@@ -6,8 +6,6 @@ import matplotlib.pyplot as plt
 import gamdpy as gp
 from .interaction import Interaction
 
-pi = numba.float32(math.pi)
-
 class Electrostatics(Interaction):
     """Electrostatic point-like Coulomb interactions.
     
@@ -41,8 +39,8 @@ class Electrostatics(Interaction):
 
         self.ewald = False
 
-    def set_ewald(self, nk):
-        self.nk = np.array(nk, dtype=np.float32) # [nkx, nky, nkz] number of wavevectors in each direction
+    def set_ewald(self, ncut):
+        self.ncut = ncut
         self.ewald = True
 
     def get_params(self, configuration: gp.Configuration, compute_plan: dict, verbose=False) -> tuple:
@@ -63,8 +61,11 @@ class Electrostatics(Interaction):
 
         # Building reciprocal space attributes
         if self.ewald:
-            self.kpoints = self.gen_k_grid(self.nk, configuration.simbox.get_lengths())
-            self.poisson = self.compute_poisson_grid(self.kpoints, self.damping, configuration.get_volume())
+            kpoints = self.gen_k_grid(self.ncut, configuration.simbox.get_lengths())
+            poisson = self.compute_poisson_grid(kpoints, self.damping, configuration.get_volume())
+            # Sorting to compute bigger numbers first
+            new_order = np.flip(np.argsort(poisson))
+            self.kpoints, self.poisson  = [x[new_order] for x in [kpoints, poisson]]
             self.num_kpoints = len(self.kpoints)
             self.real_fourier_density = np.zeros_like(self.poisson, dtype=np.float32)
             self.imag_fourier_density = np.zeros_like(self.poisson, dtype=np.float32)
@@ -142,7 +143,7 @@ class Electrostatics(Interaction):
                 cscalars[lap_id] += numba.float32(1-D)*s + umm          # Laplacian 
                 return
 
-        diel_pref = numba.float32(2.0) * pi / (numba.float32(3.0) * vol)
+        diel_pref = numba.float32(2.0) * numba.float32(math.pi) / (numba.float32(3.0) * vol)
         def add_dielectric_drift(ri, rj, qiqj, my_f, cscalars):
             two = numba.float32(2.0)
             for d in range(D):
@@ -427,28 +428,32 @@ class Electrostatics(Interaction):
         return coulomb_matrix, unique_charges, charges_types
 
     @staticmethod
-    def gen_k_grid(nk, box_size):
+    def gen_k_grid(ncut, box_size):
         """
         Gen a k-point grid taking into account the (k,-k) symmetry.
 
         :TODO: Generalize for any dimension.
         """
-        nx = np.arange(-nk[0], nk[0]+1)
-        ny = np.arange(-nk[1], nk[1]+1)
-        nz = np.arange(0, nk[2]+1)
-
+        # Building complete mesh
+        nx, ny = [np.arange(-ncut, ncut+1) for _ in range(2)]
+        nz = np.arange(0, ncut+1)
         M = np.stack(np.meshgrid(nx, ny, nz, indexing='ij'), axis=-1).reshape(-1, 3)
 
         # drop k=0
         M = M[np.any(M != 0, axis=1)]
 
+        # Discard half of the k-points
         on_plane = (M[:,2] == 0) # nz = 0
         keep = (M[:,2] > 0) | (on_plane & (M[:,1] > 0)) | (on_plane & (M[:,1] == 0) & (M[:,0] > 0))
         # (nz != 0) or (nz=0 and ny>0) or (nz=0 and ny = 0 and nx > 0)
         M = M[keep]
 
-        k_points = (2.0 * pi * M.astype(np.float32)) / box_size
-        return k_points
+        # Only consider those in kcut sphere
+        norm_M = np.linalg.norm(M, axis=-1)
+        M = M[norm_M <= ncut]
+
+        k_points = (2.0 * np.pi * M) / box_size
+        return k_points.astype(np.float32)
 
     @staticmethod
     def compute_poisson_grid(k_points, kappa, volume):
@@ -456,7 +461,18 @@ class Electrostatics(Interaction):
         four = numba.float32(4.0)
         kappa2 = kappa * kappa
         k2 = np.linalg.norm(k_points, axis=-1)**2
-        return four * pi * np.exp(-k2 / (four * kappa2)) / (volume * k2)
+        poisson = four * numba.float32(math.pi) * np.exp(-k2 / (four * kappa2)) / (k2 * volume)
+        poisson = poisson[poisson != 0.0]
+        return poisson
+
+    @staticmethod
+    def sort_and_filter(A, B):
+        """
+        Sort array A as per sorting of array B. Filter out all non-zero elements.
+        """
+        descending_order = np.flip(np.argsort(B))
+        A, B  = [x[descending_order] for x in [A, B]]
+        return A, B
 
     @staticmethod
     def format_pot_params(params_):
