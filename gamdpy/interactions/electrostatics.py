@@ -211,7 +211,7 @@ class Electrostatics(Interaction):
                     other_charge_type = charges_types[other_id]
                     ij_params = params_function(my_charge_type, other_charge_type, params)
                     qiqj = ij_params[0]
-                    add_dielectric_drift(vectors[r_id][part_id], vectors[r_id][other_part_id], qiqj, my_f, my_cscalars)
+                    # add_dielectric_drift(vectors[r_id][part_id], vectors[r_id][other_part_id], qiqj, my_f, my_cscalars)
                     if part_id != other_part_id:
                         dist_sq = dist_sq_dr_function(vectors[r_id][other_part_id], vectors[r_id][part_id], sim_box, my_dr)
                         cut = ij_params[-1]
