@@ -7,11 +7,9 @@ import gamdpy as gp
 from .interaction import Interaction
 
 class Electrostatics(Interaction):
-    """Electrostatic point-like Coulomb interactions.
-    
-    This interaction is separated from the normal PairPotential class because 
-    it uses a brute-force O(N^2) algorithm as a basis for the long-range part of Ewald sums.
-        
+    """Electrostatic point-like Coulomb interactions. 
+    Can deal with standard Ewald sums and Wolf method.
+
     Parameters
     ----------
     damping : float
@@ -22,15 +20,23 @@ class Electrostatics(Interaction):
         Real-space cutoff associated to pair-wise interactions between charges classes.
         Rows and columns MUST be sorted in ascending charges.
         :TODO: Add a check of this.
+
+    max_num_nbs : int
+        Maximum number of neighbors per particle to allocate in the neighbor list.
+
+    exclusions : array_like
+        List of particle indices to exclude from interactions for each particle.
     """
 
-    def __init__(self, damping, cutoff):
+    def __init__(self, damping, cutoff, max_num_nbs, exclusions=None):
         def params_function(i_type, j_type, params):
             result = params[i_type, j_type]
             return result
         self.params_function = params_function
         self.damping = numba.float32(damping)
         self.cutoff = cutoff
+        self.exclusions = exclusions 
+        self.max_num_nbs = max_num_nbs
 
         if self.damping != 0.0:
             self.real_space_pot = gp.apply_shifted_potential_cutoff(gp.gaussian_screened_coulomb)
@@ -75,6 +81,16 @@ class Electrostatics(Interaction):
             self.imag_fourier_density = np.zeros_like(self.poisson, dtype=np.float32)
 
         self.copy_to_device()
+
+        # Deal with neighbours lists
+        if compute_plan['nblist'] == 'N squared':
+            self.nblist = gp.NbList2(configuration, self.exclusions, self.max_num_nbs)
+        elif compute_plan['nblist'] == 'linked lists':
+            self.nblist = gp.NbListLinkedLists(configuration, self.exclusions, self.max_num_nbs)
+        else:
+            raise ValueError(f"No lblist called: {compute_plan['nblist']}. Use either 'N squared' or 'linked lists'")
+        nblist_params = self.nblist.get_params(max_cut, compute_plan, verbose)
+
         if self.ewald:
             return (
                 self.d_params,
@@ -85,9 +101,18 @@ class Electrostatics(Interaction):
                 self.d_poisson,
                 self.d_real_fourier_density,
                 self.d_imag_fourier_density,
+                self.nblist.d_nblist, 
+                nblist_params
             )
         else:
-            return (self.d_params, self.d_charges, self.d_charged_idx, self.d_charges_types, )
+            return (
+                self.d_params,
+                self.d_charges,
+                self.d_charged_idx,
+                self.d_charges_types,
+                self.nblist.d_nblist,
+                nblist_params
+            )
 
     def copy_to_device(self):
         self.d_params = cuda.to_device(self.params)
@@ -121,6 +146,11 @@ class Electrostatics(Interaction):
             num_part = num_charged
         num_blocks = (num_part - 1) // pb + 1 
 
+        if verbose:
+            print(f'\tpb: {pb}, tp:{tp}, num_blocks:{num_blocks}')
+            print(f'\tNumber (virtual) particles: {num_blocks*pb}')
+            print(f'\tNumber of threads {num_blocks*pb*tp}')
+    
         # Unpack indices for vectors and scalars to be compiled into kernel
         r_id, f_id = [configuration.vectors.indices[key] for key in ['r', 'f']]
 
@@ -179,7 +209,7 @@ class Electrostatics(Interaction):
         dist_sq_dr_function = numba.njit(configuration.simbox.get_dist_sq_dr_function())
 
         @cuda.jit( device=gridsync )
-        def sum_real_space(vectors, cscalars, sim_box, charges_idx, charges_types, params):
+        def sum_real_space(vectors, cscalars, sim_box, charges_idx, charges_types, nblist, params):
             """ 
             Sum real-space Ewald contributions.
             """
@@ -189,6 +219,7 @@ class Electrostatics(Interaction):
             global_id = my_block*pb + local_id
             my_t = cuda.threadIdx.y
 
+            max_nbs = nblist.shape[1]-1
 
             my_f = cuda.local.array(shape=D,dtype=numba.float32)
             my_dr = cuda.local.array(shape=D,dtype=numba.float32)
@@ -206,17 +237,16 @@ class Electrostatics(Interaction):
             if global_id < num_charged:
                 part_id = charges_idx[global_id]
                 my_charge_type = charges_types[global_id]
-                for other_id in range(my_t, num_charged, tp):
-                    other_part_id = charges_idx[other_id]
-                    other_charge_type = charges_types[other_id]
+                for i in range(my_t, nblist[part_id, max_nbs], tp):
+                    other_part_id = nblist[global_id, i] 
+                    other_charge_type = charges_types[other_part_id] # this will only work if every particle has a charge
                     ij_params = params_function(my_charge_type, other_charge_type, params)
                     qiqj = ij_params[0]
                     # add_dielectric_drift(vectors[r_id][part_id], vectors[r_id][other_part_id], qiqj, my_f, my_cscalars)
-                    if part_id != other_part_id:
-                        dist_sq = dist_sq_dr_function(vectors[r_id][other_part_id], vectors[r_id][part_id], sim_box, my_dr)
-                        cut = ij_params[-1]
-                        if dist_sq < cut*cut:
-                            real_space_calculator(math.sqrt(dist_sq), ij_params, my_dr, my_f, my_cscalars, 0, vectors[f_id], other_part_id)
+                    dist_sq = dist_sq_dr_function(vectors[r_id][other_part_id], vectors[r_id][part_id], sim_box, my_dr)
+                    cut = ij_params[-1]
+                    if dist_sq < cut*cut:
+                        real_space_calculator(math.sqrt(dist_sq), ij_params, my_dr, my_f, my_cscalars, 0, vectors[f_id], other_part_id)
                     
                 for k in range(D):
                     cuda.atomic.add(vectors[f_id], (part_id, k), my_f[k])
@@ -330,11 +360,13 @@ class Electrostatics(Interaction):
 
             return 
 
+        nblist_check_and_update = self.nblist.get_kernel(configuration, compute_plan, compute_flags, verbose)
+
         if gridsync:
             # A device function, 
             @cuda.jit( device=gridsync )
             def compute_interactions(grid, vectors, scalars, ptype, sim_box, interaction_parameters):
-                (params, charges, charged_idx, charges_types, kpoints, poisson_grid, real_fourier_density, imag_fourier_density
+                (params, charges, charged_idx, charges_types, kpoints, poisson_grid, real_fourier_density, imag_fourier_density, nblist, nblist_parameters
                 ) = interaction_parameters
                 init_fourier_density(real_fourier_density, imag_fourier_density)
                 grid.sync()
@@ -358,12 +390,15 @@ class Electrostatics(Interaction):
                     imag_fourier_density
                 )
                 grid.sync()
+                nblist_check_and_update(grid, vectors, scalars, ptype, sim_box, nblist, nblist_parameters)
+                grid.sync()
                 sum_real_space(
                     vectors,
                     scalars,
                     sim_box,
                     charged_idx,
                     charges_types,
+                    nblist,
                     params
                 )
                 return
@@ -372,7 +407,7 @@ class Electrostatics(Interaction):
         else:
             # A python function, 
             def compute_interactions(grid, vectors, scalars, ptype, sim_box, interaction_parameters):
-                (params, charges, charged_idx, charges_types, kpoints, poisson_grid, real_fourier_density, imag_fourier_density
+                (params, charges, charged_idx, charges_types, kpoints, poisson_grid, real_fourier_density, imag_fourier_density, nblist, nblist_parameters
                 ) = interaction_parameters
                 init_fourier_density[num_blocks, (pb, tp)](real_fourier_density, imag_fourier_density)
                 update_fourier_density[num_blocks, (pb, tp)](
@@ -393,12 +428,14 @@ class Electrostatics(Interaction):
                     real_fourier_density,
                     imag_fourier_density
                 )
+                nblist_check_and_update(grid, vectors, scalars, ptype, sim_box, nblist, nblist_parameters)
                 sum_real_space[num_blocks, (pb, tp)](
                     vectors,
                     scalars,
                     sim_box,
                     charged_idx,
                     charges_types,
+                    nblist,
                     params
                 )
                 return
