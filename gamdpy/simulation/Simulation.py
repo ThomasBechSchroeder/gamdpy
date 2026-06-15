@@ -288,7 +288,7 @@ class Simulation():
             def integrator(vectors, scalars, ptype, r_im, sim_box, interaction_params, integrator_params,
                             runtime_actions_params, time_zero, steps):
                 grid = cuda.cg.this_grid()
-                for step in range(steps + 1): # make extra step without integration, so that interactions and run_time actions called for final configuration
+                for step in range(steps + 1): # make extra step without integration, so that interactions and run_time actions called for final configuration                   
                     time = time_zero + step * integrator_params[0]
                     compute_interactions(grid, vectors, scalars, ptype, sim_box, interaction_params)
                     grid.sync()

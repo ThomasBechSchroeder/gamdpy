@@ -119,6 +119,10 @@ class Configuration:
             if self.D > 4:
                 raise ValueError("compute_flags['stresses'] should not be set for D>4")
             self.vector_columns += ['sx', 'sy', 'sz','sw'][:self.D]
+        if self.compute_flags['orientations']:
+            if self.D > 4:
+                raise ValueError("compute_flags['orientations'] should not be set for D>4")
+            self.vector_columns += ['n'][:self.D]
 
 
         self.num_cscalars = 0
@@ -329,6 +333,29 @@ class Configuration:
             self.set_kinetic_temperature(temperature=temperature, ndofs=ndofs)
         else:
             self['v'] = np.zeros((self.N, self.D), np.float32)
+            
+    def randomize_orientations(self, seed=None) -> None:
+        """ Randomize orientations
+
+        """
+        if self.D is None:
+            raise ValueError('Cannot randomize velocities. Start by assigning positions.')
+            
+        if self.D == 3: 
+	        phi = np.random.uniform(0, 2*np.pi, self.N)
+	        u   = np.random.uniform(-1, 1, self.N)
+	        s = np.sqrt(1 - u*u)
+	        self['n'][:,0] = s*np.cos(phi)
+	        self['n'][:,1] = s*np.sin(phi)
+	        self['n'][:,2] = u
+        if self.D ==2:
+	        phi = np.random.uniform(0, 2*np.pi, self.N)
+	        orientations[:,0] = np.cos(phi)
+	        orientations[:,1] = np.sin(phi)
+
+        
+        
+
 
     def make_lattice(self, unit_cell: dict, cells: list, rho: float = None, ptype_unit_cell: list = None) -> None:
         """ Generate a lattice configuration
