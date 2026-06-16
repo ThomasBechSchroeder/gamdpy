@@ -10,6 +10,50 @@ from .integrator import Integrator
 
 
 class ActiveBP(Integrator):
+	
+    """
+    Integrator for Active Brownian Particles (ABP).
+
+    This class implements the time evolution of active particles with
+    translational and rotational diffusion as well as self-propulsion.
+
+    Parameters
+    ----------
+    DT : float or array-like
+        Translational diffusion coefficient (can depend on particle type).
+    DR : float or array-like
+        Rotational diffusion coefficient (can depend on particle type).
+    mu : float or array-like
+        Particle mobility (can depend on particle type).
+    v0 : float or array-like
+        Self-propulsion speed (can depend on particle type).
+    dt : float
+        Integration time step.
+    seed : int
+        Seed for the GPU random number generator.
+
+    Methods
+    --------
+    get_params(configuration, interactions_params, verbose=False)
+        Prepares integration parameters and RNG states for GPU execution.
+
+    get_kernel(configuration, compute_plan, compute_flags, interactions_kernel, verbose=False)
+        Builds the CUDA kernel used for time evolution of the system.
+
+    save_internal_state(output, group_name)
+        Placeholder for saving internal state (currently not implemented).
+        
+        
+    Example
+    --------
+    configuration.randomize_orientations()
+    integrator = gp.integrators.ActiveBP(DT=[5.0, 5.0], DR=[1.0, 1.0], mu=[0.0, 0.0], v0=[5.0, 5.0] , dt=0.005, seed=2028)
+
+    Notes
+    -----
+    - Particles must have an orientation in this integrator. 
+    -In the initializaton, make use of randomize_oreintations() to get random initial orientations.
+    """
     
 
     def __init__(self, DT,DR,mu, v0, dt: float, seed = 0) -> None:
@@ -53,7 +97,7 @@ class ActiveBP(Integrator):
             print(f'\tNumber of threads {num_blocks * pb * tp}')
         
 
-        r_id, f_id, n_id = [configuration.vectors.indices[key] for key in ['r', 'f', 'n']]
+        r_id, f_id, n_id = (lambda d: (_ for _ in ()).throw(KeyError("Missing keys r/f/n")) if not all(k in d for k in ('r','f','n')) else [d[k] for k in ('r','f','n')])(configuration.vectors.indices)
 
         apply_PBC = numba.njit(configuration.simbox.get_apply_PBC())
 
