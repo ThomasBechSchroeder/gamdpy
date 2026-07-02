@@ -156,7 +156,7 @@ class ActiveBP(Integrator):
 	                
                 if D==2:
 	                g = xoroshiro128p_normal_float32(rng_states, global_id)
-	                dtheta = factor * g
+	                dtheta = DR_factor * g
 
 	                nx = my_n[0]
 	                ny = my_n[1]
