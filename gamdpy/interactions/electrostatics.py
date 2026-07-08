@@ -7,8 +7,34 @@ import gamdpy as gp
 from .interaction import Interaction
 
 class Electrostatics(Interaction):
-    """Electrostatic point-like Coulomb interactions. 
-    Can deal with standard Ewald sums and Wolf method.
+    r"""Electrostatic Coulomb interactions. 
+    Deal with standard Ewald sums and Wolff method.
+
+    Standard methods (off-lattice) methods to deal with electrostatics in MD rely on 
+    a Gaussian screened potential, controlled by a damping parameter :math:`\kappa`
+    (cf. gaussian_screened_coulomb in potential_functions). 
+
+    The simple Wolff method (default Electrostatics) approximates long-range Coulomb interactions
+    with such screened potential. The latter also correponds to the real-space summation of the Ewald method. 
+
+    The compensating long-range potential can be efficiently computed in reciprocal space
+    (cf. Allen & Tildesley eq. 6.6 page 220 second edition):
+
+    .. math::
+        U_\mathrm{reciprocal}=\frac{1}{2}\sum_i q_i\sum_{\mathbf{k}\neq 0}G(k)\rho(\mathbf{k})\exp(i\mathbf{k}\cdot\mathbf{r}_i),
+    
+    where :math:`\mathbf{k}=\frac{2\pi}{L}\mathbf{n}` is an element of the dual space
+    of the box simulation, :math:`G(k)=\frac{2\pi}{V}\frac{\exp(-k^2/4\kappa^2)}{k^2}` is the convoluting 
+    kernel of the Poisson equation, and :math:`\rho(\mathbf{k})=\sum_j q_j\exp(-i\mathbf{k}\cdot\mathbf{r}_j)`. 
+
+    The force on atom i subsequently follows as
+
+    .. math::
+        \mathbf{f}^i_\mathrm{reciprocal}=-q_i\sum_\mathbf{k\neq 0}\mathbf{k}G(k)\Im(\rho(-\mathbf{k})\exp(-i\mathbf{k}\cdot{r}_j)).
+
+    Note: the reciprocal contribution to the potential can be expressed as a single sum over wave-vectors
+    but because the force requires both particle and wave-vector indices, we kept this form
+    to take advantage of our current threading choice.
 
     Parameters
     ----------
@@ -46,6 +72,14 @@ class Electrostatics(Interaction):
         self.ewald = False
 
     def set_ewald(self, ncut):
+        '''
+        Compute Ewald sums on top of the Wolff method.
+
+        Parameters
+        ----------
+        ncut : int
+            Given a k-point in a single direction 2pi/L * n, this sets the maximum absolue value of n. 
+        '''
         self.ncut = ncut
         self.ewald = True
 
@@ -473,7 +507,7 @@ class Electrostatics(Interaction):
         """
         Gen a k-point grid taking into account the (k,-k) symmetry.
 
-        :TODO: Generalize for any dimension.
+        :TODO: Generalize for any dimension. CURRENTLY DESIGNED FOR D=3.
         """
         # Building complete mesh
         nx, ny = [np.arange(-ncut, ncut+1) for _ in range(2)]
@@ -498,6 +532,9 @@ class Electrostatics(Interaction):
 
     @staticmethod
     def compute_poisson_grid(k_points, kappa, volume):
+        """
+        Compute the Poisson equation convolution kernel over a whole k-point grid.
+        """
         # Helper variables
         four = numba.float32(4.0)
         kappa2 = kappa * kappa
