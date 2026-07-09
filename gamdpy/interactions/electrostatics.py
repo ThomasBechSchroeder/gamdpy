@@ -272,7 +272,7 @@ class Electrostatics(Interaction):
                 part_id = charges_idx[global_id]
                 my_charge_type = charges_types[global_id]
                 for i in range(my_t, nblist[part_id, max_nbs], tp):
-                    other_part_id = nblist[global_id, i] 
+                    other_part_id = nblist[part_id, i]
                     other_charge_type = charges_types[other_part_id] # this will only work if every particle has a charge
                     ij_params = params_function(my_charge_type, other_charge_type, params)
                     qiqj = ij_params[0]
