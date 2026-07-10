@@ -109,6 +109,7 @@ class Electrostatics(Interaction):
             # Filter out kpoints not giving any contribution with single precision
             purge_zeroes = (poisson != 0.0)
             self.kpoints, self.poisson = [x[purge_zeroes] for x in [kpoints, poisson]]
+            self.self_energy = self.compute_self_energy(self.charges, self.damping)
 
             self.num_kpoints = len(self.kpoints)
             self.real_fourier_density = np.zeros_like(self.poisson, dtype=np.float32)
@@ -169,6 +170,7 @@ class Electrostatics(Interaction):
         # Unpack parameters
         D, N = configuration.D, configuration.N
         num_kpoints = self.num_kpoints
+        self_energy = self.self_energy
         num_charged = len(self.charged_idx)
         damping = self.damping
         vol = configuration.get_volume()
@@ -202,7 +204,7 @@ class Electrostatics(Interaction):
             u, s, umm = real_space_pot(ij_dist, ij_params)
             half = numba.float32(0.5)
             for k in range(D):
-                my_f[k] = my_f[k] - dr[k]*s                         # Force
+                my_f[k] = my_f[k] - dr[k]*s                             # Force
                 if compute_w:
                     cscalars[w_id] += dr[k]*dr[k]*s*virial_factor       # Virial
             if compute_u:
@@ -318,6 +320,8 @@ class Electrostatics(Interaction):
                     my_f[d] = numba.float32(0.0)
                 for s in range(num_cscalars):
                     my_cscalars[s] = numba.float32(0.0)
+                if compute_u:
+                    my_cscalars[u_id] -= self_energy
 
             cuda.syncthreads()
 
@@ -474,6 +478,36 @@ class Electrostatics(Interaction):
                 )
                 return
             return compute_interactions
+
+    @staticmethod
+    def compute_self_energy(charges, kappa):
+        r"""
+        Compute the self-energy associated to the screening procedure:
+
+        .. math::
+            \frac{\kappa}{N\sqrt{\pi}}\sum_i q_i^2.
+
+        Note that the self-energy is divided by N to make it a per-atom quantity.
+        This quantity does not depend on the state of the system and can be computed 
+        only once. It only has benchmarking purposes.
+
+        Parameters
+        ----------
+        charges : numpy array
+            Assigning a charge to each particle
+
+        kappa : float
+            Decay rate of the electrostatic gaussian screening. 
+
+        Returns
+        -------
+        self_energy : numpy array
+            Per-atom self-energy associated to the screening procedure.
+        """
+
+        N = len(charges)
+        pref = numba.float32((kappa / (N * math.sqrt(math.pi))))
+        return pref * np.sum(charges**2)
 
     @staticmethod
     def build_pair_coulomb_matrix(charges):
