@@ -81,7 +81,6 @@ class Electrostatics(Interaction):
         self.charges, self.charged_idx = configuration.get_charged_particles()
         coulomb_matrix, unique_charges, self.charges_types = self.build_pair_coulomb_matrix(self.charges)
 
-
         decay_rate = np.full_like(coulomb_matrix, self.damping, dtype=np.float32)
         params = [coulomb_matrix, decay_rate, self.cutoff]
 
