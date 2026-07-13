@@ -14,7 +14,7 @@ class Electrostatics(Interaction):
     a Gaussian screened potential, controlled by a damping parameter :math:`\kappa`
     (cf. gaussian_screened_coulomb in potential_functions). 
 
-    The simple Wolff method (default Electrostatics) approximates long-range Coulomb interactions
+    The simple Wolff method approximates long-range Coulomb interactions
     with such screened potential. The latter also correponds to the real-space summation of the Ewald method. 
 
     The compensating long-range potential can be efficiently computed in reciprocal space
@@ -32,9 +32,14 @@ class Electrostatics(Interaction):
     .. math::
         \mathbf{f}^i_\mathrm{reciprocal}=-q_i\sum_\mathbf{k\neq 0}\mathbf{k}G(k)\Im(\rho(-\mathbf{k})\exp(-i\mathbf{k}\cdot{r}_j)).
 
-    Note: the reciprocal contribution to the potential can be expressed as a single sum over wave-vectors
+    Note 1: The reciprocal contribution to the potential can be expressed as a single sum over wave-vectors
     but because the force requires both particle and wave-vector indices, we kept this form
     to take advantage of our current threading choice.
+
+    Note 2: There is a self-energy that must be substracted due to the screening procedure
+    (see function compute_self_energy) but it is a constant that must be computed only once
+    and does not depend on the Configuration. You can add it in post-processing for
+    benchmarking purposes.
 
     Parameters
     ----------
@@ -320,8 +325,8 @@ class Electrostatics(Interaction):
                     my_f[d] = numba.float32(0.0)
                 for s in range(num_cscalars):
                     my_cscalars[s] = numba.float32(0.0)
-                if compute_u:
-                    my_cscalars[u_id] -= self_energy
+                # if compute_u:
+                #     my_cscalars[u_id] -= self_energy
 
             cuda.syncthreads()
 
