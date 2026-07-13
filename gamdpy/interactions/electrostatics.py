@@ -52,6 +52,10 @@ class Electrostatics(Interaction):
         Rows and columns MUST be sorted in ascending charges.
         :TODO: Add a check of this.
 
+    ncut : int
+        Given a k-point in a single direction 2pi/L * n, this sets the maximum absolue value of n
+        for summing the reciprocal part of the Ewald method.
+
     max_num_nbs : int
         Maximum number of neighbors per particle to allocate in the neighbor list.
 
@@ -59,66 +63,45 @@ class Electrostatics(Interaction):
         List of particle indices to exclude from interactions for each particle.
     """
 
-    def __init__(self, damping, cutoff, max_num_nbs, exclusions=None):
+    def __init__(self, damping, cutoff, ncut, max_num_nbs, exclusions=None):
         def params_function(i_type, j_type, params):
             result = params[i_type, j_type]
             return result
         self.params_function = params_function
         self.damping = numba.float32(damping)
         self.cutoff = cutoff
+        self.ncut = ncut
         self.exclusions = exclusions 
         self.max_num_nbs = max_num_nbs
 
-        if self.damping != 0.0:
-            self.real_space_pot = gp.apply_shifted_potential_cutoff(gp.gaussian_screened_coulomb)
-        else:
-            self.real_space_pot = gp.apply_shifted_force_cutoff(gp.make_IPL_n(n=1))
-
-        self.ewald = False
-
-    def set_ewald(self, ncut):
-        '''
-        Compute Ewald sums on top of the Wolff method.
-
-        Parameters
-        ----------
-        ncut : int
-            Given a k-point in a single direction 2pi/L * n, this sets the maximum absolue value of n. 
-        '''
-        self.ncut = ncut
-        self.ewald = True
+        self.real_space_pot = gp.apply_shifted_potential_cutoff(gp.gaussian_screened_coulomb)
 
     def get_params(self, configuration: gp.Configuration, compute_plan: dict, verbose=False) -> tuple:
         # Gathering charges properties
         self.charges, self.charged_idx = configuration.get_charged_particles()
         coulomb_matrix, unique_charges, self.charges_types = self.build_pair_coulomb_matrix(self.charges)
 
-        if self.damping == 0.0:
-            params = [coulomb_matrix, self.cutoff]
-        else:
-            # Need to change this: decay rate is not a type-of-pairs quantity
-            # Keeping it like that atm because it fits the current params format
-            decay_rate = np.full_like(coulomb_matrix, self.damping, dtype=np.float32)
-            params = [coulomb_matrix, decay_rate, self.cutoff]
+
+        decay_rate = np.full_like(coulomb_matrix, self.damping, dtype=np.float32)
+        params = [coulomb_matrix, decay_rate, self.cutoff]
 
         # Formatting params for kernels
         self.params, max_cut = self.format_pot_params(params)
 
         # Building reciprocal space attributes
-        if self.ewald:
-            kpoints = self.gen_k_grid(self.ncut, configuration.simbox.get_lengths())
-            poisson = self.compute_poisson_grid(kpoints, self.damping, configuration.get_volume())
-            # Sorting to compute strongest poisson points first
-            new_order = np.flip(np.argsort(poisson))
-            kpoints, poisson  = [x[new_order] for x in [kpoints, poisson]]
-            # Filter out kpoints not giving any contribution with single precision
-            purge_zeroes = (poisson != 0.0)
-            self.kpoints, self.poisson = [x[purge_zeroes] for x in [kpoints, poisson]]
-            self.self_energy = self.compute_self_energy(self.charges, self.damping)
+        kpoints = self.gen_k_grid(self.ncut, configuration.simbox.get_lengths())
+        poisson = self.compute_poisson_grid(kpoints, self.damping, configuration.get_volume())
+        # Sorting to compute strongest poisson points first
+        new_order = np.flip(np.argsort(poisson))
+        kpoints, poisson  = [x[new_order] for x in [kpoints, poisson]]
+        # Filter out kpoints not giving any contribution with single precision
+        purge_zeroes = (poisson != 0.0)
+        self.kpoints, self.poisson = [x[purge_zeroes] for x in [kpoints, poisson]]
+        self.self_energy = self.compute_self_energy(self.charges, self.damping)
 
-            self.num_kpoints = len(self.kpoints)
-            self.real_fourier_density = np.zeros_like(self.poisson, dtype=np.float32)
-            self.imag_fourier_density = np.zeros_like(self.poisson, dtype=np.float32)
+        self.num_kpoints = len(self.kpoints)
+        self.real_fourier_density = np.zeros_like(self.poisson, dtype=np.float32)
+        self.imag_fourier_density = np.zeros_like(self.poisson, dtype=np.float32)
 
         self.copy_to_device()
 
@@ -131,39 +114,28 @@ class Electrostatics(Interaction):
             raise ValueError(f"No lblist called: {compute_plan['nblist']}. Use either 'N squared' or 'linked lists'")
         nblist_params = self.nblist.get_params(max_cut, compute_plan, verbose)
 
-        if self.ewald:
-            return (
-                self.d_params,
-                self.d_charges,
-                self.d_charged_idx,
-                self.d_charges_types,
-                self.d_kpoints,
-                self.d_poisson,
-                self.d_real_fourier_density,
-                self.d_imag_fourier_density,
-                self.nblist.d_nblist, 
-                nblist_params
-            )
-        else:
-            return (
-                self.d_params,
-                self.d_charges,
-                self.d_charged_idx,
-                self.d_charges_types,
-                self.nblist.d_nblist,
-                nblist_params
-            )
+        return (
+            self.d_params,
+            self.d_charges,
+            self.d_charged_idx,
+            self.d_charges_types,
+            self.d_kpoints,
+            self.d_poisson,
+            self.d_real_fourier_density,
+            self.d_imag_fourier_density,
+            self.nblist.d_nblist, 
+            nblist_params
+        )
 
     def copy_to_device(self):
         self.d_params = cuda.to_device(self.params)
         self.d_charges = cuda.to_device(self.charges)
         self.d_charged_idx = cuda.to_device(self.charged_idx)
         self.d_charges_types = cuda.to_device(self.charges_types)
-        if self.ewald:
-            self.d_kpoints = cuda.to_device(self.kpoints)
-            self.d_poisson = cuda.to_device(self.poisson)
-            self.d_real_fourier_density = cuda.to_device(self.real_fourier_density)
-            self.d_imag_fourier_density = cuda.to_device(self.imag_fourier_density)
+        self.d_kpoints = cuda.to_device(self.kpoints)
+        self.d_poisson = cuda.to_device(self.poisson)
+        self.d_real_fourier_density = cuda.to_device(self.real_fourier_density)
+        self.d_imag_fourier_density = cuda.to_device(self.imag_fourier_density)
 
     def get_kernel(self, configuration: gp.Configuration, compute_plan: dict, compute_flags: dict[str,bool], verbose=False):
         num_cscalars = configuration.num_cscalars
