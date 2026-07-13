@@ -41,7 +41,6 @@ def test_NPT_Langevin_isotropic(verbose=False, plot=False):
         alpha_barostat=2 * K / tau_V / V,  # 0.01
         mass_barostat=K * (zeta * tau_V) ** 2 / V,  # 1.0
         dt=0.004,
-        volume_velocity=0.0,
         seed=2025,
     )
 
@@ -155,7 +154,6 @@ def test_NPT_Langevin_isotropic_2d(verbose=False, plot=False):
         alpha_barostat=2 * K / tau_V / V,  # 0.01
         mass_barostat=K * (zeta * tau_V) ** 2 / V,  # 1.0
         dt=0.004,
-        volume_velocity=0.0,
         seed=2025,
     )
     integrator_NVT = gp.integrators.NVT(temperature=0.7, tau=0.2, dt=0.005)

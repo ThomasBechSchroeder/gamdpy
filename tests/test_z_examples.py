@@ -102,8 +102,14 @@ class Test_examples:
     def test_widoms_particle_insertion(self):
         self.make_one("widoms_particle_insertion")
 
+    def test_lennard_jones_argon(self):
+        self.make_one("lennard_jones_argon")
+
     def test_LJchain(self):
         self.make_one("LJchain", ["Data/LJchain10_Rho1.00_T0.700.h5", "Data/LJchain10_Rho1.00_T0.700_compress.h5"])
+
+    def test_LJchain_continue(self):
+        self.make_one("LJchain_continue", ["Data/LJchain10_Rho1.00_T0.700_c1.h5"])
 
     def test_write_to_lammps(self):
         self.make_one("write_to_lammps", ["dump.initial", "dump.lammps"])
@@ -138,14 +144,14 @@ class Test_examples:
     def test_hydrocorr(self):
         self.make_one("hydrocorr", ["jacf.dat", "dacf.dat"])
 
-    def test_isomorph(self):        # Note: this script produces Data/isomorph.pkl needed by next two. File gets remove in next
+    def test_isomorph(self):        # Note: this script produces Data/isomorph.pkl
         self.make_one("isomorph")
+   
+    def test_isomorph_forcemethod(self):        # Note: this script produces Data/isomorph.pkl. File gets remove in next
+        self.make_one("isomorph_forcemethod")
 
-    def test_plot_isomorph_rdf(self):        
-        self.make_one("plot_isomorph_rdf", ["isomorph_rdf.pdf"])
-
-    def test_plot_isomorph_dynamics(self):
-        self.make_one("plot_isomorph_dynamics", ["Data/isomorph.pkl", "isomorph_dynamics.pdf"])
+    def test_plot_isomorph(self):        
+        self.make_one("plot_isomorph", ["Data/isomorph.pkl", "isomorph.pdf"])
 
     def test_consistency_NPT(self):
         self.make_one("consistency_NPT")
@@ -174,3 +180,29 @@ class Test_examples:
     def test_quench_trajectory(self): 
         self.make_one("quench_trajectory", ['Data/KABLJ_Rho1.200_T0.400_toread_quench.h5', ])
 
+    def test_active_ornstein_uhlenbeck(self):
+        self.make_one("active_ornstein_uhlenbeck", ["Data/ActiveOUP.h5"])
+
+    def test_zbl(self):
+        self.make_one("zbl", ["Data/zbl.h5"])
+
+    def test_water(self):
+        self.make_one("water", ["Data/water.h5"])
+
+    def test_water_real_units(self):
+        self.make_one("water_real_units", ["Data/water.h5"])
+
+
+    def test_analyze_NpT_thermodynamics(self):
+        self.make_one("analyze_NpT_thermodynamics",
+                      [
+                          "./Data/LJ_p4.70_T2.0_toread_NpT_thermodynamics.toml",
+                          "./Data/LJ_p4.70_T2.0_toread_NpT_thermodynamics.pdf"
+                      ])
+
+    def test_analyze_NVT_thermodynamics(self):
+        self.make_one("analyze_NVT_thermodynamics",
+                      [
+                          "./Data/LJ_r0.973_T0.70_toread_NVT_thermodynamics.toml",
+                          "./Data/LJ_r0.973_T0.70_toread_NVT_thermodynamics.pdf"
+                      ])

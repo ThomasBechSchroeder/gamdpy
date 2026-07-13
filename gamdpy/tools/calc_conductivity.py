@@ -48,11 +48,8 @@ def calc_conductivity_(positions, images, charges, simbox, block0, conf_index0, 
 def calc_conductivity(trajectory, first_block, charges):
     """Compute conductivity from a saved trajectory HDF5 file.
 
-    This function processes blocks of saved configurations to evaluate time‐dependent
-    dynamical observables, including the mean square displacement (MSD), the non‐Gaussian
-    parameter (alpha2), and the self‐intermediate scattering function (Fs), for one or more
-    particle types.
-
+    This function processes blocks of saved configurations to evaluate time dependendet 
+    conductivity.
     Parameters
     ----------
     trajectory : h5py.File object in the gamdpy style
@@ -60,29 +57,13 @@ def calc_conductivity(trajectory, first_block, charges):
     first_block : int
         Index of the first block to use as the reference origin.
 
-    qvalues : float or array‐like of shape (num_types,), optional
-        Wavevector magnitudes at which to compute the self‐intermediate scattering
-        function Fs. If a single float is provided, it is broadcast to all particle types.
-        If None, Fs is not computed (remains zero).
+    charges :  array‐like of shape (num_particles,)
+        charge for each particle
 
     Returns
     -------
     results : dict
-        Dictionary containing dynamcal data.
-
-    Examples
-    --------
-    For command‐line usage, see:
-        $ python -m gamdpy.tools.calc_dynamics -h
-
-    Usage within a Python script:
-
-    >>> import gamdpy as gp
-    >>> sim = gp.get_default_sim()  # Replace with your simulation object
-    >>> for block in sim.run_timeblocks(): pass
-    >>> dynamics = gp.calc_dynamics(sim.output, first_block=0, qvalues=7.5)
-    >>> dynamics.keys()
-    dict_keys(['times', 'msd', 'alpha2', 'qvalues', 'Fs', 'count'])
+        Dictionary containing 'times', 'nernst_einstein', 'einstein', and 'crossterm'
 
     """
     attributes = trajectory.attrs

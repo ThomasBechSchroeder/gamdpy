@@ -7,7 +7,7 @@ from numba import cuda
 
 from .colarray import colarray
 from ..simulation_boxes import Orthorhombic, LeesEdwards
-from .topology import Topology, duplicate_topology, replicate_topologies
+from .topology import Topology, replicate_topologies
 from ..simulation.get_default_compute_flags import get_default_compute_flags
 from .Configuration import Configuration
 
@@ -316,7 +316,7 @@ def configuration_from_rumd3(filename: str, reset_images=False, compute_flags=No
     return configuration
 
 
-def configuration_to_lammps(configuration, timestep=0) -> str:
+def configuration_to_lammps(configuration, timestep=0, unit_rescale=None) -> str:
     """ Convert a configuration to a string formatted as LAMMPS dump file 
 
     Parameters
@@ -325,9 +325,11 @@ def configuration_to_lammps(configuration, timestep=0) -> str:
     configuration : gamdpy.Configuration
         a gamdpy configuration object
 
-    timestep : float
+    timestep : int
         time at which the configuration is saved
 
+    unit_rescale : dictionary
+        contains rescale factors for positions/box, velocities and forces for converting units.
     Returns
     -------
 
@@ -353,6 +355,12 @@ def configuration_to_lammps(configuration, timestep=0) -> str:
     velocities = configuration['v']
     ptypes = configuration.ptype
     simulation_box = configuration.simbox.get_lengths()
+
+    if unit_rescale is not None:
+        positions *= unit_rescale['positions-box']
+        simulation_box *= unit_rescale['positions-box']
+        velocities *= (unit_rescale['velocities'])
+        forces *= (unit_rescale['forces'])
 
     # Header
     header = f'ITEM: TIMESTEP\n{timestep:d}\n'

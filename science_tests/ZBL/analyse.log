@@ -1,0 +1,6 @@
+{'unit_mass': 1.0552061567359032e-25, 'unit_length': 1.07976205156178e-11, 'in_Angstrom': 0.107976205156178, 'unit_energy': 1.796925736923421e-14, 'in_eV': 112155.28293139626, 'unit_pressure': 1.4274008429517773e+19, 'in_bar': 142740084295177.75, 'in_GPa': 14274008429.517775, 'unit_time': 2.616565758784872e-17, 'in_ns': 2.6165657587848718e-08, 'in_ps': 2.616565758784872e-05, 'unit_temperature': 1301508013.2049644, 'in_K': 1301508013.2049644}
+Found .h5 file (./zbl.h5), loading to gamdpy as output dictionary
+Number of timeblocks:          nblocks = 32
+Configurations per timeblock:  nconfs = 12
+Number of particles:           N = 4000
+Number of spatial dimensions:  D = 3

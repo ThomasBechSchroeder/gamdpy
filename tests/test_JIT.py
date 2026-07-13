@@ -45,7 +45,6 @@ def test_JIT():
                      gp.integrators.NPT_Atomic  (temperature=temperature, tau=0.4, pressure=pressure, tau_p=20, dt=dt),
                      gp.integrators.NPT_Langevin(temperature=temperature, pressure=pressure,
                                                  alpha=0.1, alpha_barostat=0.0001, mass_barostat=0.0001,
-                                                 volume_velocity=0.0,
                                                  dt=dt, seed=2023)]
 
        for configuration in [configuration1, configuration3]:

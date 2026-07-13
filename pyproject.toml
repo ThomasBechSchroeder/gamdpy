@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "gamdpy"
-version = "0.8.3dev"
+version = "0.8.4dev"
 authors = [
     {name="Thomas Schrøder", email="tbs@ruc.dk" },
     {name="Ulf R. Pedersen"},

@@ -9,4 +9,5 @@ from .SLLOD import SLLOD
 from .NVU_RT import NVU_RT
 from .NVU import NVU
 from .gradient_descent import GradientDescent
+from .ActiveOUP import ActiveOUP
 

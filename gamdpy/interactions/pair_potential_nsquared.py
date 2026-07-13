@@ -100,7 +100,7 @@ class PairPotentialNsquared(Interaction):
         if compute_lap:
             lap_id = configuration.sid['lapU']
 
-        pairpotential_function = self.pairpotential_function
+        pairpotential_function = numba.njit(self.pairpotential_function)
  
         virial_factor = numba.float32( 0.5/configuration.D )
         def pairpotential_calculator(ij_dist, ij_params, dr, my_f, cscalars, my_stress, f, other_id):

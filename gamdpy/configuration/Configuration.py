@@ -5,7 +5,7 @@ from numba import cuda
 
 from .colarray import colarray
 from ..simulation_boxes import Orthorhombic, LeesEdwards
-from .topology import Topology, duplicate_topology, replicate_topologies
+from .topology import Topology, replicate_topologies
 from ..simulation.get_default_compute_flags import get_default_compute_flags
 
 
@@ -392,7 +392,7 @@ class Configuration:
         else:
             self['v'] = np.zeros((self.N, self.D), np.float32)
 
-    def make_lattice(self, unit_cell: dict, cells: list, rho: float = None) -> None:
+    def make_lattice(self, unit_cell: dict, cells: list, rho: float = None, ptype_unit_cell: list = None) -> None:
         """ Generate a lattice configuration
 
         The lattice is constructed by replicating the unit cell in all directions.
@@ -413,6 +413,9 @@ class Configuration:
         rho : float
             Number density
 
+        ptype_unit_cell : list
+            Types of the particles in the unit cell
+
         Example
         -------
 
@@ -424,9 +427,11 @@ class Configuration:
 
         """
         from .make_lattice import make_lattice
-        positions, box_vector = make_lattice(unit_cell=unit_cell, cells=cells, rho=rho)
-        self['r'] = positions
-        self.simbox = Orthorhombic(self.D, box_vector)
+        lattice = make_lattice(unit_cell=unit_cell, cells=cells, rho=rho, ptype_unit_cell=ptype_unit_cell)
+        self['r'] = lattice["positions"]
+        self.simbox = Orthorhombic(self.D, lattice["box_vector"])
+        if "ptype" in lattice:
+            self.ptype = lattice["ptype"]
         return
 
     def make_positions(self, N, rho: float) -> None:
@@ -507,10 +512,10 @@ class Configuration:
         self.vectors['r'] *= scale_factor
         self.simbox.scale(scale_factor)
 
-    def save(self, output: h5py.File, group_name: str, mode: str="w", 
-            update_ptype: bool=True, update_topology: bool=True, verbose: bool=True) -> None:
+    def save(self, output: h5py.File, group_name: str, mode: str="w",
+            update_ptype: bool=True, include_topology: bool=True, use_topology_link: bool=False, verbose: bool=True) -> None:
         """ Write a configuration to a HDF5 file
-    
+
         Parameters
         ----------
 
@@ -529,6 +534,9 @@ class Configuration:
 
         include_topology : bool
             Boolean flag indicating whether the topology of the configuration should be included
+
+        use_topology_link : bool
+            Boolean flag indicating the topology should just be a soft link to that of the initial configuration (if present)
 
         verbose : bool
             Boolean flag indicating whether messages should be written            
@@ -602,20 +610,23 @@ class Configuration:
 
         # save simulation box
         output[group_name].attrs['simbox_name'] = self.simbox.get_name()
-        #output[group_name].attrs['simbox_data'] = self.simbox.get_lengths()
         output[group_name].attrs['simbox_data'] = self.simbox.data_array
 
         # For topology decide to save new array every time or link to the one in initial_configuration
-        if update_topology:
-            output[group_name].create_group('topology')
-            self.topology.save(output[f'{group_name}/topology'])
-        else:
-            output[f'{group_name}/topology'] = h5py.SoftLink('/initial_configuration/topology')
+        if include_topology:
+            if use_topology_link:
+                if not output['/initial_configuration/topology']:
+                    raise KeyError("Group '/initial_configuration/topology' not found")
+                output[f'{group_name}/topology'] = h5py.SoftLink('/initial_configuration/topology')
+            else:
+                output[group_name].create_group('topology')
+                self.topology.save(output[f'{group_name}/topology'])
+
 
     # The following is equivalent to overloading in c++ : https://stackoverflow.com/questions/12179271/meaning-of-classmethod-and-staticmethod-for-beginner
     # cls stands for class, in this case the Configuration class
     @classmethod
-    def from_h5(cls, h5file: h5py.File, group_name: str, reset_images: bool=False, compute_flags: bool=None, include_topology: bool=False) -> "Configuration":
+    def from_h5(cls, h5file: h5py.File, group_name: str, reset_images: bool=False, compute_flags: bool=None, include_topology: bool=True) -> "Configuration":
         """ Read a configuration from an open HDF5 file identified by group-name
 
         Parameters
@@ -632,6 +643,9 @@ class Configuration:
         compute_flags : bool
             NOTE: still to be developed, should be possible to define compute flags from dictionary
             compute_flags defining what will be stored in the configuration (default None)
+
+        include_topology : bool
+            if True then read also the topology from the file (default True)
 
         Returns
         -------
@@ -697,7 +711,8 @@ class Configuration:
 
         # Read topology
         if include_topology:
-            configuration.topology.from_h5(h5file[group_name]['topology'])
+            if 'topology' in h5file[group_name]:
+                configuration.topology.from_h5(h5file[group_name]['topology'])
 
         return configuration
 

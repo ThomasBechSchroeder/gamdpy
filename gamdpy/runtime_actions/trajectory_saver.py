@@ -60,7 +60,7 @@ class TrajectorySaver(RuntimeAction):
         # check that items of saving_list are known
         for item in saving_list:
             if item not in list(self.datatypes.keys()):
-                raise ValueError(f"{item} is not recognized. Accepted values are 'positions', 'images', 'velocities', 'forces'.")
+                raise KeyError(f"{item} is not recognized. Accepted values are 'positions', 'images', 'velocities', 'forces'.")
             self.sid[self.translator[item]]=True
         self.saving_list = saving_list
         self.update_ptype = update_ptype
@@ -83,8 +83,10 @@ class TrajectorySaver(RuntimeAction):
     def extract_forces(h5file):
         return h5file['trajectory/forces']
 
-    def setup(self, configuration, num_timeblocks: int, steps_per_timeblock: int, output, verbose=False) -> None:
-        self.configuration = configuration
+    def setup(self, simulation, num_timeblocks: int, steps_per_timeblock: int, output, verbose=False) -> None:
+
+        self.simulation = simulation
+        self.configuration = self.simulation.configuration
 
         if type(num_timeblocks) != int or num_timeblocks < 0:
             raise ValueError(f'num_timeblocks ({num_timeblocks}) should be non-negative integer.')
@@ -161,7 +163,7 @@ class TrajectorySaver(RuntimeAction):
             if 'sim_box' in output['trajectory'].keys():
                 del output['trajectory/sim_box']
             output.create_dataset('trajectory/sim_box', 
-                                  shape=(self.num_timeblocks, self.conf_per_block, self.configuration.simbox.len_sim_box_data))
+                                  shape=(self.num_timeblocks, self.conf_per_block, self.configuration.simbox.len_sim_box_data), dtype=np.float32)
 
         flag = config.CUDA_LOW_OCCUPANCY_WARNINGS
         config.CUDA_LOW_OCCUPANCY_WARNINGS = False

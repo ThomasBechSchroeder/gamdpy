@@ -1,7 +1,8 @@
 import numpy as np
 import numba
-import gamdpy as gp
+import h5py
 from numba import cuda
+from ..configuration import Configuration
 from .integrator import Integrator
 
 
@@ -34,11 +35,14 @@ class NVE(Integrator):
     def __init__(self, dt: float):
         self.dt = dt
   
-    def get_params(self, configuration: gp.Configuration, interactions_params: tuple, verbose=False) -> tuple:
+    def get_params(self, configuration: Configuration, interactions_params: tuple, verbose=False) -> tuple:
         dt = np.float32(self.dt)
         return (dt,)
 
-    def get_kernel(self, configuration: gp.Configuration, compute_plan: dict, compute_flags: dict[str,bool], interactions_kernel, verbose=False):
+    def save_internal_state(self, output: h5py.File, group_name: str):
+        pass
+
+    def get_kernel(self, configuration: Configuration, compute_plan: dict, compute_flags: dict[str,bool], interactions_kernel, verbose=False):
 
         # Unpack parameters from configuration and compute_plan
         D, num_part = configuration.D, configuration.N
@@ -68,7 +72,7 @@ class NVE(Integrator):
             """ Make one NVE timestep using Leap-frog
                 Kernel configuration: [num_blocks, (pb, tp)]
             """
-            
+
             # Unpack parameters. MUST be compatible with get_params() above
             dt, = integrator_params
 

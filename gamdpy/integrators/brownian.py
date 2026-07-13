@@ -3,9 +3,11 @@ import numpy as np
 import numba
 from numba import cuda
 import math
+import h5py
 from numba.cuda.random import create_xoroshiro128p_states
 from numba.cuda.random import xoroshiro128p_normal_float32
-import gamdpy as gp
+from ..configuration import Configuration
+from ..misc.make_function import make_function_constant
 from .integrator import Integrator
 
 class Brownian(Integrator):
@@ -73,7 +75,7 @@ class Brownian(Integrator):
         self.dt = dt
         self.seed = seed
 
-    def get_params(self, configuration: gp.Configuration, interactions_params: tuple, verbose=False) -> tuple:
+    def get_params(self, configuration: Configuration, interactions_params: tuple, verbose=False) -> tuple:
         dt = np.float32(self.dt)
         tau = np.float32(self.tau)
         rng_states = create_xoroshiro128p_states(configuration.N, seed=self.seed)
@@ -82,7 +84,10 @@ class Brownian(Integrator):
         return (dt, tau, rng_states, d_old_beta) # Needs to be compatible with unpacking in
                                                    # step() below
 
-    def get_kernel(self, configuration: gp.Configuration, compute_plan: dict, compute_flags: dict[str,bool], interactions_kernel, verbose=False):
+    def save_internal_state(self, output: h5py.File, group_name: str):
+        pass
+
+    def get_kernel(self, configuration: Configuration, compute_plan: dict, compute_flags: dict[str,bool], interactions_kernel, verbose=False):
 
         # Unpack parameters from configuration and compute_plan
         D, num_part = configuration.D, configuration.N
@@ -93,7 +98,7 @@ class Brownian(Integrator):
         if callable(self.temperature):
             temperature_function = self.temperature
         else:
-            temperature_function = gp.make_function_constant(value=float(self.temperature))
+            temperature_function = make_function_constant(value=float(self.temperature))
 
         if verbose:
             print(f'Generating Brownian integrator for {num_part} particles in {D} dimensions:')

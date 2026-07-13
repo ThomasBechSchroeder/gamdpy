@@ -11,10 +11,10 @@ from gamdpy import Configuration
 
 class Dihedrals(Interaction): 
 
-    def __init__(self, potential, indices, parameters):
-        self.potential = potential
-        self.indices = np.array(indices, dtype=np.int32) 
-        self.params = np.array(parameters, dtype=np.float32)
+    def __init__(self, dihedral_potential, dihedral_indices, dihedral_parameters):
+        self.potential = dihedral_potential
+        self.indices = np.array(dihedral_indices, dtype=np.int32)
+        self.params = np.array(dihedral_parameters, dtype=np.float32)
 
     def get_params(self, configuration: Configuration, compute_plan: dict, verbose=False) -> tuple:
         self.d_indices = cuda.to_device(self.indices)

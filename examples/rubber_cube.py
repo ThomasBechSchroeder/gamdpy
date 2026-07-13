@@ -63,7 +63,7 @@ for x, y, z in product(range(L), repeat=3):
         if x + dx < L and y + dy < L and z + dz < L:
             that = xyz2idx(x+dx, y+dy, z+dz)
             neighbour_bonds.append([this, that, bond_type])
-bonds = gp.Bonds(bond_potential, bond_params, neighbour_bonds)
+bonds = gp.Bonds(bond_potential, neighbour_bonds, bond_params)
 
 # Create a 3D figure showing bonds
 plot = False

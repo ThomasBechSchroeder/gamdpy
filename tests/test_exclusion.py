@@ -18,10 +18,10 @@ def test_exclusions():
 
     configuration = gp.replicate_molecules([dict_test_mol], [nmols], safety_distance=3.0)
 
-    bonds = gp.Bonds(gp.harmonic_bond_function, [1.0, 1.0], configuration.topology.bonds)
+    bonds = gp.Bonds(gp.harmonic_bond_function, configuration.topology.bonds, [1.0, 1.0])
     angles = gp.Angles(gp.cos_angle_function, configuration.topology.angles, [1.0, 1.0])
     dihedrals = gp.Dihedrals(gp.ryckbell_dihedral, configuration.topology.dihedrals, 
-                             parameters=[.0, 5.0, .0, .0, .0, .0])
+                             dihedral_parameters=[.0, 5.0, .0, .0, .0, .0])
 
     for option in ['bonds', 'angles', 'dihedrals']:
         if option=='bonds':

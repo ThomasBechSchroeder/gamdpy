@@ -1,5 +1,6 @@
 import numpy as np
 import gamdpy as gp
+import math
 
 gp.select_gpu()
 
@@ -72,21 +73,24 @@ print(f'Number of particles: {configuration.N}\n')
 # Make bond interactions
 bond_potential = gp.harmonic_bond_function
 bond_params = [[0.8, 1000.], ]
-bonds = gp.Bonds(bond_potential, bond_params, configuration.topology.bonds)
+bonds = gp.Bonds(bond_potential, configuration.topology.bonds, bond_params)
 
 # Make angle interactions
 angle_potential = gp.cos_angle_function
+#angle_potential = gp.harmonic_angle_function
 angle0, k = 2.0, 500.0
-angles = gp.Angles(angle_potential, configuration.topology.angles, parameters=[[k, angle0],])
+#k *= math.sin(angle0)**2 # for harmonic_angle to have consistency with cos function at small deviations from angle0
+angles = gp.Angles(angle_potential, configuration.topology.angles, angle_parameters=[[angle0, k],])
 
 # Make dihedral interactions
 dihedral_potential = gp.ryckbell_dihedral
-rbcoef=[.0, 5.0, .0, .0, .0, .0]    
-dihedrals = gp.Dihedrals(dihedral_potential, configuration.topology.dihedrals, parameters=[rbcoef, ])
+rbcoef=[-3.0, 3.0, .0, .0, .0, .0]
+dihedrals = gp.Dihedrals(dihedral_potential, configuration.topology.dihedrals, dihedral_parameters=[rbcoef, ])
 
-# Exlusion list
-exclusions = dihedrals.get_exclusions(configuration)
-#exclusions = bonds.get_exclusions(configuration)
+# Exclusion lists (the dihedral one includes the others, so merging is redundant here but we do it for illustration)
+exclusions_bond = bonds.get_exclusions(configuration)
+exclusions_angle= angles.get_exclusions(configuration)
+exclusions_dih = dihedrals.get_exclusions(configuration)
 
 # Make pair potential
 pair_func = gp.apply_shifted_force_cutoff(gp.LJ_12_6_sigma_epsilon)
@@ -100,7 +104,7 @@ cut = [[2.50, 1.12, 1.12],
        [1.12, 2.50, 2.50],
        [1.12, 2.50, 2.50]]
 
-pair_pot = gp.PairPotential(pair_func, params=[sig, eps, cut], exclusions=exclusions, max_num_nbs=1000)
+pair_pot = gp.PairPotential(pair_func, params=[sig, eps, cut], exclusions=[exclusions_bond, exclusions_angle, exclusions_dih], max_num_nbs=1000)
 
 # Make integrator
 integrator = gp.integrators.NVT(temperature=temperature, tau=0.1, dt=0.004)
@@ -151,7 +155,7 @@ full_stress_tensor = gp.StressSaver.extract(sim.output)
 mean_diagonal_sts = (full_stress_tensor[:,0,0] + full_stress_tensor[:,1,1] + full_stress_tensor[:,2,2])/3
 
 print("Mean diagonal stress", np.mean(mean_diagonal_sts) )
-print("Pressure", np.mean(W)*rho/N + temperature*rho)
+print("Pressure", np.mean(W)*rho + temperature*rho)
 
 
 print('\nAnalyse the saved simulation with scripts found in "examples"')

@@ -147,6 +147,17 @@ pip install git+https://github.com/ThomasBechSchroeder/gamdpy.git
 
 for the latest developers version.
 
+## Confirm that installation is successful
+
+In a Python terminal type
+
+```python
+import gamdpy as gp
+gp.get_default_sim().run()
+```
+
+This should run a short simulation within errors.
+
 ## Known issues
 
 ### LinkerError: libcudadevrt.a not found

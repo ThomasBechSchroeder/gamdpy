@@ -23,7 +23,7 @@ else:
 # Load existing data
 output = gp.tools.TrajectoryIO(filename+'.h5').get_h5()
 
-dynamics = gp.tools.calc_dynamics(output, 0, qvalues=7.5)
+dynamics = gp.tools.calc_dynamics(output, 0, qvalues=7.5, overlap_distances=0.3, extra_times_method='auto')
 with open(filename+'_dynamics.pkl', 'wb') as f:     
     pickle.dump(dynamics, f)
 print(f"Wrote: {filename+'_dynamics.pkl'}")

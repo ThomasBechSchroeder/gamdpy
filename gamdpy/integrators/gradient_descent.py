@@ -1,9 +1,10 @@
 import numpy as np
 import numba
+import h5py
 import gamdpy as gp
 from numba import cuda
 from .integrator import Integrator
-
+from ..configuration import Configuration
 
 class GradientDescent(Integrator):
     """ Gradient descent algorithm, minimizing the potential energy.
@@ -24,11 +25,14 @@ class GradientDescent(Integrator):
     def __init__(self, dt: float):
         self.dt = dt
   
-    def get_params(self, configuration: gp.Configuration, interactions_params: tuple, verbose=False) -> tuple:
+    def get_params(self, configuration: Configuration, interactions_params: tuple, verbose=False) -> tuple:
         dt = np.float32(self.dt)
         return (dt,)
 
-    def get_kernel(self, configuration: gp.Configuration, compute_plan: dict, compute_flags: dict[str,bool], interactions_kernel, verbose=False):
+    def save_internal_state(self, output: h5py.File, group_name: str):
+        pass
+
+    def get_kernel(self, configuration: Configuration, compute_plan: dict, compute_flags: dict[str,bool], interactions_kernel, verbose=False):
 
         # Unpack parameters from configuration and compute_plan
         D, num_part = configuration.D, configuration.N

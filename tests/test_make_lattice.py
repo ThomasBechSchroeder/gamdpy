@@ -86,7 +86,8 @@ def test_fcc_lattice():
     # plot = False
 
     cells = [2, 2, 2]
-    positions, box_vector = gp.configuration.make_lattice(gp.unit_cells.FCC, cells)
+    lattice = gp.configuration.make_lattice(gp.unit_cells.FCC, cells)
+    positions, box_vector = lattice["positions"], lattice["box_vector"]
     configuration = gp.Configuration(D=3)
     configuration['r'] = positions
     configuration.simbox = gp.Orthorhombic(configuration.D, box_vector)
@@ -106,21 +107,18 @@ def test_fcc_lattice():
     #     plt.show()
 
 def test_fcc_lattice_method():
-    print("    FCC lattice usign conf.make_lattice")
     conf = gp.Configuration(D=3)
     conf.make_lattice(gp.unit_cells.FCC, [2, 2, 2])
     positions = conf['r']
-    print("positions:", positions)
-    box_vector = conf.simbox.get_lengths()
     expected_box_vector = np.array([2.0, 2.0, 2.0])
     assert np.allclose(positions, EXPECTED_FCC_POSITIONS, rtol=1e-4)
     assert np.allclose(conf.simbox.get_lengths(), expected_box_vector)
-    print("positions:", positions)
 
 
 def test_bcc_lattice():
     cells = [2, 2, 2]
-    positions, box_vector = gp.configuration.make_lattice(gp.unit_cells.BCC, cells)
+    lattice = gp.configuration.make_lattice(gp.unit_cells.BCC, cells)
+    positions, box_vector  = lattice["positions"], lattice["box_vector"]
     configuration = gp.Configuration(D=3)
     configuration['r'] = positions
     configuration.simbox = gp.Orthorhombic(configuration.D, box_vector)
@@ -146,7 +144,8 @@ def test_hexagonal():
     # plot = False
 
     cells = [4, 2]
-    positions, box_vector = gp.configuration.make_lattice(gp.unit_cells.HEXAGONAL, cells=cells)
+    lattice = gp.configuration.make_lattice(gp.unit_cells.HEXAGONAL, cells=cells)
+    positions, box_vector = lattice["positions"], lattice["box_vector"]
     configuration = gp.Configuration(D=2)
     configuration['r'] = positions
     configuration.simbox = gp.Orthorhombic(configuration.D, box_vector)
@@ -173,9 +172,34 @@ def test_hexagonal():
     #     plt.axis('equal')
     #     plt.show()
 
+def test_set_new_density(verbose=False):
+    from itertools import product
+    rhos = 0.8, 1.0, 1.2
+    lattice_kwargs = {
+        'D=3': dict(unit_cell=gp.unit_cells.FCC, cells=[5, 6, 7]),
+        'D=2': dict(unit_cell=gp.unit_cells.HEXAGONAL, cells=[34, 22]),
+    }
+    for lattice_key, rho in product(lattice_kwargs, rhos):
+        kwargs = lattice_kwargs[lattice_key]
+        if verbose:
+            print(f"Testing new density of {rho} for {lattice_key}: {kwargs}")
+        lattice = gp.configuration.make_lattice(**kwargs, rho=rho)
+        positions, box_vector = lattice["positions"], lattice["box_vector"]
+        N = positions.shape[0]
+        D = positions.shape[1]
+        D_box_vector = box_vector.shape[0]
+        V = np.prod(box_vector)
+        if verbose:
+            print(f"{N=} {D=} {V=}")
+            print(f"    New density is {N/V}")
+        assert D_box_vector == D, "Dimension of box vector must be equal to dimension of positions"
+        assert np.isclose(N/V, rho, rtol=1e-4), "New density is not equal to the density requested"
+
+
 
 if __name__ == "__main__":  # pragma: no cover
     test_hexagonal()
     test_fcc_lattice()
     test_fcc_lattice_method()
     test_bcc_lattice()
+    test_set_new_density()

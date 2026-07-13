@@ -63,8 +63,8 @@ print('\nProduction:')
 integrator = gp.integrators.NVT(temperature=temperature, tau=0.2, dt=dt)
 
 #Setup runtime actions, i.e. actions performed during simulation of timeblocks
-runtime_actions = [gp.RestartSaver(),
-                   gp.TrajectorySaver(),
+runtime_actions = [gp.TrajectorySaver(scheduler=gp.Log(base=1.3)),
+                   #gp.TrajectorySaver(scheduler=gp.Log2()),
                    gp.ScalarSaver(32, {'Fsq':True, 'lapU':True}),
                    gp.RestartSaver(),
                    gp.MomentumReset(100)]

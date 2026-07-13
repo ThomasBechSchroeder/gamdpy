@@ -8,10 +8,12 @@ class NbListLinkedLists():
     
     def __init__(self, configuration, exclusions, max_num_nbs):
         self.configuration = configuration
+        if configuration.D not in [2,3]:
+            raise ValueError('Linked-list neighbor-list is only available for D=2,3')
         self.N, self.D = configuration.N, configuration.D
         self.nblist = np.zeros((configuration.N, max_num_nbs+1), dtype=np.int32) 
         self.nbflag = np.zeros(3, dtype=np.int32)
-        self.r_ref = np.zeros_like(configuration['r']) # Inherents also data type
+        self.r_ref = np.zeros_like(configuration['r']) # Inherits also data type
         self.exclusions = exclusions  # Should be able to be a list (eg from bonds, angles, etc), and merge
         self.d_simbox_last_rebuild = cuda.to_device(np.zeros(configuration.simbox.len_sim_box_data, dtype=np.float32))
 
@@ -71,6 +73,11 @@ class NbListLinkedLists():
         dist_moved_exceeds_limit_function = numba.njit(configuration.simbox.get_dist_moved_exceeds_limit_function())
         loop_x_shift_function = numba.njit(configuration.simbox.get_loop_x_shift_function())
 
+        if D == 3:
+            max_iz = 2
+        elif D == 2:
+            max_iz = 0.
+
         @cuda.jit( device=gridsync )
         def nblist_check(vectors, sim_box, skin, r_ref, nbflag, simbox_last_rebuild, cut): # pragma: no cover
             """ Check validity of nblist, i.e. did any particle mode more than skin/2 since last nblist update?
@@ -104,7 +111,10 @@ class NbListLinkedLists():
                     my_cell[global_id,k] = int(math.floor((vectors[r_id][global_id,k]+0.5*sim_box[k])*cells_per_dimension[k]/sim_box[k]))%cells_per_dimension[k]
                     #if my_cell[global_id,k]<0:
                     #    print(global_id,k, my_cell[global_id,k],vectors[r_id][global_id,k])
-                index = (my_cell[global_id,0], my_cell[global_id,1], my_cell[global_id,2])      # 3D 
+                if D == 3:
+                    index = (my_cell[global_id,0], my_cell[global_id,1], my_cell[global_id,2])      # 3D
+                elif D == 2:
+                    index = (my_cell[global_id,0], my_cell[global_id,1])
                 next_particle_in_cell[global_id] = cuda.atomic.exch(cells, index, global_id)    # index needs to be tuple when multidim
             return
                 
@@ -132,11 +142,17 @@ class NbListLinkedLists():
                         y_wrap_cell = 1 if other_cell_y_unwrapped >= cells_per_dimension[1] else -1 if other_cell_y_unwrapped < 0 else 0
                         shifted_ix = ix + y_wrap_cell * loop_x_shift
 
-                        for iz in range(-2,3,1):
-                            other_index = (
-                                (my_cell[global_id, 0]+shifted_ix)%cells_per_dimension[0],
-                                (my_cell[global_id, 1]+iy)%cells_per_dimension[1],
-                                (my_cell[global_id, 2]+iz)%cells_per_dimension[2])
+
+                        for iz in range(-max_iz,max_iz+1,1):
+                            if D == 3:
+                                other_index = (
+                                    (my_cell[global_id, 0]+shifted_ix)%cells_per_dimension[0],
+                                    (my_cell[global_id, 1]+iy)%cells_per_dimension[1],
+                                    (my_cell[global_id, 2]+iz)%cells_per_dimension[2])
+                            elif D == 2:
+                                other_index = (
+                                    (my_cell[global_id, 0]+shifted_ix)%cells_per_dimension[0],
+                                    (my_cell[global_id, 1]+iy)%cells_per_dimension[1])
                             other_global_id = cells[other_index]
                             while other_global_id >= 0: # To use tp>1: read tp particles ahead, and pick yours
                                 if UtilizeNIII: # Could be done per cell basis...
@@ -160,7 +176,7 @@ class NbListLinkedLists():
                 nblist[global_id, -1] = my_num_nbs
 
                 # Various house-keeping
-                for k in range(D):    
+                for k in range(D):
                     r_ref[global_id, k] = vectors[r_id][global_id, k]   # Store positions for wich nblist was updated ( used in nblist_check() ) 
             #if local_id == 0 and my_t==0:
             #    cuda.atomic.add(nbflag, 0, -1)              # nbflag[0] = 0 by when all blocks are done. Moved to clear_cells
@@ -181,15 +197,18 @@ class NbListLinkedLists():
             global_id, my_t = cuda.grid(2)
 
             if global_id < num_part and my_t == 0: # Change to simple Nullify kernel?
-                cells[my_cell[global_id,0], my_cell[global_id,1], my_cell[global_id,2]] = -1 # Every body writes, but thats OK
-                next_particle_in_cell[global_id] = -1            
+                if D == 3:
+                    cells[my_cell[global_id,0], my_cell[global_id,1], my_cell[global_id,2]] = -1 # Every body writes, but thats OK
+                elif D == 2:
+                    cells[my_cell[global_id,0], my_cell[global_id,1]] = -1
+                next_particle_in_cell[global_id] = -1
 
                 
             if cuda.threadIdx.x == 0 and my_t==0: # One thread per threadblock decreases from numblocks
                 cuda.atomic.add(nbflag, 0, -1)    # i.e., nbflag[0] = 0 by when all blocks are done
-                                                  
+
             return
-        
+
         if gridsync:
             # A device function, calling a number of device functions, using gridsync to syncronize
             @cuda.jit( device=gridsync )
@@ -205,7 +224,7 @@ class NbListLinkedLists():
                     clear_cells(vectors, sim_box, nbflag,  cells_per_dimension, cells, my_cell, next_particle_in_cell)
                 return
             return check_and_update
-        
+
         else:
             # A python function, making several kernel calls to syncronize  
             def check_and_update(grid, vectors, scalars, ptype, sim_box, nblist, nblist_parameters):

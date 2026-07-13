@@ -12,7 +12,7 @@ configuration.make_positions(N, rho=1.0)
 configuration['m'] = 1.0
 configuration.randomize_velocities(temperature)
 
-pair_func = numba.njit(gp.harmonic_repulsion)
+pair_func = gp.harmonic_repulsion
 pair_potential = gp.PairPotential(pair_func, params=[2.0, 1.0], max_num_nbs=8192)
 
 integrator = gp.integrators.NVT(temperature=temperature, tau=0.08, dt=0.001)

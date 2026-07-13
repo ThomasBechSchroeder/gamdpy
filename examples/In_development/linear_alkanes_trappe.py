@@ -39,7 +39,7 @@ def trappe_ua_interactions(configuration, type_names):
     # Make angle interactions
     angle_potential = gp.cos_angle_function
     angle0, k = 2.0, 500.0
-    interactions['angles'] = gp.Angles(angle_potential, configuration.topology.angles, parameters=[[k, angle0],])
+    interactions['angles'] = gp.Angles(angle_potential, configuration.topology.angles, parameters=[[angle0, k],])
 
     # Make dihedral interactions
     rbcoef=[.0, 5.0, .0, .0, .0, .0]

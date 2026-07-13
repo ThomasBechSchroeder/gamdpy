@@ -118,7 +118,7 @@ class Simulation():
 
         # Saving initial configuration
         self.configuration.save(output=self.memory, group_name="initial_configuration", mode="w",
-                update_ptype=True, update_topology=True)
+                update_ptype=True, include_topology=True)
         
         self.runtime_actions = runtime_actions
 
@@ -143,7 +143,7 @@ class Simulation():
                 raise ValueError('compute_flags["%s]" set for Simulation but not in Configuration' % k)
 
         for runtime_action in self.runtime_actions:
-            runtime_action.setup(configuration=self.configuration, num_timeblocks=num_timeblocks,
+            runtime_action.setup(simulation=self, num_timeblocks=num_timeblocks,
                                 steps_per_timeblock=steps_per_timeblock, output=self.memory )
 
         self.vectors_list = []
@@ -158,7 +158,7 @@ class Simulation():
         if self.storage and self.storage[-3:] == '.h5':
             self.memory.close()
 
-    # __del__ is supposed to work also if __init__ fails. This means you can't use attributed defined in __init__
+    # __del__ is supposed to work also if __init__ fails. This means you can't use attributes defined in __init__
     # https://www.algorithm.co.il/programming/python-gotchas-1-__del__-is-not-the-opposite-of-__init__/
 
     def get_output(self, mode="r"):
@@ -401,10 +401,15 @@ class Simulation():
 
         for block in range(num_timeblocks):
 
+            if block==0:
+                # Saving initial configuration
+                self.configuration.save(output=self.get_output(mode="a"), group_name="initial_configuration", mode="w",
+                                        update_ptype=True, include_topology=True, verbose=False)
+
             self.current_block = block
             for runtime_action in self.runtime_actions:
                 runtime_action.initialize_before_timeblock(block, self.get_output(mode="a"))
-            
+
             if self.timing: 
                 start_block.record()
 
@@ -490,7 +495,51 @@ class Simulation():
             st += f'( TPS: {tps_sim:.2e} )\n'
         return st
 
-    def autotune_bruteforce(self, pbs='auto', skins='auto', tps='auto', timesteps=0, repeats=1, verbose=False):
+
+    def compress(self, desired_rho, steps_per_rescale, relative_change):
+        """ Compress simulation to the density 'desired_rho'.
+        This is done by a sequence of small adjustments of the simulation box, each followed by a short simulation.
+    
+        Parameters
+        ----------
+
+        desired_rho : float
+            The final density to scale the simulation to.
+
+        steps_per_rescale : int
+            The number of timesteps performed after each adjustments of the simulation box
+            Can not be larger than the 'steps_per_timeblock' that the simulation object was created with 
+
+        relative_change : float
+            The relative increase in density for each adjustments of the simulation box.
+            The last adjustment is computed to hit the desired density exactly 
+        
+        """    
+        
+        if steps_per_rescale > self.steps_per_block:
+            raise ValueError(f"'steps_per_rescale' must not be larger than 'steps_per_timeblock' of the Simulation object, {steps_per_rescale}>{self.steps_per_block}")
+        done = False
+
+        while not done:
+            current_rho = self.configuration.N / self.configuration.get_volume()
+            scale_to = desired_rho
+            if scale_to / current_rho > 1 + relative_change:
+                scale_to = current_rho * (1 + relative_change)
+            else:
+                done = True
+            self.configuration.atomic_scale(density=scale_to)
+            self.configuration.copy_to_device()
+            self.integrate_self(0.0, steps_per_rescale)
+            self.configuration.copy_to_host()
+
+            current_rho = self.configuration.N / self.configuration.get_volume()
+            print(self.status(per_particle=True), f'rho= {current_rho:.3}')
+        return
+
+
+#### Autotuner ###
+
+    def autotune_bruteforce1(self, pbs='auto', skins='auto', tps='auto', timesteps=0, repeats=1, verbose=False):
         if verbose:
             print('compute_plan :', self.compute_plan)
         if timesteps==0: 
@@ -581,7 +630,7 @@ class Simulation():
         cuda.config.CUDA_LOW_OCCUPANCY_WARNINGS = flag
 
 
-    def autotune_scan_skin(self, compute_plan, skins, timesteps, repeats, total_min_time, local_min_time, optimal_compute_plan, verbose=False):
+    def autotune_scan_skin1(self, compute_plan, skins, timesteps, repeats, total_min_time, local_min_time, optimal_compute_plan, verbose=False):
         min_time = 1e9
         skin_times = []
         pb = compute_plan['pb']
@@ -624,38 +673,43 @@ class Simulation():
         return total_min_time, local_min_time
 
 
-    def autotune(self, include_linked_lists=True):
+    def autotune(self, time_steps=None, parameters_to_optimize=None, include_linked_lists=True):
         """ Autotune the simulation parameters for most efficient calculations on the current machine """
         flag = cuda.config.CUDA_LOW_OCCUPANCY_WARNINGS
         cuda.config.CUDA_LOW_OCCUPANCY_WARNINGS = False
 
         initial_compute_plan = self.compute_plan.copy()
-        timesteps = self.steps_per_block
+        if time_steps==None:
+            timesteps = self.steps_per_block
         repeats = 1
+        if parameters_to_optimize==None:
+            parameters_to_optimize = ['pb', 'tp', 'skin', 'UtilizeNIII', 'gridsync', 'nblist']
 
         # Binary choises: Take self.compute_plan as starting point, and add alternatives if appropiate 
         gridsyncs = [initial_compute_plan['gridsync'], ]
-        if gridsyncs[0] != True:
-            gridsyncs.append(True)
-        if gridsyncs[0] != False and self.configuration.N > 10000:
-            gridsyncs.append(False)
+        if 'gridsync' in parameters_to_optimize:
+            if gridsyncs[0] != True:
+                gridsyncs.append(True)
+            if gridsyncs[0] != False and self.configuration.N > 10000:
+                gridsyncs.append(False)
 
         nblists = [initial_compute_plan['nblist'], ]
-        if nblists[0] != 'N squared' and self.configuration.N < 32000:
-            nblists.append('N squared')
-        if nblists[0] != 'linked lists' and self.configuration.N > 2000 and include_linked_lists:
-            nblists.append('linked lists')
+        if 'nblist' in parameters_to_optimize:
+            if nblists[0] != 'N squared' and self.configuration.N < 32000:
+                nblists.append('N squared')
+            if nblists[0] != 'linked lists' and self.configuration.N > 2000 and include_linked_lists:
+                nblists.append('linked lists')
 
         UtilizeNIIIs = [initial_compute_plan['UtilizeNIII'], ]
-        if UtilizeNIIIs[0] != False:
-            UtilizeNIIIs.append(False)
-        if UtilizeNIIIs[0] != True:
-            UtilizeNIIIs.append(True)
+        if 'UtilizeNIII' in parameters_to_optimize:
+            if UtilizeNIIIs[0] != False:
+                UtilizeNIIIs.append(False)
+            if UtilizeNIIIs[0] != True:
+                UtilizeNIIIs.append(True)
 
 
         pb = self.compute_plan['pb']
-        pbs = [pb//2, pb, pb*2]
-
+        
         optimal_compute_plan = initial_compute_plan.copy()
         results = []
         # Loop over binary parameters
@@ -677,7 +731,7 @@ class Simulation():
                         continue
         
                     local_min_time = 1e9
-                    total_min_time, local_min_time, min_time = self.autotune_skin(initial_compute_plan['skin'], 0.2, 
+                    total_min_time, local_min_time, min_time = self.autotune_skin(initial_compute_plan['skin'], parameters_to_optimize, 0.2, 
                                                                         timesteps, repeats, total_min_time, local_min_time, 
                                                                         optimal_compute_plan, verbose=False)
                     self.compute_plan['min_time'] = min_time
@@ -701,7 +755,7 @@ class Simulation():
                 while 4 <= pb <= 1024:
                     self.compute_plan['pb'] = pb
                     print(f' {pb=} ', end='')
-                    total_min_time, local_min_time, min_time = self.autotune_tp(compute_plan['tp'], 1, compute_plan, timesteps, repeats, optimal_compute_plan, total_min_time, local_min_time)
+                    total_min_time, local_min_time, min_time = self.autotune_tp(compute_plan['tp'], 1, compute_plan, parameters_to_optimize, timesteps, repeats, optimal_compute_plan, total_min_time, local_min_time)
                     if initial_min_time<0:
                         initial_min_time = min_time
                     #print(f'[{min_time:.3}, {pb_min_time:.3}]')
@@ -715,7 +769,7 @@ class Simulation():
                     while 4 <= pb <= 1024:
                         self.compute_plan['pb'] = pb
                         print(f' {pb=} ', end='')
-                        total_min_time, local_min_time, min_time = self.autotune_tp(compute_plan['tp'], 1, compute_plan, timesteps, repeats, optimal_compute_plan, total_min_time, local_min_time)
+                        total_min_time, local_min_time, min_time = self.autotune_tp(compute_plan['tp'], 1, compute_plan, parameters_to_optimize, timesteps, repeats, optimal_compute_plan, total_min_time, local_min_time)
                         #print(f'[{min_time:.3}, {pb_min_time:.3}]')
                         if min_time > 1.01 * pb_min_time:
                             break
@@ -729,7 +783,7 @@ class Simulation():
         cuda.config.CUDA_LOW_OCCUPANCY_WARNINGS = flag
 
 
-    def autotune_tp(self, initial_tp, delta_tp, initial_compute_plan, timesteps, repeats, optimal_compute_plan, total_min_time, local_min_time):
+    def autotune_tp(self, initial_tp, delta_tp, initial_compute_plan, parameters_to_optimize, timesteps, repeats, optimal_compute_plan, total_min_time, local_min_time):
         tp = initial_tp
         tp_min_time = 1e9
         while 0 < tp <= 64:
@@ -739,7 +793,7 @@ class Simulation():
                 self.JIT_and_test_kernel(adjust_compute_plan=False)
                 if self.compute_plan['tp'] != tp: #or self.compute_plan['gridsync'] != gridsync: 
                     break
-                total_min_time, local_min_time, min_time = self.autotune_skin(initial_compute_plan['skin'], 0.2, 
+                total_min_time, local_min_time, min_time = self.autotune_skin(initial_compute_plan['skin'], parameters_to_optimize, 0.2, 
                                                                     timesteps, repeats, total_min_time, local_min_time, 
                                                                     optimal_compute_plan, verbose=False)
                 if min_time > 1.05 * tp_min_time:
@@ -754,7 +808,7 @@ class Simulation():
                 self.JIT_and_test_kernel(adjust_compute_plan=False)
                 if self.compute_plan['tp'] != tp: #or self.compute_plan['gridsync'] != gridsync: 
                     break
-                total_min_time, local_min_time, min_time = self.autotune_skin(initial_compute_plan['skin'], 0.2, 
+                total_min_time, local_min_time, min_time = self.autotune_skin(initial_compute_plan['skin'], parameters_to_optimize, 0.2, 
                                                                     timesteps, repeats, total_min_time, local_min_time, 
                                                                     optimal_compute_plan, verbose=False)
                 if min_time > 1.05 * tp_min_time:
@@ -765,15 +819,18 @@ class Simulation():
         return total_min_time, local_min_time, tp_min_time
 
  
-    def autotune_skin(self, initial_skin, delta_skin, timesteps, repeats, total_min_time, local_min_time, optimal_compute_plan, verbose=False):
+    def autotune_skin(self, initial_skin, parameters_to_optimize, delta_skin, timesteps, repeats, total_min_time, local_min_time, optimal_compute_plan, verbose=False):
         min_time = 1e9
         min_skin = -0.1
         
-        # Upscan
-        min_time, min_skin = self.scan_skin(timesteps, repeats, initial_skin, delta_skin, min_time, min_skin)
+        #print(f'{initial_skin=}, {timesteps=}')
+
+        # Upscan, including current skin
+        min_time, min_skin = self.scan_skin(parameters_to_optimize, timesteps, repeats, initial_skin, delta_skin, min_time, min_skin)
         
         # Downscan
-        min_time, min_skin = self.scan_skin(timesteps, repeats, initial_skin-delta_skin, -delta_skin, min_time, min_skin)
+        if 'skin' in parameters_to_optimize:
+            min_time, min_skin = self.scan_skin(parameters_to_optimize, timesteps, repeats, initial_skin-delta_skin, -delta_skin, min_time, min_skin)
         
         max_TPS = repeats * timesteps / min_time * 1000
         if min_time < local_min_time:
@@ -791,13 +848,15 @@ class Simulation():
             optimal_compute_plan['tp'] = self.compute_plan['tp']
         return total_min_time, local_min_time, min_time
 
-    def scan_skin(self, timesteps, repeats, skin, delta_skin, min_time, min_skin):
+    def scan_skin(self, parameters_to_optimize, timesteps, repeats, skin, delta_skin, min_time, min_skin):
+        
         while abs(delta_skin)/2 < skin < 1.45: # Should keep on going until eg. linked lists throw an error
             self.compute_plan['skin'] = skin
             self.update_params()
             self.configuration.copy_to_device() # By _not_ copying back to host later we dont change configuration
             start = cuda.event()
             end = cuda.event()
+            #print(timesteps)
             start.record()
             for i in range(repeats):
                 self.integrate_self(0.0, timesteps)
@@ -808,7 +867,7 @@ class Simulation():
             if time_elapsed < min_time:
                 min_time = time_elapsed
                 min_skin = skin
-            elif time_elapsed > 1.1*min_time:
+            elif time_elapsed > 1.1*min_time or 'skin' not in parameters_to_optimize:
                 break
             skin += delta_skin
         return min_time, min_skin

@@ -42,7 +42,7 @@ def merge_interactions(configuration: Configuration, kernelA: Callable, paramsA:
             return
         return interactions, (paramsA, paramsB, )
     else:
-        # A python function, making several kernel calls to syncronize  
+        # A python function, making several kernel calls to synchronize
         def interactions(grid, vectors, scalars, ptype, sim_box, interaction_parameters):
             kernelA(0, vectors, scalars, ptype, sim_box, interaction_parameters[0])
             kernelB(0, vectors, scalars, ptype, sim_box, interaction_parameters[1])
@@ -52,7 +52,7 @@ def merge_interactions(configuration: Configuration, kernelA: Callable, paramsA:
 
 def add_interactions_list(configuration: Configuration, interactions_list: list[Interaction], compute_plan: dict, compute_flags: dict[str,bool], verbose: bool = False) -> tuple[Callable, tuple]:
 
-    # Setup first interaction and cuda.jit it if gridsync is used for syncronization
+    # Setup first interaction and cuda.jit it if gridsync is used for synchronization
     params = get_initializer_params(configuration, compute_plan)
     kernel: Callable = get_initializer_kernel(configuration, compute_plan, compute_flags)
     if compute_plan['gridsync']:

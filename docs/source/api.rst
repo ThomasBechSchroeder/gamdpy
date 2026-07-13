@@ -80,6 +80,10 @@ Other integrators
    :members:
    :exclude-members: get_kernel, get_params
 
+.. autoclass:: gamdpy.ActiveOUP
+   :members:
+   :exclude-members: get_kernel, get_params
+
 .. _interactions:
 
 Interactions
@@ -90,6 +94,10 @@ This will typically include a *pair potential* and *fix interactions* like gravi
 
 Pair potential
 ~~~~~~~~~~~~~~
+
+Evaluating pair potentials is typically computationally expensive.
+For efficiency, instances of the class below only compute forces between two particles
+when their separation is less than a specified cutoff distance.
 
 .. autoclass:: gamdpy.PairPotential
    :members:
@@ -102,11 +110,19 @@ Pair potential functions
 
 .. autofunction:: gamdpy.LJ_12_6_sigma_epsilon
 
+.. autofunction:: gamdpy.yukawa
+
+.. autofunction:: gamdpy.gaussian_core_model
+
+.. autofunction:: gamdpy.exponential_repulsion
+
 .. autofunction:: gamdpy.harmonic_repulsion
 
 .. autofunction:: gamdpy.hertzian
 
 .. autofunction:: gamdpy.SAAP
+
+.. autofunction:: gamdpy.universal_zbl_potential
 
 Generators
 ^^^^^^^^^^
@@ -130,8 +146,15 @@ Modifies are typically used to smoothly truncate the potential at a certain dist
 
 .. autofunction:: gamdpy.apply_shifted_force_cutoff
 
+.. autofunction:: gamdpy.apply_cubic_spline_cutoff
+
+.. autofunction:: gamdpy.apply_gromacs_cutoff
+
 Fixed interactions
 ~~~~~~~~~~~~~~~~~~
+
+Fixed interactions (covalent bonds, angles, gravitational forces, walls, or tethers to an anchor points) are evaluated at every time step.
+This is contrast to non-bonded pair interactions, which are only computed for particle pairs within the non-bonded cutoff distance.
 
 Classes
 ^^^^^^^
@@ -142,9 +165,9 @@ Classes
 
 .. autoclass:: gamdpy.Tether
 
-.. autoclass:: gamdpy.Gravity
-
 .. autoclass:: gamdpy.Relaxtemp
+
+.. autoclass:: gamdpy.Planar
 
 Generators
 ^^^^^^^^^^
@@ -159,9 +182,19 @@ Generators
 Bond functions
 ^^^^^^^^^^^^^^
 
-A *bond potential* is needed for the :class:`~gamdpy.Bonds` class.
+A *bond potential* function is needed for the :class:`~gamdpy.Bonds` class.
 
 .. autofunction:: gamdpy.harmonic_bond_function
+
+Angle functions
+^^^^^^^^^^^^^^^
+
+An *angle potential* function is needed for the :class:`~gamdpy.Angles` class.
+
+.. autofunction:: gamdpy.harmonic_angle_function
+
+.. autofunction:: gamdpy.cos_angle_function
+
 
 
 .. _runtime_actions:
@@ -172,14 +205,24 @@ Runtime Actions
 A list of runtime actions are passed as an argument to the :class:`~gamdpy.Simulation` class.
 
 .. autoclass:: gamdpy.TrajectorySaver
+   :members:
+   :exclude-members: get_params, get_poststep_kernel, get_prestep_kernel, initialize_before_timeblock, update_at_end_of_timeblock
 
 .. autoclass:: gamdpy.ScalarSaver
+   :members:
+   :exclude-members: get_params, get_poststep_kernel, get_prestep_kernel, initialize_before_timeblock, update_at_end_of_timeblock
 
 .. autoclass:: gamdpy.RestartSaver
+   :members:
+   :exclude-members: get_params, get_poststep_kernel, get_prestep_kernel, initialize_before_timeblock, update_at_end_of_timeblock
 
 .. autoclass:: gamdpy.MomentumReset
+   :members:
+   :exclude-members: get_params, get_poststep_kernel, get_prestep_kernel, initialize_before_timeblock, update_at_end_of_timeblock
 
 .. autoclass:: gamdpy.StressSaver
+   :members:
+   :exclude-members: get_params, get_poststep_kernel, get_prestep_kernel, initialize_before_timeblock, update_at_end_of_timeblock, make_zero_kernel_3
 
 Calculators
 -----------
@@ -223,7 +266,9 @@ IO functions
 Post-analysis tools
 -------------------
 
-.. autofunction:: gamdpy.extract_scalars
+.. autofunction:: gamdpy.tools.thermodynamics_NpT
+
+.. autofunction:: gamdpy.tools.thermodynamics_NVT
 
 .. autofunction:: gamdpy.tools.calc_dynamics
 
@@ -255,6 +300,8 @@ Miscellaneous
 .. autofunction:: gamdpy.get_default_compute_plan
 
 .. autofunction:: gamdpy.get_default_compute_flags
+
+.. autofunction:: gamdpy.conversion_factors
 
 .. autofunction:: gamdpy.plot_molecule
 

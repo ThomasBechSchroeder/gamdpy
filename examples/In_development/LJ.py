@@ -46,7 +46,7 @@ if integrator_name=='NVT_Langevin':
 if integrator_name=='NPT_Langevin':
     integrator = gp.integrators.NPT_Langevin(temperature=temperature, pressure=pressure,
                                              alpha=0.1, alpha_barostat=0.0001, mass_barostat=0.0001,
-                                             volume_velocity=0.0, barostatModeISO = True, boxFlucCoord = 2,
+                                             barostatModeISO = True, boxFlucCoord = 2,
                                              dt=dt, seed=2023)
 
 # Setup Simulation. Total number of timesteps: num_blocks * steps_per_block

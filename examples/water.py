@@ -7,8 +7,8 @@ import numpy as np
 import gamdpy as gp
 
 # Sim. params 
-nmols = 1000
-rho0= 0.1
+nmols = 500
+rho0= 0.4
 rho_desired, temperature = 3.15, 3.9
 
 qH,qO = 10.783, -21.566
@@ -42,34 +42,29 @@ configuration.randomize_velocities(temperature=temperature)
 # Make bonds
 bond_potential = gp.harmonic_bond_function
 bond_params = [[bond0, kspring], ]
-bonds = gp.Bonds(bond_potential, bond_params, configuration.topology.bonds)
+bonds = gp.Bonds(bond_potential, configuration.topology.bonds, bond_params)
 
 # Angles
 angle_potential = gp.cos_angle_function
-angle_params = [[kangle, angle0],]
+angle_params = [[angle0, kangle],]
 angles = gp.Angles(angle_potential, configuration.topology.angles, angle_params)
 
 # Angle exclusions
-exclusion =angles.get_exclusions(configuration)
+exclusion = angles.get_exclusions(configuration)
 
-#exclusion = np.zeros( (configuration.N, 20) , dtype=np.int32)
-#for n in range(0, configuration.N, 3):
-#    exclusion[n, 0], exclusion[n, 1], exclusion[n, -1] = n+1, n+2, 2
-#    exclusion[n+1, 0], exclusion[n+1, 1], exclusion[n+1, -1] = n, n+2, 2
-#    exclusion[n+2, 0], exclusion[n+2, 1], exclusion[n+2, -1] = n, n+1, 2
-    
 
 # Make pair potential
-pair_func = gp.apply_shifted_force_cutoff(gp.LJ_SF)
+pair_func = gp.LJ_coulomb_sf
 sig = [[0.0, 0.0], 
        [0.0, 1.0]]
 eps = [[0.0, 0.0], 
        [0.0, 1.0]]
 charge = [[qH*qH, qH*qO], 
           [qO*qH, qO*qO]]
-cut = np.ones( (2,2) )*2.9
+cut_lj = np.ones( (2,2) )*3.0 
+cut_coulomb = np.ones( (2,2) )*3.5
 
-pair_pot = gp.PairPotential(pair_func, params=[sig, eps, charge, cut], exclusions=exclusion, max_num_nbs=1000)
+pair_pot = gp.PairPotential(pair_func, params=[sig, eps, charge, cut_lj, cut_coulomb], exclusions=exclusion, max_num_nbs=1000)
 
 # Make integrator
 integrator = gp.integrators.NVT(temperature=temperature, tau=0.1, dt=dt)
@@ -80,14 +75,14 @@ runtime_actions = [gp.MomentumReset(100), ]
 
 # Eq. setup simulation
 sim = gp.Simulation(configuration, [pair_pot, bonds, angles], integrator, runtime_actions,
-                    num_timeblocks=4000, steps_per_timeblock=64, storage='memory')
+                    num_timeblocks=3000, steps_per_timeblock=32, storage='memory')
 
 npart = configuration.N
 for block in sim.run_timeblocks():
     rho = npart/configuration.simbox.get_volume()
     prefac = np.exp(-alpha*rho/rho_desired) + 1.0  
-    if prefac > 1.01:
-        prefac = 1.01
+    if prefac > 1.02:
+        prefac = 1.02
 
     if rho < rho_desired:
         rho = prefac*rho
@@ -100,7 +95,7 @@ print(sim.status(per_particle=True))
 runtime_actions = [gp.MomentumReset(100), gp.TrajectorySaver()]
 
 sim = gp.Simulation(configuration, [pair_pot, bonds, angles], integrator, runtime_actions,
-                    num_timeblocks=100, steps_per_timeblock=512, storage='water.h5')
+                    num_timeblocks=10, steps_per_timeblock=256, storage='Data/water.h5')
 
 for block in sim.run_timeblocks():
     print("\r", block, "out of ", sim.num_blocks, end=" ")  

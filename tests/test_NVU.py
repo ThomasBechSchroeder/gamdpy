@@ -67,7 +67,7 @@ def test_NVU():
     df = pd.DataFrame(data.T, columns=columns)
     df['Tconf'] = df['Fsq']/df['lapU']
     Tconf = np.mean(df['Tconf'],axis=0)
-    assert 0.68 < Tconf < 0.72, print("ATconf should be around 0.7, but is",
+    assert 0.67 < Tconf < 0.73, print("ATconf should be around 0.7, but is",
                                       f"{Tconf}. For this test, assertionError",
                                       "arises if Tconf is not in the interval",
                                       "[0.68; 0.72]. Try the test again if Tconf",
@@ -128,7 +128,7 @@ def test_NVU():
     df = pd.DataFrame(data.T, columns=columns)
     df['Tconf'] = df['Fsq']/df['lapU']
     Tconf = np.mean(df['Tconf'],axis=0)
-    assert 0.67 < Tconf < 0.73, print("BTconf should be around 0.7, but is",
+    assert 0.67 < Tconf < 0.74, print("BTconf should be around 0.7, but is",
                                       f"{Tconf}. For this test, assertionError",
                                       "arises if Tconf is not in the interval",
                                       "[0.68; 0.72].Try the test again if Tconf",

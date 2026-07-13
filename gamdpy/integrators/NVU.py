@@ -1,9 +1,13 @@
 import numpy as np
 import numba
 from numba import cuda
-import gamdpy as gp
+import h5py
+from ..configuration import Configuration
+from ..misc.make_function import make_function_constant
+from .integrator import Integrator
 
-class NVU():
+
+class NVU(Integrator):
     """
     Integrator keeping N (number of particles), V (volume), and U (potential energy) constant,
     using the NVU algorithm (see eq. 20 in http://jcdyre.dk/2011_JCP_135_104101.pdf)
@@ -34,24 +38,27 @@ class NVU():
         self.d_U = cuda.to_device(self.U)
         self.d_old_U = cuda.to_device(self.old_U)
 
-    def get_params(self, configuration: gp.Configuration, interactions_params: tuple, verbose=False) -> tuple:
+    def get_params(self, configuration: Configuration, interactions_params: tuple, verbose=False) -> tuple:
         dt = np.float32(self.dt)
         return (dt, self.d_f_dot_v, self.d_f_dot_f, 
                 self.d_denominator, self.d_U, self.d_old_U)   # Needs to be compatible with unpacking in
                                                                 # step() and update_thermostat_state() below.
 
-    def get_kernel(self, configuration: gp.Configuration, compute_plan: dict, compute_flags: dict, interactions_kernel, verbose=False):
+    def save_internal_state(self, output: h5py.File, group_name: str):
+        pass
+
+    def get_kernel(self, configuration: Configuration, compute_plan: dict, compute_flags: dict, interactions_kernel, verbose=False):
 
         # Unpack parameters from configuration and compute_plan
         D, num_part = configuration.D, configuration.N
         pb, tp, gridsync = [compute_plan[key] for key in ['pb', 'tp', 'gridsync']]
         num_blocks = (num_part - 1) // pb + 1
 
-        # Convert temperature to a function if isn't allready (better be a number then...)
+        # Convert temperature to a function if isn't already (better be a number then...)
         if callable(self.U_0):
             U_0_function = self.U_0
         else:
-            U_0_function = gp.make_function_constant(value=float(self.U_0))
+            U_0_function = make_function_constant(value=float(self.U_0))
 
         if verbose:
             print(f'Generating NVT kernel for {num_part} particles in {D} dimensions:')

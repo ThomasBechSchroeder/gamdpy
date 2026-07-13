@@ -38,7 +38,7 @@ bonds = gp.Bonds(bond_potential, bond_params, configuration.topology.bonds)
 
 # Make angle interactions
 angle_potential = gp.cos_angle_function
-angle_params = [[k, angle0],]
+angle_params = [[angle0, k],]
 angles = gp.Angles(angle_potential, configuration.topology.angles, angle_params)
 
 # Make dihedral interactions

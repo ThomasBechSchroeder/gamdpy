@@ -1,6 +1,7 @@
 from numba import cuda
 from abc import ABC, abstractmethod
-from gamdpy import Configuration
+from ..configuration import Configuration
+from ..simulation import Simulation
 from typing import Callable
 
 
@@ -12,7 +13,7 @@ class RuntimeAction(ABC):
     def get_compute_flags(self):
         return None
 
-    def setup(self, configuration: Configuration, num_timeblocks: int, steps_per_timeblock: int, output, verbose=False) -> None:
+    def setup(self, simulation: Simulation, num_timeblocks: int, steps_per_timeblock: int, output, verbose=False) -> None:
         pass
 
     @abstractmethod   

@@ -12,6 +12,9 @@ from .electrostatics import Electrostatics
 
 from .tabulated_pair_potential import TabulatedPairPotential
 
+# Many body EAM
+from .eam_zjw_2004 import EAM_ZJW_2004
+
 # Fixed interactions
 from .make_fixed_interactions import make_fixed_interactions
 from .planar_interactions import make_planar_calculator, setup_planar_interactions  # old interface for planar interactions
@@ -24,3 +27,5 @@ from .gravity import Gravity
 from .bonds import Bonds
 from .angles import Angles
 from .dihedrals import Dihedrals
+
+from .bonds_from_pair_potential import Bonds_from_PairPotential

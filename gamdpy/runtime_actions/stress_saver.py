@@ -27,10 +27,12 @@ class StressSaver(RuntimeAction):
         return self.compute_flags
 
 
-    def setup(self, configuration, num_timeblocks:int, steps_per_timeblock:int, output, verbose=False) -> None:
+    def setup(self, simulation, num_timeblocks:int, steps_per_timeblock:int, output, verbose=False) -> None:
 
-        self.configuration = configuration
-        D = configuration.D
+        self.simulation = simulation
+        self.configuration = self.simulation.configuration
+        
+        D = self.configuration.D
 
         if type(num_timeblocks) != int or num_timeblocks < 0:
             raise ValueError(f'num_timeblocks ({num_timeblocks}) should be non-negative integer.')
@@ -44,7 +46,7 @@ class StressSaver(RuntimeAction):
             raise ValueError(f'scalar_output ({self.steps_between_output}) must be less than steps_per_timeblock ({steps_per_timeblock})')
 
         # per block saving of stress tensor
-        if not configuration.compute_flags['stresses']:
+        if not self.configuration.compute_flags['stresses']:
             raise RuntimeError('stresses not set in compute_flags')
 
         self.stress_saves_per_block = self.steps_per_timeblock//self.steps_between_output

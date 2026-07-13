@@ -83,7 +83,51 @@ def nblist_test(nx, ny, nz, rho=0.8442, pb=None, tp=None, skin=None, gridsync=No
     nblist = gp.NbList2(configuration, [], 300)
     run_nblist(configuration, nblist, cut, compute_plan, compute_flags)
     nblist_N_squared = nblist.d_nblist.copy_to_host()
-    
+
+    return nblist_linked_list, nblist_N_squared, compute_plan
+
+
+def nblist_test_2D(nx, ny, rho=0.8442, pb=None, tp=None, skin=None, gridsync=None, UtilizeNIII=None, box_shift=0, cut=2.5, verbose=True):
+
+    # Generate configuration with a FCC lattice
+    configuration = gp.Configuration(D=2)
+    configuration.make_lattice(gp.unit_cells.HEXAGONAL, cells=(nx, ny), rho=rho)
+    np.random.seed(0)
+    configuration['r'] += np.random.uniform(-.3, +.3, configuration['r'].shape)
+    configuration['r'] = configuration['r'][np.random.permutation(configuration.N),:]
+
+    if box_shift != 0.0:
+        configuration.simbox = gp.LeesEdwards(configuration.D, configuration.simbox.get_lengths(), box_shift)
+
+    # Allow for overwriting of the default compute_plan
+    compute_plan = gp.get_default_compute_plan(configuration)
+    if pb!=None:
+        compute_plan['pb'] = pb
+    if tp!=None:
+        compute_plan['tp'] = tp
+    if skin!=None:
+        compute_plan['skin'] = np.float32(skin)
+    if gridsync!=None:
+        compute_plan['gridsync'] = gridsync
+    if UtilizeNIII!=None:
+        compute_plan['UtilizeNb'] = UtilizeNIII
+    if verbose:
+        print('simbox lengths:', configuration.simbox.get_lengths())
+        print('compute_plan: ', compute_plan)
+
+    compute_flags = gp.get_default_compute_flags()
+
+    configuration.copy_to_device()
+    nblist = gp.NbListLinkedLists(configuration, [], 300)
+    run_nblist(configuration, nblist, cut, compute_plan, compute_flags)
+    nblist_linked_list = nblist.d_nblist.copy_to_host()
+
+    #configuration['r'][0,2] += 2*cut # Testing the test: This should make test fail!
+    configuration.copy_to_device()
+    nblist = gp.NbList2(configuration, [], 300)
+    run_nblist(configuration, nblist, cut, compute_plan, compute_flags)
+    nblist_N_squared = nblist.d_nblist.copy_to_host()
+
     return nblist_linked_list, nblist_N_squared, compute_plan
 
 
@@ -92,7 +136,7 @@ def nblist_test(nx, ny, nz, rho=0.8442, pb=None, tp=None, skin=None, gridsync=No
 @given(nx=st.integers(min_value=12, max_value=32), ny=st.integers(min_value=12, max_value=32), nz=st.integers(min_value=12, max_value=32))
 def test_nblist(nx, ny, nz):
     # hard-code box_shift for now
-    box_shift = 0.5 
+    box_shift = 0.5
     N = nx*ny*nz*4
     D = 3
     nblist_linked_list, nblist_N_squared, compute_plan = nblist_test(nx, ny, nz, box_shift=box_shift, cut=2.5, verbose=False)
@@ -130,7 +174,30 @@ def test_nblist(nx, ny, nz):
 
     #return nblist_linked_list, nblist_N_squared
 
+
+@pytest.mark.experimental
+@settings(deadline=200_000, max_examples = 8)
+@given(nx=st.integers(min_value=12, max_value=32), ny=st.integers(min_value=12, max_value=32))
+def test_nblist_2D(nx, ny):
+    # hard-code box_shift for now
+    box_shift = 0.5
+    N = nx*ny
+    D = 2
+    nblist_linked_list, nblist_N_squared, compute_plan = nblist_test_2D(nx, ny, box_shift=box_shift, cut=2.5, verbose=False)
+    total_num_nbs_linked_list = np.sum(nblist_linked_list[:,-1])
+    total_num_nbs_N_squared = np.sum(nblist_N_squared[:,-1])
+    print(N, nx, ny,
+          compute_plan,
+          total_num_nbs_linked_list, total_num_nbs_N_squared, total_num_nbs_linked_list/N)
+    assert total_num_nbs_linked_list == total_num_nbs_N_squared
+    assert np.all(nblist_linked_list[:,-1] == nblist_N_squared[:,-1]) # Num nbs for each particle
+    assert np.all(np.sort(nblist_linked_list, axis=1) == np.sort(nblist_N_squared, axis=1)) # Same nbs, order allowed to differ
+    return
+
+
 if __name__ == "__main__":
     config.CUDA_LOW_OCCUPANCY_WARNINGS = False
     test_nblist()
+    test_nblist_2D()
+
     #nb_ll, nb_n2 = test_nblist(7, 7, 7, -1.1)

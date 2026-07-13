@@ -8,12 +8,32 @@ from .make_fixed_interactions import make_fixed_interactions   # bonds is an exa
 from .interaction import Interaction
 from gamdpy import Configuration
 
-class Angles(Interaction): 
+class Angles(Interaction):
+    """ Fixed angle interactions between particle triplet
 
-    def __init__(self, potential, indices, parameters):
-        self.potential = potential
-        self.indices = np.array(indices, dtype=np.int32) 
-        self.params = np.array(parameters, dtype=np.float32)
+    Parameters
+    ----------
+
+    angle_potential : function
+        A angle potential function, see :func:`gamdpy.harmonic_angle_function` for an example.
+
+    indices : list
+        A list of indices, each containing the indices of the particles involved in a bond and the bond type.
+
+    potential_params : list
+        A list of parameters for each angle type.
+
+    See Also
+    --------
+
+    gamdpy.harmonic_angle_function
+
+    """
+
+    def __init__(self, angle_potential, angle_indices, angle_parameters):
+        self.potential = angle_potential
+        self.indices = np.array(angle_indices, dtype=np.int32)
+        self.params = np.array(angle_parameters, dtype=np.float32)
 
 
     def get_params(self, configuration: Configuration, compute_plan: dict, verbose=False) -> tuple:
@@ -85,8 +105,8 @@ class Angles(Interaction):
             c22 = dr_2[0]*dr_2[0] + dr_2[1]*dr_2[1] + dr_2[2]*dr_2[2]
 
             cD = math.sqrt(c11*c22)
-            ca = c12/cD
-           
+            ca = -c12/cD # minus so that the angle is the one subtended at the center atom by the other two
+ 
             if  ca > one:
                 ca = one
             elif ca < -one:
@@ -96,8 +116,8 @@ class Angles(Interaction):
             u, f = potential_function(angle, params)
 
             for k in range(D):
-                f_1 = f*( (c12/c11)*dr_1[k] - dr_2[k] )/cD
-                f_2 = f*( dr_1[k] - (c12/c22)*dr_2[k] )/cD
+                f_1 = -f*( (c12/c11)*dr_1[k] - dr_2[k] )/cD
+                f_2 = -f*( dr_1[k] - (c12/c22)*dr_2[k] )/cD
 
                 cuda.atomic.add(vectors, (f_id, indices[0], k), f_1)      
                 cuda.atomic.add(vectors, (f_id, indices[1], k), -f_1-f_2)
@@ -157,7 +177,7 @@ class Angles(Interaction):
         c22 = dr_2[0]*dr_2[0] + dr_2[1]*dr_2[1] + dr_2[2]*dr_2[2]
 
         cD = math.sqrt(c11*c22)
-        cc = c12/cD 
+        cc = -c12/cD 
 
         angle = math.acos(cc)
         

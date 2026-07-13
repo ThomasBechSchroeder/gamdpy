@@ -97,7 +97,7 @@ class CalculatorWidomInsertion:
 
     def _update_CPU(self):
         """ Return the boltzmann factors for the ghost particles in the current configuration (CPU backend). """
-        pair_pot_func = self.pair_potential.pairpotential_function
+        pair_pot_func = numba.njit(self.pair_potential.pairpotential_function)
         this_boltzmann_factors = np.zeros(len(self.ghost_positions), dtype=np.float32)
         for idx_ghost in range(len(self.ghost_positions)):
             ghost_pos = self.ghost_positions[idx_ghost]
@@ -134,8 +134,8 @@ class CalculatorWidomInsertion:
         # Prepare user-specified functions for inclusion in kernel(s)
         ptype_function = numba.njit(self.configuration.ptype_function)
         params_function = numba.njit(self.pair_potential.params_function)
-        # pairpotential_function = numba.njit(self.pair_potential.pairpotential_function)
-        pairpotential_function = self.pair_potential.pairpotential_function 
+        pairpotential_function = numba.njit(self.pair_potential.pairpotential_function)
+        #pairpotential_function = self.pair_potential.pairpotential_function 
         dist_sq_function = numba.njit(self.configuration.simbox.get_dist_sq_function())
 
         def update_kernel(vectors, sim_box, ptype, params, ghost_positions, ptype_ghost, temperature, boltzmann_factors):

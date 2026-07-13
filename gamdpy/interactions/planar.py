@@ -9,15 +9,15 @@ from . import Interaction
 from .make_fixed_interactions import make_fixed_interactions
 
 class Planar(Interaction):
-    """ Planar interactions such as smooth walls, gravity, or an electric field.
+    r""" Planar interactions such as smooth walls, gravity, or an electric field.
 
-    Consider a plane with the normal vector :math:`{\\bf n}` going though the point :math:`{\\bf p}`.
-    For a given particle, let :math:`{\\bf r}` be the distance to the nearest point in the plane.
-    Then the planar for is
+    Consider a plane with the normal vector :math:`{\bf n}` going though the point :math:`{\bf p}`.
+    For a given particle, let :math:`{\bf r}` be the distance to the nearest point in the plane.
+    Then the planar force is
 
     .. math::
 
-        {\\bf F} = s(r) {\\bf n}
+        {\bf F} = s(r) {\bf n}
 
     Where :math:`s(r)=-u'(r)/r` is the force multiplier of a given potential function.
 
@@ -43,6 +43,40 @@ class Planar(Interaction):
 
     points : list[list[float]]
         A list of lists, each containing a point on a given plane.
+
+    Example
+    -------
+
+    Planar interactions can be used to add smooth walls and gravity to a simulation (be aware of periodic boundary conditions).
+
+    >>> import gamdpy as gp
+    >>>
+    >>> # Replace the below with your own simulation
+    >>> sim = gp.get_default_sim()
+    >>> box_length = sim.configuration.simbox.get_lengths()[1]  # Box-length in y-direction
+    >>> N = sim.configuration.N
+    >>>
+    >>> # Two smooth walls
+    >>> wall_distance = box_length/2
+    >>> walls = gp.interactions.Planar(
+    ...     potential=gp.harmonic_repulsion,
+    ...     params=[[100.0, 1.0], [100.0, 1.0]],
+    ...     indices=[[n, 0] for n in range(N)] + [[n, 1] for n in range(N)],  # All particles feel both walls
+    ...     normal_vectors=[[0.0, 1.0, 0.0], [0.0, -1.0, 0.0]],
+    ...     points=[[0.0, -wall_distance/2, 0], [0.0, wall_distance/2, 0]]
+    ... )
+    >>>
+    >>> # Gravity
+    >>> mg = 0.0005
+    >>> potential_gravity = gp.make_IPL_n(-1)
+    >>> gravity = gp.interactions.Planar(
+    ...     potential=potential_gravity,
+    ...     params= [[mg, 10*wall_distance]],
+    ...     indices= [[n, 0] for n in range(N)],   # All particles feel the gravity
+    ...     normal_vectors= [[0,1,0], ],
+    ...     points= [[0, -wall_distance/2.0, 0] ]  # Defining 0 for potential energy on the lower wall
+    ... )
+    >>> interactions = [..., walls, gravity]
 
     """
 

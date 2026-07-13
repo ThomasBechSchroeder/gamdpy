@@ -1,7 +1,7 @@
 """ Example of a Simulation using gamdpy, using explicit blocks.
 
 Simulation of a Lennard-Jones crystal in the NVT ensemble followed by shearing with SLLOD 
-and Lees-Edwards boundary conditions. Runs one shear rate but easy to make a loop over shear rates.
+and Lees-Edwards boundary conditions using a harmonically varying shear rate
 
 """
 import h5py
@@ -11,9 +11,9 @@ import gamdpy as gp
 
 temperature = 0.700
 sc_output = 16
-dt = 0.01
-epsilon0 = 0.2
-period = 100.
+dt = 0.006
+epsilon0 = 0.04
+period = 200.
 num_periods = 5.
 
 
@@ -79,7 +79,7 @@ for block in sim_SLLOD.run_timeblocks():
 print(sim_SLLOD.summary())
 
 
-U, K, W= gp.ScalarSaver.extract(sim_SLLOD.output, ['U', 'K', 'W'])
+U, K, W = gp.ScalarSaver.extract(sim_SLLOD.output, ['U', 'K', 'W'])
 N = configuration.N
 u, k = U/N,K/N
 

@@ -2,7 +2,6 @@
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
 
-from numba import njit
 import gamdpy as gp
 
 temperature = 0.01
@@ -15,7 +14,7 @@ configuration['m'] = 1.0
 configuration.randomize_velocities(temperature=2 * temperature, seed=0)
 
 # Setup pair potential.
-pairfunc = njit(gp.harmonic_repulsion)
+pairfunc = gp.harmonic_repulsion
 eps, sig = 1.0, 1.0
 pairpot = gp.PairPotential(pairfunc, params=[eps, sig], max_num_nbs=1000)
 interactios = [pairpot, ]

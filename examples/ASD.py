@@ -21,7 +21,7 @@ configuration.randomize_velocities(temperature=1.44)
 bond_potential = gp.harmonic_bond_function
 bond_params = [[0.584, 3000.], ]  # Parameters for bond type 0, 1, 2 etc (here only 0)
 bond_indices = [[i, i + 1, 0] for i in range(0, configuration.N - 1, 2)]  # dumbells: i(even) and i+1 bonded with type 0
-bonds = gp.Bonds(bond_potential, bond_params, bond_indices)
+bonds = gp.Bonds(bond_potential, bond_indices, bond_params)
 
 # Make pair potential
 # pair_func = gp.apply_shifted_potential_cutoff(gp.LJ_12_6_sigma_epsilon)

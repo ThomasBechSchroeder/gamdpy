@@ -17,7 +17,7 @@ from .configuration.Configuration import replicate_molecules
 from .simulation_boxes.orthorhombic import Orthorhombic
 from .simulation_boxes.lees_edwards import LeesEdwards
 from .configuration.topology import Topology
-from .configuration.topology import bonds_from_positions, angles_from_bonds, dihedrals_from_angles, molecules_from_bonds, duplicate_topology, replicate_topologies
+from .configuration.topology import bonds_from_positions, angles_from_bonds, dihedrals_from_angles, molecules_from_bonds, replicate_topologies
 from .configuration.colarray import colarray 
 from .configuration import unit_cells
 # make_lattice is imported in configuration/__init__.py
@@ -29,15 +29,17 @@ from .simulation.get_default_compute_plan import get_default_compute_plan
 from .simulation.get_default_compute_flags import get_default_compute_flags
 
 # Import from integrators subpackage
-from .integrators import integrator, NVE, NVT, NVT_Langevin, Brownian, NPT_Atomic, NPT_Langevin, SLLOD, NVU_RT, GradientDescent
+from .integrators import integrator, NVE, NVT, NVT_Langevin, Brownian, NPT_Atomic, NPT_Langevin, SLLOD, NVU_RT, GradientDescent, ActiveOUP
 
 # Import from interactions subpackage
 from .interactions import interaction, add_interactions_list, NbList2, NbListLinkedLists
-from .interactions import PairPotential, TabulatedPairPotential, PairPotentialNsquared, Electrostatics
+from .interactions import PairPotential, TabulatedPairPotential, PairPotentialNsquared, Electrostatics, EAM_ZJW_2004
 from .interactions import Bonds, Angles, Dihedrals
+from .interactions import Bonds_from_PairPotential
 from .interactions import make_fixed_interactions, make_planar_calculator, setup_planar_interactions
-from .interactions import Gravity, Relaxtemp, Tether
+from .interactions import Planar, Gravity, Relaxtemp, Tether
 from .interactions.potential_functions import *
+from .interactions.potential_parameters import *
 
 # Import from runtime_actions subpackage (Actions that can be inserted into the stimulation  kernel)
 from .runtime_actions import RuntimeAction, add_runtime_actions_list, TrajectorySaver, RestartSaver, ScalarSaver, MomentumReset, StressSaver
@@ -50,8 +52,10 @@ from .calculators import CalculatorRadialDistribution, CalculatorStructureFactor
 # Import from tools subpackage
 # To make type checking work (e.g. pylance): 
 from .tools import TrajectoryIO, calc_dynamics, save_configuration, calc_conductivity
+from .tools import read_h5
 # Side effect gp.calc_dynamics does also work! Same problem for integrators
 # TrajectoryIO, save_configuration and calc_dynamics are not directly imported and are called via gp.tools.*
+from .tools import conversion_factors
 
 # Tools/Evaluator are runtime actions with do not interact with the kernel
 from .tools.Evaluator import Evaluator
@@ -67,4 +71,4 @@ from .misc.plot_molecule import plot_molecule
 # Import from visualization 
 #from .visualization import *
 
-__version__ = "0.8.3dev"
+__version__ = "0.8.4dev"

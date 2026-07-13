@@ -45,7 +45,7 @@ def neighbour_potential(delta_theta: float, params: np.ndarray) -> tuple:
     return eps*u, eps*s, eps*curvature
 neighbour_bond_potential = neighbour_potential
 neighbour_bond_params = [[1.0], ]
-neighbour_bond_interaction = gp.Bonds(neighbour_bond_potential, neighbour_bond_params, neighbour_bonds)
+neighbour_bond_interaction = gp.Bonds(neighbour_bond_potential, neighbour_bonds, neighbour_bond_params)
 
 # Setup integrator
 integrator = gp.integrators.NVT_Langevin(temperature=0.4, alpha=0.4, dt=0.01, seed=2025)

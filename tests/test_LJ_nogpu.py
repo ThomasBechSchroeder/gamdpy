@@ -46,7 +46,7 @@ class Test(unittest.TestCase):
         #integrator3 = gp.integrators.NVT_Langevin(temperature=temperature, alpha=0.2, dt=dt, seed=2023)
         #integrator4 = gp.integrators.NPT_Langevin(temperature=temperature, pressure=pressure, 
         #                                        alpha=0.1, alpha_baro=0.0001, mass_baro=0.0001, 
-        #                                        volume_velocity=0.0, barostatModeISO = True , boxFlucCoord = 2,
+        #                                        barostatModeISO = True , boxFlucCoord = 2,
         #                                        dt=dt, seed=2023)
 
         #for configuration in [configuration1, configuration2, configuration3]:

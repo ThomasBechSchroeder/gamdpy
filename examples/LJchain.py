@@ -32,7 +32,7 @@ configuration.randomize_velocities(temperature=10.0)
 # Make bond interactions
 bond_potential = gp.harmonic_bond_function
 bond_params = [[1.00, 3000.], ]
-bonds = gp.Bonds(bond_potential, bond_params, configuration.topology.bonds)
+bonds = gp.Bonds(bond_potential, configuration.topology.bonds, bond_params)
 
 # Make pair potential
 pair_func = gp.apply_shifted_force_cutoff(gp.LJ_12_6_sigma_epsilon)

@@ -2,8 +2,10 @@ import numpy as np
 # LC: check https://orbit.dtu.dk/en/publications/cudarray-cuda-based-numpy
 import numba
 from numba import cuda
-from gamdpy import Configuration, Orthorhombic
-from gamdpy.misc.make_function import make_function_constant
+import h5py
+from ..configuration import Configuration
+from ..simulation_boxes import Orthorhombic
+from ..misc.make_function import make_function_constant
 from .integrator import Integrator
 
 class NPT_Atomic(Integrator):
@@ -71,6 +73,9 @@ class NPT_Atomic(Integrator):
         self.d_thermostat_state = numba.cuda.to_device(self.thermostat_state)
         return (dt, mass_t, mass_p, degrees, self.d_thermostat_state, self.d_barostat_state)   # Needs to be compatible with unpacking in
                                                                                                # step() and update_thermostat_state() below.
+
+    def save_internal_state(self, output: h5py.File, group_name: str):
+        pass
 
     def get_kernel(self, configuration: Configuration, compute_plan: dict, compute_flags: dict, interactions_kernel, verbose=False):
 

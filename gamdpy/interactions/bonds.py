@@ -19,11 +19,13 @@ class Bonds(Interaction):
         A function that takes the distance between two particles and the bond type as arguments and returns the potential energy, force and laplacian.
         See :func:gamdpy.potential_functions.harmonic_bond_function for an example.
 
-    potential_params : list
+    bond_indices : list
+        A list of lists, each containing the indices of the two particles involved in a bond and the bond
+
+    bond_parameters : list
         A list of parameters for each bond type. Each entry is a list of parameters for a specific bond type.
 
-    indices : list
-        A list of lists, each containing the indices of the two particles involved in a bond and the bond
+
 
     See Also
     --------
@@ -31,10 +33,11 @@ class Bonds(Interaction):
     gamdpy.harmonic_bond_function : Harmonic bond potential
 
     """
-    def __init__(self, bond_potential, potential_params, indices):
+    def __init__(self, bond_potential, bond_indices, bond_parameters):
         self.bond_potential = bond_potential
-        self.potential_params = potential_params
-        self.indices = indices
+        self.indices = bond_indices
+        self.potential_params = bond_parameters
+
 
     def get_params(self, configuration: Configuration, compute_plan: dict, verbose=False) -> tuple:
         self.N = configuration.N

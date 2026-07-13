@@ -1,4 +1,4 @@
-""" Minimal example of a running an simulation using gamdpy
+""" Minimal example of running a simulation using gamdpy
 
 Simulation of a Lennard-Jones crystal in the NVT ensemble.
 
@@ -45,4 +45,3 @@ print('   python3 analyze_structure.py LJ_T0.70')
 print('   python3 analyze_dynamics.py LJ_T0.70')
 print('   python3 analyze_thermodynamics.py LJ_T0.70')
 print('   python3 visualize.py LJ_T0.70.h5')
-

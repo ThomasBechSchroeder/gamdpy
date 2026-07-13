@@ -4,11 +4,18 @@ import math
 from numba import cuda
 
 def apply_shifted_potential_cutoff(pair_potential: callable) -> callable:
-    """ Apply shifted potential cutoff to a pair-potential function
+    r""" Apply shifted potential cutoff to a pair-potential function
 
         If the input pair potential is :math:`u(r)`,
-        then the shifted potential is :math:`u(r) - u(r_{c})`, where :math:`r_c` is the cutoff distance.
+        then the shifted potential is
+
+        .. math::
+
+           u_m(r) = u(r) - u(r_{c}) \quad (r<r_c)
+
+        and :math:`u_m(r)=0` for :math:`r>r_c` where :math:`r_c` is the cutoff distance.
         Calls the original potential function twice, avoiding changes to params.
+        The last entry the parameter array (`params`) is the cutoff: `[..., r_c]`.
 
         Parameters
         ----------
@@ -30,17 +37,20 @@ def apply_shifted_potential_cutoff(pair_potential: callable) -> callable:
         truncated and shifted to zero at the cutoff distance of 2.5.
 
         >>> import gamdpy as gp
-        >>> pair_func = gp.apply_shifted_force_cutoff(gp.LJ_12_6)
+        >>> pair_func = gp.apply_shifted_potential_cutoff(gp.LJ_12_6)
         >>> A12, A6, cut = 1.0, 1.0, 2.5
         >>> pair_pot = gp.PairPotential(pair_func, params=[A12, A6, cut], max_num_nbs=1000)
-        >>> interactions = [pair_pot, ]  # List of interactions only containing the pair potential
+        >>> interactions = [pair_pot, ]  # List of interactions passed to an instance of the Simulation class
 
     """
     pair_pot = numba.njit(pair_potential)
 
-    @numba.njit
+    #@numba.njit # Jit moved to 'last minut', i.e. PairPotential.get_kernel 
     def potential(dist, params): # pragma: no cover
         cut = params[-1]
+        if dist>cut:
+            return numba.float32(0.0), numba.float32(0.0), numba.float32(0.0)
+        
         u, s, umm = pair_pot(dist, params)
         u_cut, s_cut, umm_cut = pair_pot(cut, params)
         u -= u_cut

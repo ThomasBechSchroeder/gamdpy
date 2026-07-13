@@ -2,10 +2,15 @@ import numpy as np
 import numba
 from numba import cuda
 import math
+import h5py
 from numba.cuda.random import create_xoroshiro128p_states
 from numba.cuda.random import xoroshiro128p_normal_float32
-import gamdpy as gp
+from ..configuration import Configuration
+from ..simulation_boxes import Orthorhombic
+from ..misc.make_function import make_function_constant
 from .integrator import Integrator
+
+
 
 class NPT_Langevin(Integrator):
     r""" Constant NPT Langevin integrator with isotropic volume fluctuations.
@@ -91,6 +96,7 @@ class NPT_Langevin(Integrator):
 
     Example of setting parameters for the NPT langevin barostat (see above) in "Lennard-Jones like" reduced units.
 
+    >>> import gamdpy as gp
     >>> tau_T = 2.0
     >>> tau_V = 8.0
     >>> zeta = 0.2
@@ -106,34 +112,42 @@ class NPT_Langevin(Integrator):
 
     """
 
-    def __init__(self, temperature, pressure, alpha: float, alpha_barostat: float, mass_barostat: float, dt: float, volume_velocity = 0.0, seed = 0) -> None:
+    def __init__(self, temperature, pressure, alpha: float, alpha_barostat: float, mass_barostat: float, dt: float, seed = 0, integrator_state: np.ndarray=None) -> None:
         self.temperature = temperature
         self.pressure = pressure
         self.alpha = alpha 
         self.alpha_barostat = alpha_barostat
         self.mass_barostat = mass_barostat
         self.dt = dt
-        self.volume_velocity = volume_velocity
+        self.volume_velocity = 0.
+        if integrator_state is not None:
+            print("Restoring from saved integrator_state; overrides specified volume_velocity")
+            self.volume_velocity = integrator_state[1]
         self.seed = seed
 
-    def get_params(self, configuration: gp.Configuration, interactions_params: tuple, verbose=False) -> tuple:
+    def get_params(self, configuration: Configuration, interactions_params: tuple, verbose=False) -> tuple:
         dt = np.float32(self.dt)
         alpha = np.float32(self.alpha)
         alpha_baro = np.float32(self.alpha_barostat)
         mass_baro = np.float32(self.mass_barostat)
-        rng_states = create_xoroshiro128p_states(configuration.N+1, seed=self.seed) # +1 for barostat dynamics 
+        rng_states = create_xoroshiro128p_states(configuration.N+1, seed=self.seed) # +1 for barostat dynamics
         barostat_state = np.array([1.0, self.volume_velocity], dtype=np.float64)       # [0] = new_vol / old_vol , [1] = vol velocity
-        d_barostat_state = cuda.to_device(barostat_state)
+        self.d_barostat_state = cuda.to_device(barostat_state)
         barostatVirial = np.array([0.0], dtype=np.float32)
         d_barostatVirial = cuda.to_device(barostatVirial)
         d_length_ratio = cuda.to_device(np.ones(configuration.D, dtype=np.float32))
         return (dt, alpha, alpha_baro, mass_baro, # Needs to be compatible with unpacking in step() below
-                rng_states, d_barostat_state, d_barostatVirial, d_length_ratio)
-    
-    def get_kernel(self, configuration: gp.Configuration, compute_plan: dict, compute_flags:dict[str,bool], interactions_kernel, verbose=False):
+                rng_states, self.d_barostat_state, d_barostatVirial, d_length_ratio)
+
+    def save_internal_state(self, output: h5py.File, group_name: str):
+        barostat_state = self.d_barostat_state.copy_to_host()
+        output[group_name].create_dataset('integrator_state', data=barostat_state)
+
+
+    def get_kernel(self, configuration: Configuration, compute_plan: dict, compute_flags:dict[str,bool], interactions_kernel, verbose=False):
 
         # This integrator is designed for an Orthorhombic simulation box
-        if not isinstance(configuration.simbox, gp.Orthorhombic):
+        if not isinstance(configuration.simbox, Orthorhombic):
             raise TypeError(f"The NPT Langevin integrator expected Orthorhombic simulation box but got {type(configuration.simbox)}")
 
         # Unpack parameters from configuration and compute_plan
@@ -145,11 +159,11 @@ class NPT_Langevin(Integrator):
         if callable(self.temperature):
             temperature_function = self.temperature
         else:
-            temperature_function = gp.make_function_constant(value=float(self.temperature))
+            temperature_function = make_function_constant(value=float(self.temperature))
         if callable(self.pressure):
             pressure_function = self.pressure
         else:
-            pressure_function = gp.make_function_constant(value=float(self.pressure))
+            pressure_function = make_function_constant(value=float(self.pressure))
 
         if verbose:
             print(f'Generating NPT langevin integrator for {num_part} particles in {D} dimensions:')
@@ -214,7 +228,7 @@ class NPT_Langevin(Integrator):
 
                 random_number = xoroshiro128p_normal_float32(rng_states, 0)          # 0th random number state is reserved for barostat
                 barostatRandomForce = math.sqrt(numba.float32(2.0) * alpha_baro * temperature * dt) * random_number 
-            
+
                 current_volume_velocity = current_barostat_state[1]
                 inv_baro_mass = numba.float32(1.0) / mass_baro
                 scaled_dt = numba.float32(0.5) * dt * alpha_baro * inv_baro_mass
@@ -317,3 +331,8 @@ class NPT_Langevin(Integrator):
                 return
 
         return kernel
+
+    @classmethod
+    def from_h5(cls, output: h5py.File, group_name: str):
+        barostat_state = output[group_name]['integrator_state'][:]
+        return barostat_state

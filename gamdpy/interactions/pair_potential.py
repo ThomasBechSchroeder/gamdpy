@@ -24,6 +24,17 @@ class PairPotential(Interaction):
         Maximum number of neighbors per particle to allocate in the neighbor list.
     exclusions : array_like
         List of particle indices to exclude from interactions for each particle.
+
+    Example
+    -------
+
+    The standard Lennard-Jones potential shifted and truncated at 2.5:
+
+    >>> pair_func = gp.apply_shifted_potential_cutoff(gp.LJ_12_6_sigma_epsilon)
+    >>> sig, eps, cut = 1.0, 1.0, 2.5
+    >>> pair_pot = gp.PairPotential(pair_func, params=[sig, eps, cut], max_num_nbs=1000)
+    >>> interactions = [pair_pot, ]  # Passed to a Simulation instance
+
     """
 
     def __init__(self, pairpotential_function, params, max_num_nbs, exclusions=None):
@@ -34,8 +45,34 @@ class PairPotential(Interaction):
         self.pairpotential_function = pairpotential_function
         self.params_function = params_function
         self.params_user = params
-        self.exclusions = exclusions 
+        if exclusions is None or type(exclusions) == np.ndarray:
+            self.exclusions = exclusions
+        elif type(exclusions) == list:
+            self.exclusions = self.merge_exclusions(exclusions)
+        else:
+            raise ValueError("Class PairPotential: parameter exclusions must be a numpy array or a list of numpy arrays")
         self.max_num_nbs = max_num_nbs
+
+    def merge_exclusions(self, exclusion_list, max_exclusions=None):
+        """ Take a list of exclusion arrays are return a merged array"""
+
+        if not max_exclusions:
+            max_exclusions = max([excl.shape[1] for excl in exclusion_list]) - 1
+
+        num_excl_arrays = len(exclusion_list)
+        n_excl = exclusion_list[0].shape[0]
+        merged_exclusions = np.zeros( (n_excl, max_exclusions+1), dtype=np.int32)
+        for idx in range(n_excl):
+            this_excl_list = []
+            for n in range(num_excl_arrays):
+                num_elements_this_atom = exclusion_list[n][idx, -1]
+                this_excl_list.append(exclusion_list[n][idx, 0:num_elements_this_atom])
+            # Now concatenate to make a single array, removing duplicates
+            this_excl_arr = np.unique(np.concatenate(this_excl_list))
+            size_this_excl_arr = len(this_excl_arr)
+            merged_exclusions[idx, 0:size_this_excl_arr] = this_excl_arr
+            merged_exclusions[idx, -1] = size_this_excl_arr
+        return merged_exclusions
 
     def convert_user_params(self):
         # Upgrade any scalar parameters to 1x1 numpy array
@@ -153,7 +190,7 @@ class PairPotential(Interaction):
 
 
 
-        pairpotential_function = self.pairpotential_function
+        pairpotential_function = numba.njit(self.pairpotential_function)
     
         if UtilizeNIII:
             virial_factor_NIII = numba.float32( 1.0/configuration.D)

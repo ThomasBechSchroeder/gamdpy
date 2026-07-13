@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from gamdpy import Configuration
+from ..configuration import Configuration
+import h5py
 
 class Integrator(ABC):
     """
@@ -17,4 +18,11 @@ class Integrator(ABC):
         """
         Get a tuple with the parameters expected by the associated kernel
         """
+
+    @abstractmethod
+    def save_internal_state(self, output: h5py.File, group_name: str):
+        """
+        Write the internal state of the integrator as an attribute called 'integrator_state' to the specified group in the specified HDF file
+        """
+        # It could be that each integrator uses its own attribute, i.e. we don't need to insist that it's always called the generic name integrator_state
 
