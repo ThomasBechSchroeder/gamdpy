@@ -173,7 +173,7 @@ class Electrostatics(Interaction):
         if compute_lap:
             lap_id = configuration.sid['lapU']
 
-        real_space_pot = self.real_space_pot
+        real_space_pot = numba.njit(self.real_space_pot)
 
         virial_factor = numba.float32( 0.5/configuration.D )
         def real_space_calculator(ij_dist, ij_params, dr, my_f, cscalars, my_stress, f, other_id):
