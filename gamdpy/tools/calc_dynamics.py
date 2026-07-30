@@ -1,5 +1,4 @@
 import math
-from attr import attributes
 import numpy as np
 import matplotlib.pyplot as plt
 
