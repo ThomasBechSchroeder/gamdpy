@@ -177,7 +177,9 @@ class StressSaver(RuntimeAction):
         h5grp = h5file['stresses']
         nblocks, per_block, D, D2 = h5grp['stress_tensor'].shape
         assert D == D2
-        final_rows = (nblocks-first_block) * per_block
+        if last_block==None:
+            last_block = nblocks
+        final_rows = (last_block-first_block) * per_block
         return h5grp['stress_tensor'][first_block:last_block,:,:, :].reshape(final_rows, D, D)[::subsample]
 
     def get_times(h5file, first_block=0, last_block=None, reset_time=True, subsample=1):
