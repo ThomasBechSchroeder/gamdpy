@@ -176,6 +176,15 @@ class Simulation():
     def output(self):
         return self.get_output()
 
+    def _adjust_compute_plan(self, error):  # Used by JIT_and_test_kernel to adjust compute_plan if autotuner fails
+        if self.compute_plan['tp'] > 1:  # Most common problem tp is too big
+            self.compute_plan['tp'] -= 1  # ... so we reduce it and try again
+        elif self.compute_plan['gridsync'] == True:  # Last resort: turn off gridsync
+            self.compute_plan['gridsync'] = False
+        else:
+            raise RuntimeError(f'Cannot adjust compute plan further.') from error
+        print('Trying adjusted compute_plan :', self.compute_plan)
+
     def JIT_and_test_kernel(self, adjust_compute_plan=True):
         while True:
             try:
@@ -185,31 +194,29 @@ class Simulation():
                                                 self.runtime_actions_prestep_kernel,
                                                 self.runtime_actions_poststep_kernel,
                                                 self.compute_plan, True)
-                self.configuration.copy_to_device() # By _not_ copying back to host later we dont change configuration
+                self.configuration.copy_to_device() # By _not_ copying back to host later, we do not change configuration
                 self.integrate_self(0.0, self.steps_in_kernel_test)
                 break
+
             except numba.cuda.cudadrv.driver.CudaAPIError as e:
                 if not adjust_compute_plan:
-                    self.compute_plan['tp'] = 0 # Signal failure to autotuner
+                    self.compute_plan['tp'] = 0  # Signal failure to autotuner
                     break
-                #print('Failed compute_plan : ', self.compute_plan)
-                if self.compute_plan['tp'] > 1:             # Most common problem tp is too big
-                    self.compute_plan['tp'] -= 1            # ... so we reduce it and try again
-                elif self.compute_plan['gridsync'] == True: # Last resort: turn off gridsync
-                    self.compute_plan['gridsync'] = False
-                else:
-                    print(f'FAILURE. Can not handle cuda error {e}')
-                    exit()  # Consider raising an error, instead of clean exit
-                    # raise RuntimeError(f'FAILURE. Can not handle cuda error {e}')
 
-                print('Trying adjusted compute_plan :', self.compute_plan)
+                self._adjust_compute_plan(e)
+
             except ValueError as e:
-                if "The specified grid size" in str(e) and "exceeds the limit" in str(e) and adjust_compute_plan:
-                    print("Warning: ", e)
-                    self.compute_plan['tp'] = self.compute_plan['tp']//2
-                    print(f"Adjust compute plan: tp = {self.compute_plan['tp']}")
-                else:
-                    raise e
+                grid_size_value_error = "The specified grid size" in str(e) and "exceeds the limit" in str(e)
+
+                if not grid_size_value_error:
+                    raise
+
+                if not adjust_compute_plan:
+                    self.compute_plan['tp'] = 0  # Signal failure to autotuner
+                    break
+
+                self._adjust_compute_plan(e)
+
 
     def get_kernels_and_params(self, verbose=False):
         # Interactions
