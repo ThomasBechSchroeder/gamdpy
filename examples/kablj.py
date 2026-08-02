@@ -4,10 +4,7 @@ NVT simulation of the Kob-Andersen mixture
 """
 
 import gamdpy as gp
-
-import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 
 # Specify statepoint
 num_part = 2000

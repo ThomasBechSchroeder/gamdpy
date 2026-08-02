@@ -1,10 +1,6 @@
 """ Example of a simulation of a Lennard-Jones chain with 10 beads per chain """
 
-import h5py
-import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
-
 import gamdpy as gp
 
 # Generate configuration with a FCC lattice

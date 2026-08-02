@@ -22,8 +22,9 @@ dependencies = [
     "numpy",
     "numba",
     "h5py",
-    "pandas",
     "matplotlib",
+    "pandas",
+    "scipy",
 ]
 license = "MIT AND (Apache-2.0 OR BSD-2-Clause)"
 license-files = ["LICENSE*"]
