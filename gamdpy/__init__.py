@@ -43,7 +43,7 @@ from .interactions.potential_parameters import *
 from .interactions import Steinhardt_Q6
 
 # Import from runtime_actions subpackage (Actions that can be inserted into the stimulation  kernel)
-from .runtime_actions import RuntimeAction, add_runtime_actions_list, TrajectorySaver, RestartSaver, ScalarSaver, MomentumReset, StressSaver
+from .runtime_actions import RuntimeAction, add_runtime_actions_list, TrajectorySaver, RestartSaver, ScalarSaver, MomentumReset, StressSaver, Q6_Saver
 from .runtime_actions.time_scheduler import *
 
 # Import from calculators subpackage

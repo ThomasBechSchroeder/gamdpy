@@ -5,4 +5,5 @@ from .trajectory_saver import TrajectorySaver
 from .restart_saver import RestartSaver
 from .momentum_reset import MomentumReset
 from .stress_saver import StressSaver
+from .q6_saver import Q6_Saver
 from .time_scheduler import *

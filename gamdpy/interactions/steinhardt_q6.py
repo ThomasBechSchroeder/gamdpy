@@ -76,13 +76,15 @@ class Steinhardt_Q6(Interaction):
 
         # create storage for q6: seven complex numbers, as well as the normalization (sum of switching_factors)
         self.q6_sum = np.zeros(7, dtype=np.complex64)
-        self.switch_sum = np.zeros(1, dtype=np.float32)
+        self.switch_sum_Q6_energy = np.zeros(3, dtype=np.float32)
+
         self.d_q6_sum = cuda.to_device(self.q6_sum)
-        self.d_switch_sum = cuda.to_device(self.switch_sum)
-        return (self.d_params, self.nblist.d_nblist, nblist_params, self.d_switch_sum, self.d_q6_sum)
+        self.d_switch_sum_Q6_energy = cuda.to_device(self.switch_sum_Q6_energy)
+        return (self.d_params, self.nblist.d_nblist, nblist_params, self.d_switch_sum_Q6_energy, self.d_q6_sum)
 
     def GetQ6(self):
-        self.switch_sum = self.d_switch_sum.copy_to_host()
+        self.switch_sum_Q6_energy = self.d_switch_sum_Q6_energy.copy_to_host()
+        switch_sum, Q6_device, Q6_energy = self.switch_sum_Q6_energy
         self.q6_sum = self.d_q6_sum.copy_to_host()
         sum_qlm_non_norm2 = self.q6_sum[0].real**2
 
@@ -91,7 +93,7 @@ class Steinhardt_Q6(Interaction):
             sum_qlm_non_norm2 += 2.*(sigma_f_Y6m.real**2 + sigma_f_Y6m.imag**2)
 
         four_pi_two_lp1 = 4.*math.pi/(2*6+1)
-        Q6 = math.sqrt(four_pi_two_lp1 * sum_qlm_non_norm2)/self.switch_sum
+        Q6 = math.sqrt(four_pi_two_lp1 * sum_qlm_non_norm2)/switch_sum
         prefactor_A = -self.kappa6 * (Q6-self.anchor6) * four_pi_two_lp1 / Q6
 
         return Q6
@@ -158,24 +160,27 @@ class Steinhardt_Q6(Interaction):
         # and get at least roughly correct Q6. But using print statments in the kernel to see it. Have gained a factor 13 in speed in the process!
         # 9.5 Make a better way to display the value of Q6 once per block (ie from the main loop) DONE 23/7
         # 10. Once have correct Q6, start debugging forces DONE 24/7
-        # 11. Once force debugged, test speed again. DONE 24/7, factor 33 slower still
+        # 11. Once force debugged, test speed again. DONE 24/7, much faster but still a factor 13 slower than ordinary minimal
         # 12. Start examining 32 vs 64 bit floats and reducing unnecessary double-precision and unnecessary casts. Look for places to improve the code generally
-        # 13. Implement a proper way to store and extract the value of Q6 (needed for IP calculations).
-        
+        # 13. Implement a proper way to store and extract the value of Q6 (needed for IP calculations). DONE 8/9
+        # 14. Think about how to use this class not as an interaction but just to measure Q6 (right now can do this by setting kappa=0 but it would still
+        # be calculated every time step so very slow)
         @cuda.jit(device=gridsync)
-        def zero_sum_arrays(switch_sum, q6_sum):
+        def zero_sum_arrays(switch_sum_Q6_energy, q6_sum):
             my_block = cuda.blockIdx.x
             local_id = cuda.threadIdx.x
             global_id = my_block*pb + local_id
             my_t = cuda.threadIdx.y
 
             if global_id == 0 and my_t == 0:
-                switch_sum[0] = zero
+                switch_sum_Q6_energy[0] = zero
+                switch_sum_Q6_energy[1] = zero
+                switch_sum_Q6_energy[2] = zero
                 for m in range(7):
                     q6_sum[m] = complex(zero, zero)
 
         @cuda.jit( device=gridsync )  
-        def calc_q6_forces(FORCES: bool, vectors, cscalars, ptype, sim_box, nblist, params, switch_sum, q6_sum):
+        def calc_q6_forces(FORCES: bool, vectors, cscalars, ptype, sim_box, nblist, params, switch_sum_Q6_energy, q6_sum):
             """ Calculate forces as given by pairpotential_calculator() (needs to exist in outer-scope) using nblist 
                 Kernel configuration: [num_blocks, (pb, tp)]        
             """
@@ -196,13 +201,6 @@ class Steinhardt_Q6(Interaction):
             my_Y6 = cuda.local.array(shape=7, dtype=numba.complex64)
             my_switch_factor_sum = zero
 
-            #if global_id < num_part and FORCES == False:
-
-            #    for k in range(D):
-            #        my_f[k] = numba.float32(0.0)
-
-            #    for k in range(num_cscalars):
-            #        my_cscalars[k] = numba.float32(0.0)
 
 
             assert UtilizeNIII == False
@@ -217,7 +215,7 @@ class Steinhardt_Q6(Interaction):
                 # for use when actually determining force contributions:
                 if(FORCES):
                     # Read in the summed values
-                    sigma_f = switch_sum[0]
+                    sigma_f = switch_sum_Q6_energy[0]
                     sigma_f_Y6[0] = q6_sum[0]
                     sum_qlm_non_norm2 = sigma_f_Y6[0].real**2
                     for m in range(1, 7):
@@ -227,7 +225,10 @@ class Steinhardt_Q6(Interaction):
 
                     Q6 = math.sqrt(four_pi_two_lp1 * sum_qlm_non_norm2)/sigma_f
                     prefactor_A = -kappa6 * (Q6-anchor6) * four_pi_two_lp1 / Q6
-
+                    Q6_energy = kappa6 * (Q6 - anchor6)**2/2
+                    if global_id == 0 and my_t == 0:
+                        switch_sum_Q6_energy[1] = Q6
+                        switch_sum_Q6_energy[2] = Q6_energy
 
                 for i in range(my_t, nblist[global_id, max_nbs], tp):
                     other_id = nblist[global_id, i] 
@@ -397,7 +398,7 @@ class Steinhardt_Q6(Interaction):
 
             # Outside the loop over neighbors for my particle handled by this thread, now each thread must add to the global sums
             if not FORCES:
-                cuda.atomic.add(switch_sum, 0, my_switch_factor_sum)
+                cuda.atomic.add(switch_sum_Q6_energy, 0, my_switch_factor_sum)
                 for m in range(7):
                     # NEED TO SEPARATELY ADD REAL AND IMAGINARY PARTS
                     cuda.atomic.add(q6_sum.real, m, my_Y6[m].real)
@@ -408,11 +409,11 @@ class Steinhardt_Q6(Interaction):
 
         def make_calc_q6_with_without_forces():
             @cuda.jit(device = gridsync)
-            def calc_q6_without_forces(vectors, scalars, ptype, sim_box, nblist, params, switch_sum, q6_sum):
-                calc_q6_forces(False, vectors, scalars, ptype, sim_box, nblist, params, switch_sum, q6_sum)
+            def calc_q6_without_forces(vectors, scalars, ptype, sim_box, nblist, params, switch_sum_Q6_energy, q6_sum):
+                calc_q6_forces(False, vectors, scalars, ptype, sim_box, nblist, params, switch_sum_Q6_energy, q6_sum)
             @cuda.jit(device = gridsync)
-            def calc_q6_with_forces(vectors, scalars, ptype, sim_box, nblist, params, switch_sum, q6_sum):
-                calc_q6_forces(True, vectors, scalars, ptype, sim_box, nblist, params, switch_sum, q6_sum)
+            def calc_q6_with_forces(vectors, scalars, ptype, sim_box, nblist, params, switch_sum_Q6_energy, q6_sum):
+                calc_q6_forces(True, vectors, scalars, ptype, sim_box, nblist, params, switch_sum_Q6_energy, q6_sum)
 
             return calc_q6_without_forces, calc_q6_with_forces
 
@@ -424,25 +425,25 @@ class Steinhardt_Q6(Interaction):
             # A device function, calling a number of device functions, using gridsync to syncronize
             @cuda.jit( device=gridsync )
             def compute_interactions(grid, vectors, scalars, ptype, sim_box, interaction_parameters):
-                params, nblist, nblist_parameters, switch_sum, q6_sum = interaction_parameters
+                params, nblist, nblist_parameters, switch_sum_Q6_energy, q6_sum = interaction_parameters
                 nblist_check_and_update(grid, vectors, scalars, ptype, sim_box, nblist, nblist_parameters)
                 grid.sync()
-                zero_sum_arrays(switch_sum, q6_sum)
+                zero_sum_arrays(switch_sum_Q6_energy, q6_sum)
                 grid.sync()
-                calc_q6_without_forces(vectors, scalars, ptype, sim_box, nblist, params, switch_sum, q6_sum)
+                calc_q6_without_forces(vectors, scalars, ptype, sim_box, nblist, params, switch_sum_Q6_energy, q6_sum)
                 grid.sync()
-                calc_q6_with_forces(vectors, scalars, ptype, sim_box, nblist, params, switch_sum, q6_sum)
+                calc_q6_with_forces(vectors, scalars, ptype, sim_box, nblist, params, switch_sum_Q6_energy, q6_sum)
                 return
             return compute_interactions
         
         else:
             # A python function, making several kernel calls to syncronize  
             def compute_interactions(grid, vectors, scalars, ptype, sim_box, interaction_parameters):
-                params, nblist, nblist_parameters, switch_sum, q6_sum = interaction_parameters
+                params, nblist, nblist_parameters, switch_sum_Q6_energy, q6_sum = interaction_parameters
                 nblist_check_and_update(grid, vectors, scalars, ptype, sim_box, nblist, nblist_parameters)
-                zero_sum_arrays(switch_sum, q6_sum)
-                calc_q6_without_forces[num_blocks, (pb, tp)](vectors, scalars, ptype, sim_box, nblist, params, switch_sum, q6_sum)
-                calc_q6_with_forces[num_blocks, (pb, tp)](vectors, scalars, ptype, sim_box, nblist, params, switch_sum, q6_sum)
+                zero_sum_arrays(switch_sum_Q6_energy, q6_sum)
+                calc_q6_without_forces[num_blocks, (pb, tp)](vectors, scalars, ptype, sim_box, nblist, params, switch_sum_Q6_energy, q6_sum)
+                calc_q6_with_forces[num_blocks, (pb, tp)](vectors, scalars, ptype, sim_box, nblist, params, switch_sum_Q6_energy, q6_sum)
                 return
             return compute_interactions
 

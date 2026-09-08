@@ -145,7 +145,7 @@ class PairPotential(Interaction):
         elif compute_plan['nblist'] == 'linked lists':
             self.nblist = gp.NbListLinkedLists(configuration, self.exclusions, self.max_num_nbs)
         else:
-            raise ValueError(f"No lblist called: {compute_plan['nblist']}. Use either 'N squared' or 'linked lists'")
+            raise ValueError(f"No nblist called: {compute_plan['nblist']}. Use either 'N squared' or 'linked lists'")
         nblist_params = self.nblist.get_params(max_cut, compute_plan, verbose)
 
         return (self.d_params, self.nblist.d_nblist, nblist_params)

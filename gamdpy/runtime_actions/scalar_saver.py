@@ -163,8 +163,8 @@ class ScalarSaver(RuntimeAction):
         unpacked_compute_flags = [configuration.compute_flags[key] for key in ['U', 'W', 'lapU', 'Fsq', 'K', 'Vol', 'Ptot', 'stresses']]
         compute_u, compute_w, compute_lap, compute_fsq, compute_k, compute_vol, compute_Ptot, compute_stresses = unpacked_compute_flags
 
-        unpacked_scalar_indicies = [self.sid.get(key, None) for key in ['U', 'W', 'lapU', 'Fsq', 'K', 'Vol', 'Px', 'Py', 'Pz', 'Sxy']]
-        u_id, w_id, lap_id, fsq_id, k_id, vol_id, Px_id, Py_id, Pz_id, Sxy_id = unpacked_scalar_indicies
+        unpacked_scalar_indices = [self.sid.get(key, None) for key in ['U', 'W', 'lapU', 'Fsq', 'K', 'Vol', 'Px', 'Py', 'Pz', 'Sxy']]
+        u_id, w_id, lap_id, fsq_id, k_id, vol_id, Px_id, Py_id, Pz_id, Sxy_id = unpacked_scalar_indices
 
         # Original
         #compute_u = configuration.compute_flags['U']
@@ -391,7 +391,7 @@ class ScalarSaver(RuntimeAction):
         -------
         np.array : A numpy arrays with simulation times
         
-        Seed also
+        See also
         ---------
 
         :function:`ScalarSaver.extract`
