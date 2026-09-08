@@ -225,6 +225,10 @@ class Simulation():
                                                                                       compute_plan=self.compute_plan,
                                                                                       compute_flags=self.compute_flags)
 
+        # It is important that runtime actions are initialized (ie get_params called) after the interactions. There is a dependency now
+        # (Sept 2026) regarding Q6_Saver which requires that a Steinhardt_Q6 potential object is present and has been initialized. If in the future
+        # for some reason there is a need to initialize runtime actions first it will be necessary to rethink this.
+
         # Runtime actions
         if self.runtime_actions:
             self.runtime_actions_prestep_kernel, self.runtime_actions_poststep_kernel, self.runtime_actions_params = gp.add_runtime_actions_list(self.configuration,
