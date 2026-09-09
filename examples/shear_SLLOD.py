@@ -58,7 +58,7 @@ sim_SLLOD = gp.Simulation(configuration, pairpot, integrator_SLLOD, runtime_acti
 for block in sim_SLLOD.run_timeblocks():
     print(sim_SLLOD.status(per_particle=True))
     configuration.simbox.copy_to_host()
-    box_shift = configuration.simbox.box_shift
+    box_shift = configuration.simbox.get_box_shift()
     lengths = configuration.simbox.get_lengths()
     print(f'box-shift={box_shift:.4f}, strain = {box_shift/lengths[1]:.4f}')
 print(sim_SLLOD.summary())

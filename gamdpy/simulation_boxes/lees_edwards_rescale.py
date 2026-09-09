@@ -13,7 +13,7 @@ import math
 from .simulationbox import SimulationBox
 
 
-class LeesEdwards(SimulationBox):
+class LeesEdwardsRescale(SimulationBox):
     """ Simulation box class with LeesEdwards bondary conditions.
 
     Parameters
@@ -42,17 +42,18 @@ class LeesEdwards(SimulationBox):
     >>> simbox = gp.LeesEdwards(D=3, lengths=[3,4,5], box_shift=1.0)
 
     """
-    def __init__(self, D, lengths, box_shift=0., box_shift_image=0):
+    def __init__(self, D, lengths, box_shift=0., box_shift_image=0, bs_scale_factor=1024.):
         if D < 2:
             raise ValueError("Cannot use LeesEdwards with dimension smaller than 2")
         self.D = D
-        self.box_shift = box_shift
+        self.box_shift_scaled = bs_scale_factor*box_shift
         self.box_shift_image = np.float32(box_shift_image)
         self.data_array = np.zeros(D+2,  dtype=np.float32)
         self.data_array[:D] = np.array(lengths, dtype=np.float32)
-        self.data_array[D] = self.box_shift
+        self.data_array[D] = self.box_shift_scaled
         self.data_array[D+1] = self.box_shift_image
         self.len_sim_box_data = D+2
+        self.bs_scale_factor = bs_scale_factor
 
         return
 
@@ -66,7 +67,7 @@ class LeesEdwards(SimulationBox):
     def copy_to_host(self):
         D = self.D
         self.data_array =  self.d_data.copy_to_host()
-        self.box_shift = self.data_array[D]
+        self.box_shift_scaled = self.data_array[D]
         self.boxshift_image = self.data_array[D+1]
 
     def get_volume_function(self):
@@ -103,7 +104,9 @@ class LeesEdwards(SimulationBox):
 
     def get_box_shift(self):
         """Return the box-shift (in the x-direction)"""
-        return self.box_shift
+        return self.box_shift_scaled/self.bs_scale_factor
+
+
 
     def scale(self, scale_factor: float) -> None:
         """ Scale the box lengths by scale_factor """
@@ -113,18 +116,23 @@ class LeesEdwards(SimulationBox):
     def get_dist_sq_dr_function(self):
         # Generates function dist_sq_dr which computes displacement and distance for one neighbor
         D = self.D
+        bs_scale_factor_inv = numba.float32(1.0/self.bs_scale_factor)
 
         def dist_sq_dr_function(ri, rj, sim_box, dr):  
-            ''' Returns the squared distance between ri and rj applying MIC and saves ri-rj in dr '''
-            box_shift = sim_box[D]
+            ''' Returns the squared distance between ri and rj applying MIC and saves ri-rj in dr.
+            We have stored a scaled box-shift, so this must be divided by the scale factor before using it'''
+            box_shift_scaled = sim_box[D]
             for k in range(D):
                 dr[k] = ri[k] - rj[k]
 
             dist_sq = numba.float32(0.0)
             box_1 = sim_box[1]
-            dr[0] += (-box_shift if numba.float32(2.0) * dr[1] > +box_1 else
-                      (+box_shift if numba.float32(2.0) * dr[1] < -box_1 else
+
+            dr[0] += (-box_shift_scaled*bs_scale_factor_inv if numba.float32(2.0) * dr[1] > +box_1 else
+                      (+box_shift_scaled*bs_scale_factor_inv if numba.float32(2.0) * dr[1] < -box_1 else
                         numba.float32(0.0)))
+
+
 
             for k in range(D):
                 box_k = sim_box[k]
@@ -138,16 +146,18 @@ class LeesEdwards(SimulationBox):
     def get_dist_sq_function(self):
 
         D = self.D
+        bs_scale_factor_inv = numba.float32(1.0/self.bs_scale_factor)
+
         def dist_sq_function(ri, rj, sim_box):  
             ''' Returns the squared distance between ri and rj applying MIC'''
-            box_shift = sim_box[D]
+            box_shift_scaled = sim_box[D]
             dist_sq = numba.float32(0.0)
 
             # first shift the x-component depending on whether the y-component is wrapped
             dr1 = ri[1] - rj[1]
             box_1 = sim_box[1]
-            x_shift = (-box_shift if numba.float32(2.0) * dr1 > box_1 else
-                      (+box_shift if numba.float32(2.0) * dr1 < -box_1 else
+            x_shift = (-box_shift_scaled*bs_scale_factor_inv if numba.float32(2.0) * dr1 > box_1 else
+                      (+box_shift_scaled*bs_scale_factor_inv if numba.float32(2.0) * dr1 < -box_1 else
                         numba.float32(0.0)))
             # then wrap as usual for all components
             for k in range(D):
@@ -163,17 +173,19 @@ class LeesEdwards(SimulationBox):
 
     def get_apply_PBC(self):
         D = self.D
+        bs_scale_factor_inv = numba.float32(1.0/self.bs_scale_factor)
+
         def apply_PBC(r, image, sim_box):
 
             # first shift the x-component depending on whether the y-component is outside the box
             # note: assumes at most one box length needs to be added/subtracted.
-            box_shift, bs_image = sim_box[D], int(sim_box[D+1])
+            box_shift_scaled, bs_image = sim_box[D], int(sim_box[D+1])
             box1_half = sim_box[1] * numba.float32(0.5)
             if r[1] > + box1_half:
-                r[0] -= box_shift
+                r[0] -= box_shift_scaled*bs_scale_factor_inv
                 image[0] -= bs_image
             if r[1] < -box1_half:
-                r[0] += box_shift
+                r[0] += box_shift_scaled*bs_scale_factor_inv
                 image[0] += bs_image
             # then put everything back in the box as usual
             for k in range(D):
@@ -188,62 +200,27 @@ class LeesEdwards(SimulationBox):
 
     def get_update_box_shift(self):
         D = self.D
+        bs_scale_factor = numba.float32(self.bs_scale_factor)
+
         def update_box_shift(sim_box, shift): # pragma: no cover
             # carry out the addition in double precision
-            sim_box[D] = numba.float32(sim_box[D] + numba.float64(shift))
+            #sim_box[D] = numba.float32(sim_box[D] + numba.float64(shift))
+            sim_box[D] += shift*bs_scale_factor
             Lx = sim_box[0]
-            Lx_half = Lx*numba.float32(0.5)
-            if sim_box[D] > +Lx_half:
-                sim_box[D] -= Lx
+            Lx_half_scaled = Lx*(bs_scale_factor*0.5)
+            if sim_box[D] > +Lx_half_scaled:
+                sim_box[D] -= (Lx*bs_scale_factor)
                 sim_box[D+1] += 1
-            if sim_box[D] < -Lx_half:
-                sim_box[D] += Lx
+            if sim_box[D] < -Lx_half_scaled:
+                sim_box[D] += (Lx*bs_scale_factor)
                 sim_box[D+1] -= 1
             return
         return update_box_shift
 
-    #def get_dist_moved_sq_function(self):
-    #    D = self.D
-    #    def dist_moved_sq_function(r_current, r_last, sim_box, sim_box_last):
-    #        zero = numba.float32(0.)
-    #        half = numba.float32(0.5)
-    #        one = numba.float32(1.0)
-    #        box_shift = sim_box[D]
-    #        dist_moved_sq = zero
-
-
-    #        strain_change = sim_box[D] - sim_box_last[D] # change in box-shift
-    #        strain_change += (sim_box[D+1] - sim_box_last[D+1]) * sim_box[0] # add contribution from box_shift_image
-    #        strain_change /= sim_box[1] # convert to (xy) strain
-
-
-    #        # we will shift the x-component when the y-component is 'wrapped'
-    #        dr1 = r_current[1] - r_last[1]
-    #        box_1 = sim_box[1]
-    #        y_wrap = (one if dr1 > half*box_1 else
-    #                  -one if dr1 < -half*box_1 else zero)
-
-    #        x_shift = y_wrap * box_shift + (r_current[1] -
-    #                                        y_wrap*box_1) * strain_change
-    #        # see the expression in Chatoraj Ph.D. thesis. Adjusted here to
-    #        # take into account BC wrapping (otherwise would use the images
-    #        # ie unwrapped positions)
-
-    #        for k in range(D):
-    #            dr_k = r_current[k] - r_last[k]
-    #            if k == 0:
-    #                dr_k -= x_shift
-    #            box_k = sim_box[k]
-    #            dr_k += (-box_k if numba.float32(2.0) * dr_k > +box_k else
-    #                     (+box_k if numba.float32(2.0) * dr_k < -box_k else numba.float32(0.0)))
-    #            dist_moved_sq = dist_moved_sq + dr_k * dr_k
-
-
-    #        return dist_moved_sq
-    #    return dist_moved_sq_function
 
     def get_dist_moved_exceeds_limit_function(self):
         D = self.D
+        bs_scale_factor = self.bs_scale_factor
 
         def dist_moved_exceeds_limit_function(r_current, r_last, sim_box, sim_box_last, skin, cut):
             """
@@ -253,11 +230,11 @@ class LeesEdwards(SimulationBox):
             zero = numba.float32(0.)
             half = numba.float32(0.5)
             one = numba.float32(1.0)
-            box_shift = sim_box[D]
+            box_shift_scaled = sim_box[D]
             dist_moved_sq = zero
 
 
-            strain_change = sim_box[D] - sim_box_last[D] # change in box-shift
+            strain_change = (sim_box[D] - sim_box_last[D])/bs_scale_factor # change in box-shift
             strain_change += (sim_box[D+1] - sim_box_last[D+1]) * sim_box[0] # add contribution from box_shift_image
             strain_change /= sim_box[1] # convert to (xy) strain
 
@@ -267,7 +244,7 @@ class LeesEdwards(SimulationBox):
             y_wrap = (one if dr1 > half*box_1 else
                       -one if dr1 < -half*box_1 else zero)
 
-            x_shift = y_wrap * box_shift + (r_current[1] -
+            x_shift = y_wrap * (box_shift_scaled/bs_scale_factor) + (r_current[1] -
                                             y_wrap*box_1) * strain_change
             # see the expression in Chatoraj Ph.D. thesis. Adjusted here to
             # take into account BC wrapping (otherwise would use the images
@@ -295,8 +272,10 @@ class LeesEdwards(SimulationBox):
 
     def get_loop_x_shift_function(self):
         D = self.D
+        bs_scale_factor = self.bs_scale_factor
+
         def loop_x_shift_function(sim_box, cell_length_x): # pragma: no cover
-            box_shift = sim_box[D]
-            return -int(math.ceil(box_shift/cell_length_x))
+            box_shift_scaled = sim_box[D]
+            return -int(math.ceil(box_shift_scaled/(bs_scale_factor*cell_length_x)))
 
         return loop_x_shift_function

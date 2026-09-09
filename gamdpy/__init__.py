@@ -14,8 +14,7 @@ from .configuration.Configuration import Configuration
 from .configuration.old_input_output import configuration_to_rumd3, configuration_from_rumd3
 from .configuration.old_input_output import configuration_to_lammps, configuration_to_lammps_data
 from .configuration.Configuration import replicate_molecules
-from .simulation_boxes.orthorhombic import Orthorhombic
-from .simulation_boxes.lees_edwards import LeesEdwards
+from .simulation_boxes import Orthorhombic, LeesEdwards, LeesEdwardsRescale
 from .configuration.topology import Topology
 from .configuration.topology import bonds_from_positions, angles_from_bonds, dihedrals_from_angles, molecules_from_bonds, replicate_topologies
 from .configuration.colarray import colarray 
