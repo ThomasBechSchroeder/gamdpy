@@ -5,7 +5,7 @@ from numba import cuda
 import math
 from ..configuration import Configuration
 from ..misc.make_function import make_function_constant
-from ..simulation_boxes import LeesEdwards, LeesEdwardsRescale
+from ..simulation_boxes import LeesEdwards, LeesEdwardsAccum
 from .integrator import Integrator
 
 
@@ -89,7 +89,7 @@ class SLLOD(Integrator):
     def get_kernel(self, configuration, compute_plan, compute_flags, interactions_kernel, verbose=False):
 
         # Expects a Lees Edwards type simulation box
-        if not (isinstance(configuration.simbox, LeesEdwards) or isinstance(configuration.simbox, LeesEdwardsRescale)):
+        if not (isinstance(configuration.simbox, LeesEdwards) or isinstance(configuration.simbox, LeesEdwardsAccum)):
             raise ValueError(f'The SLLOD integrator requires a Lees-Edwards simulation box, but got {type(configuration.simbox)}')
 
         # Unpack parameters from configuration and compute_plan
