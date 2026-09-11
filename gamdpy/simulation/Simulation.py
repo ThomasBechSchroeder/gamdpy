@@ -313,13 +313,13 @@ class Simulation():
                     compute_interactions(grid, vectors, scalars, ptype, sim_box, interaction_params)
                     grid.sync()
                     if runtime_actions_prestep_kernel != None:
-                        runtime_actions_prestep_kernel(grid, vectors, scalars, r_im, sim_box, step, runtime_actions_params)
+                        runtime_actions_prestep_kernel(grid, vectors, scalars, ptype, r_im, sim_box, step, runtime_actions_params)
                         grid.sync()
                     if step<steps:
                         integration_step(grid, vectors, scalars, r_im, sim_box, integrator_params, time, ptype)
                         grid.sync()
                         if runtime_actions_poststep_kernel != None:
-                            runtime_actions_poststep_kernel(grid, vectors, scalars, r_im, sim_box, step, runtime_actions_params)
+                            runtime_actions_poststep_kernel(grid, vectors, scalars, ptype, r_im, sim_box, step, runtime_actions_params)
                             grid.sync()
 
                 return
@@ -335,11 +335,11 @@ class Simulation():
                     time = time_zero + step * integrator_params[0]
                     compute_interactions(0, vectors, scalars, ptype, sim_box, interaction_params)
                     if runtime_actions_prestep_kernel != None:
-                        runtime_actions_prestep_kernel(0, vectors, scalars, r_im, sim_box, step, runtime_actions_params)
+                        runtime_actions_prestep_kernel(0, vectors, scalars, ptype, r_im, sim_box, step, runtime_actions_params)
                     if step<steps:
                         integration_step(0, vectors, scalars, r_im, sim_box, integrator_params, time, ptype)
                         if runtime_actions_poststep_kernel != None:
-                            runtime_actions_poststep_kernel(0, vectors, scalars, r_im, sim_box, step, runtime_actions_params)
+                            runtime_actions_poststep_kernel(0, vectors, scalars, ptype, r_im, sim_box, step, runtime_actions_params)
                 return
 
             return integrator
