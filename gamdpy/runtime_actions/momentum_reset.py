@@ -32,12 +32,12 @@ class MomentumReset(RuntimeAction):
 
         pb, tp, gridsync = [compute_plan[key] for key in ['pb', 'tp', 'gridsync']]
         if gridsync:
-            def kernel(grid, vectors, scalars, r_im, sim_box, step, momentum_reset_params):
+            def kernel(grid, vectors, scalars, ptype, r_im, sim_box, step, momentum_reset_params):
                 pass
                 return
             return cuda.jit(device=gridsync)(kernel)
         else:
-            def kernel(grid, vectors, scalars, r_im, sim_box, step, momentum_reset_params):
+            def kernel(grid, vectors, scalars, ptype, r_im, sim_box, step, momentum_reset_params):
                 pass
             return kernel
 
@@ -82,7 +82,7 @@ class MomentumReset(RuntimeAction):
         shift_velocities = cuda.jit(device=gridsync)(shift_velocities)
 
         if gridsync:
-            def kernel(grid, vectors, scalars, r_im, sim_box, step, momentum_reset_params):
+            def kernel(grid, vectors, scalars, ptype, r_im, sim_box, step, momentum_reset_params):
                 cm_velocity, = momentum_reset_params
                 if step%steps_between_reset == 0:
                     zero_momentum(cm_velocity)
@@ -93,7 +93,7 @@ class MomentumReset(RuntimeAction):
                 return
             return cuda.jit(device=gridsync)(kernel)
         else:
-            def kernel(grid, vectors, scalars, r_im, sim_box, step, momentum_reset_params):
+            def kernel(grid, vectors, scalars, ptype, r_im, sim_box, step, momentum_reset_params):
                 cm_velocity, = momentum_reset_params
                 if step%steps_between_reset == 0:
                     zero_momentum[1, 1](cm_velocity)

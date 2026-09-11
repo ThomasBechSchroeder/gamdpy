@@ -18,7 +18,7 @@ class RestartSaver(RuntimeAction):
     def setup(self, simulation, num_timeblocks : int, steps_per_timeblock : int, output: h5py.File,
             update_ptype: bool=False, update_topology: bool=False, verbose: bool=False) -> None:
 
-        
+        update_ptype = True
         self.simulation = simulation
         self.configuration = simulation.configuration
         self.update_ptype = update_ptype
@@ -45,12 +45,12 @@ class RestartSaver(RuntimeAction):
     def get_prestep_kernel(self, configuration, compute_plan, verbose=False):
         pb, tp, gridsync = [compute_plan[key] for key in ['pb', 'tp', 'gridsync']]
         if gridsync:
-            def kernel(grid, vectors, scalars, r_im, sim_box, step, conf_saver_params):
+            def kernel(grid, vectors, scalars, ptype, r_im, sim_box, step, conf_saver_params):
                 pass
                 return
             return cuda.jit(device=gridsync)(kernel)
         else:
-            def kernel(grid, vectors, scalars, r_im, sim_box, step, conf_saver_params):
+            def kernel(grid, vectors, scalars, ptype, r_im, sim_box, step, conf_saver_params):
                 pass
             return kernel
 
@@ -59,11 +59,11 @@ class RestartSaver(RuntimeAction):
         
         pb, tp, gridsync = [compute_plan[key] for key in ['pb', 'tp', 'gridsync']]
         if gridsync:
-            def kernel(grid, vectors, scalars, r_im, sim_box, step, conf_saver_params):
+            def kernel(grid, vectors, scalars, ptype, r_im, sim_box, step, conf_saver_params):
                 pass
                 return
             return cuda.jit(device=gridsync)(kernel)
         else:
-            def kernel(grid, vectors, scalars, r_im, sim_box, step, conf_saver_params):
+            def kernel(grid, vectors, scalars, ptype, r_im, sim_box, step, conf_saver_params):
                 pass
             return kernel

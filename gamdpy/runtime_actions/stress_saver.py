@@ -125,7 +125,7 @@ class StressSaver(RuntimeAction):
 
         #volume_function = numba.njit(configuration.simbox.get_volume_function())
 
-        def kernel(grid, vectors, scalars, r_im, sim_box, step, runtime_action_params):
+        def kernel(grid, vectors, scalars, ptype, r_im, sim_box, step, runtime_action_params):
             """     
             """
             steps_between_output, output_array = runtime_action_params # Needs to be compatible with get_params above
@@ -160,12 +160,12 @@ class StressSaver(RuntimeAction):
     def get_poststep_kernel(self, configuration, compute_plan, verbose=False):
         pb, tp, gridsync = [compute_plan[key] for key in ['pb', 'tp', 'gridsync']]
         if gridsync:
-            def kernel(grid, vectors, scalars, r_im, sim_box, step, conf_saver_params):
+            def kernel(grid, vectors, scalars, ptype, r_im, sim_box, step, conf_saver_params):
                 pass
                 return
             return cuda.jit(device=gridsync)(kernel)
         else:
-            def kernel(grid, vectors, scalars, r_im, sim_box, step, conf_saver_params):
+            def kernel(grid, vectors, scalars, ptype, r_im, sim_box, step, conf_saver_params):
                 pass
             return kernel
 

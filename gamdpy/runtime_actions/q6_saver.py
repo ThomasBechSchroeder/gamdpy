@@ -93,12 +93,12 @@ class Q6_Saver(RuntimeAction):
     def get_prestep_kernel(self, configuration, compute_plan, verbose=False):
         pb, tp, gridsync = [compute_plan[key] for key in ['pb', 'tp', 'gridsync']]
         if gridsync:
-            def kernel(grid, vectors, scalars, r_im, sim_box, step, conf_saver_params):
+            def kernel(grid, vectors, scalars, ptype, r_im, sim_box, step, conf_saver_params):
                 pass
                 return
             return cuda.jit(device=gridsync)(kernel)
         else:
-            def kernel(grid, vectors, scalars, r_im, sim_box, step, conf_saver_params):
+            def kernel(grid, vectors, scalars, ptype, r_im, sim_box, step, conf_saver_params):
                 pass
             return kernel
 
@@ -110,7 +110,7 @@ class Q6_Saver(RuntimeAction):
 
 
 
-        def kernel(grid, vectors, scalars, r_im, sim_box, step, runtime_action_params):
+        def kernel(grid, vectors, scalars, ptype, r_im, sim_box, step, runtime_action_params):
             """
             """
             steps_between_output, output_array, switch_sum_Q6_energy = runtime_action_params # Needs to be compatible with get_params above

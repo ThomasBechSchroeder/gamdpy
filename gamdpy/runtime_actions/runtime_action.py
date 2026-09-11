@@ -54,30 +54,30 @@ def merge_runtime_actions(configuration: Configuration, prestep_kernelA: Callabl
     if compute_plan['gridsync']:
         # A device function, calling a number of device functions, using gridsync to syncronize
         @cuda.jit( device=compute_plan['gridsync'])
-        def prestep_kernel(grid, vectors, scalars, r_im, sim_box, step, runtime_actions_params):
-            prestep_kernelA(grid, vectors, scalars, r_im, sim_box, step, runtime_actions_params[0])
+        def prestep_kernel(grid, vectors, scalars, ptype, r_im, sim_box, step, runtime_actions_params):
+            prestep_kernelA(grid, vectors, scalars, ptype, r_im, sim_box, step, runtime_actions_params[0])
             grid.sync() # Not always necessary !!!
-            prestep_kernelB(grid, vectors, scalars, r_im, sim_box, step, runtime_actions_params[1])
+            prestep_kernelB(grid, vectors, scalars, ptype, r_im, sim_box, step, runtime_actions_params[1])
             return
 
         @cuda.jit( device=compute_plan['gridsync'])
-        def poststep_kernel(grid, vectors, scalars, r_im, sim_box, step, runtime_actions_params):
-            poststep_kernelA(grid, vectors, scalars, r_im, sim_box, step, runtime_actions_params[0])
+        def poststep_kernel(grid, vectors, scalars, ptype, r_im, sim_box, step, runtime_actions_params):
+            poststep_kernelA(grid, vectors, scalars, ptype, r_im, sim_box, step, runtime_actions_params[0])
             grid.sync() # Not always necessary !!!
-            poststep_kernelB(grid, vectors, scalars, r_im, sim_box, step, runtime_actions_params[1])
+            poststep_kernelB(grid, vectors, scalars, ptype, r_im, sim_box, step, runtime_actions_params[1])
             return
         
         return prestep_kernel, poststep_kernel, (paramsA, paramsB, )
     else:
         # Two python function, making several kernel calls to syncronize
-        def prestep_kernel(grid, vectors, scalars, r_im, sim_box, step, runtime_actions_params):
-            prestep_kernelA(grid, vectors, scalars, r_im, sim_box, step, runtime_actions_params[0])
-            prestep_kernelB(grid, vectors, scalars, r_im, sim_box, step, runtime_actions_params[1])
+        def prestep_kernel(grid, vectors, scalars, ptype, r_im, sim_box, step, runtime_actions_params):
+            prestep_kernelA(grid, vectors, scalars, ptype, r_im, sim_box, step, runtime_actions_params[0])
+            prestep_kernelB(grid, vectors, scalars, ptype, r_im, sim_box, step, runtime_actions_params[1])
             return
 
-        def poststep_kernel(grid, vectors, scalars, r_im, sim_box, step, runtime_actions_params):
-            poststep_kernelA(grid, vectors, scalars, r_im, sim_box, step, runtime_actions_params[0])
-            poststep_kernelB(grid, vectors, scalars, r_im, sim_box, step, runtime_actions_params[1])
+        def poststep_kernel(grid, vectors, scalars, ptype, r_im, sim_box, step, runtime_actions_params):
+            poststep_kernelA(grid, vectors, scalars, ptype, r_im, sim_box, step, runtime_actions_params[0])
+            poststep_kernelB(grid, vectors, scalars, ptype, r_im, sim_box, step, runtime_actions_params[1])
             return
         
         return prestep_kernel, poststep_kernel, (paramsA, paramsB, )   
