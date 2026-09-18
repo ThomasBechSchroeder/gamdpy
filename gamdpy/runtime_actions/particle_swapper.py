@@ -24,7 +24,7 @@ class ParticleSwapper(RuntimeAction):
     dtype = numba.float32 
 
 
-    def __init__(self, steps_between_swaps: int, swap_attempts: int, pair_potential, swap_temperature, seed) -> None:
+    def __init__(self, steps_between_swaps: int, swap_attempts: int, allowed_swap_types, pair_potential, swap_temperature, seed) -> None:
         if type(steps_between_swaps) != int or steps_between_swaps < 0:
             raise ValueError(f'steps_between_swaps ({steps_between_swaps}) should be non-negative integer.')
         self.steps_between_swap = steps_between_swaps
@@ -32,7 +32,7 @@ class ParticleSwapper(RuntimeAction):
         if type(swap_attempts) != int or swap_attempts < 0:
             raise ValueError(f'swaps attempts per swap session({swap_attempts}) should be non-negative integer.')
         self.swap_attempts = swap_attempts
-
+        self.allowed_swap_types = allowed_swap_types
         self.pair_potential = pair_potential
         self.swap_temperature = swap_temperature
         self.seed = seed
@@ -50,6 +50,7 @@ class ParticleSwapper(RuntimeAction):
     def get_params(self, configuration: Configuration, compute_plan: dict) -> tuple:
         self.configuration = configuration
         number_of_parallel_attempts = configuration.N*compute_plan['tp']
+        self.d_allowed_swap_types = cuda.to_device(np.array(self.allowed_swap_types))
         self.rng_states = create_xoroshiro128p_states(number_of_parallel_attempts, seed=self.seed) 
         self.first_success_idx = cuda.device_array(1, dtype=np.int32) 
         self.attempts_counter = cuda.device_array(1, dtype=np.int32)
@@ -57,7 +58,8 @@ class ParticleSwapper(RuntimeAction):
         self.success_counter[0] = 0
         
         self.params = (self.swap_attempts,
-            self.swap_temperature, 
+            self.swap_temperature,
+            self.d_allowed_swap_types,
             self.rng_states,
             self.pair_potential.nblist.d_nblist,
             self.pair_potential.d_params,
@@ -154,7 +156,7 @@ class ParticleSwapper(RuntimeAction):
 
         @cuda.jit(device=gridsync) 
         def thread_swap_attempts(positions, ptype, sim_box, neighbour_list, params,
-                                 rng_states, temperature, first_success_idx, attempts_counter, 
+                                 rng_states, temperature, allowed_swap_types, first_success_idx, attempts_counter, 
                                  number_of_swap_attempts, success_counter): 
                                  
                                              
@@ -200,7 +202,7 @@ class ParticleSwapper(RuntimeAction):
                     if my_t==0: # only one thread per attempt needs to sample the two particles to swap
                         i = save_random_int(num_particles, rng_states, thread_id)
                         j=i
-                        while ptype[j] == ptype[i]: #only resample j if ptypes are the same
+                        while allowed_swap_types[ptype[i],ptype[j]]==False: # resample j if not allowed
                             j = save_random_int(num_particles, rng_states, thread_id)
                         s_i[my_local_id] = i
                         s_j[my_local_id] = j
@@ -250,10 +252,10 @@ class ParticleSwapper(RuntimeAction):
         if gridsync:
             def kernel(grid, vectors, scalars, ptype, r_im, sim_box, step, swapper_params):
                 if step%steps_between_swap == 0:
-                    swap_attempts, temperature, rng_states, nblist, params, first_success_idx, attempts_counter, success_counter = swapper_params
+                    swap_attempts, temperature, allowed_swap_types, rng_states, nblist, params, first_success_idx, attempts_counter, success_counter = swapper_params
                                                     
-                    thread_swap_attempts(vectors[r_id], ptype, sim_box, nblist, params, 
-                                         rng_states, temperature, first_success_idx, attempts_counter, swap_attempts, success_counter)
+                    thread_swap_attempts(vectors[r_id], ptype, sim_box, nblist, params, rng_states, temperature, 
+                                         allowed_swap_types, first_success_idx, attempts_counter, swap_attempts, success_counter)
             
                 return
             return cuda.jit(device=gridsync)(kernel)
