@@ -32,8 +32,8 @@ pair_pot = gp.PairPotential(pair_func, params=[sig, eps, cut], max_num_nbs=1000)
 # Increase 'num_blocks' for longer runs, better statistics, AND bigger storage consumption
 # Increase 'steps_per_block' for longer runs
 dt = 0.004  # timestep
-num_timeblocks = 128           # Do simulation in this many 'blocks'. 
-steps_per_timeblock = 2*1024  # ... each of this many steps
+num_timeblocks = 32           # Do simulation in this many timeblocks. 
+steps_per_timeblock = 2*1024   # ... each of this many steps
 filename = f'Data/TLJ_Rho{rho:.3f}_T{temperature:.3f}_swap.h5'
 
 integrator = gp.integrators.NVT(temperature=temperature, tau=0.2, dt=dt)
@@ -70,6 +70,28 @@ for i in range(2):
     print()
 
     swapper.reset_success_counter() # Reset the success counter for the next run
+
+# Print current status of configuration
+print(configuration)
+
+# Switch to normal MD for comparison
+filename = f'Data/TLJ_Rho{rho:.3f}_T{temperature:.3f}.h5'
+
+#Setup runtime actions, i.e. actions performed during simulation of timeblocks
+runtime_actions = [gp.TrajectorySaver(scheduler=gp.Log2()),
+                   gp.ScalarSaver(32),
+                   gp.RestartSaver(),
+                   gp.MomentumReset(100)]
+
+sim = gp.Simulation(configuration, [pair_pot, ], integrator, runtime_actions,
+                    num_timeblocks=num_timeblocks, steps_per_timeblock=steps_per_timeblock,
+                    storage=filename)
+
+
+print('Production, standard MD')
+for block in sim.run_timeblocks():
+    print(f'{sim.status(per_particle=True)}')
+print(sim.summary())
 
 # Print current status of configuration
 print(configuration)
