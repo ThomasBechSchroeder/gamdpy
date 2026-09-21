@@ -116,10 +116,10 @@ class Steinhardt_Q6(Interaction):
         # Unpack indices for vectors and scalars to be compiled into kernel
         r_id, f_id = [configuration.vectors.indices[key] for key in ['r', 'f']]
 
-        if compute_u:
-            u_id = configuration.sid['U']
-        if compute_w:
-            w_id = configuration.sid['W']
+        #if compute_u:
+        #   u_id = configuration.sid['U']
+        #if compute_w:
+        #    w_id = configuration.sid['W']
 
  
         # Maybe print a warning or comment that UtilizeNIII is not relevant here
@@ -140,8 +140,9 @@ class Steinhardt_Q6(Interaction):
         four = numba.float32(4.0)
         six = numba.float32(6.0)
         eleven = numba.float32(11.)
-        thirteen = numba.float32(13.)
-        four_pi_two_lp1 = 4.*math.pi / thirteen
+        root_thirteen = numba.float32(math.sqrt(13.))
+        ratio_13_11 = numba.float32(13./11.0)
+        four_pi_two_lp1 = numba.float32(4.*math.pi / 13.0)
         # default value of phi when theta is zero or pi # CHANGE TO ZERO to avoid defining these!!!!
         #phi_def = numba.float32(math.pi/2)
         #cos_phi_def = numba.float32(math.cos(phi_def))
@@ -196,8 +197,8 @@ class Steinhardt_Q6(Interaction):
 
             my_f = cuda.local.array(shape=D,dtype=numba.float32)
             my_dr = cuda.local.array(shape=D,dtype=numba.float32)
-            my_cscalars = cuda.local.array(shape=num_cscalars, dtype=numba.float32)
-    
+            #my_cscalars = cuda.local.array(shape=num_cscalars, dtype=numba.float32)
+
             my_Y6 = cuda.local.array(shape=7, dtype=numba.complex64)
             my_switch_factor_sum = zero
 
@@ -212,6 +213,7 @@ class Steinhardt_Q6(Interaction):
                 sigma_f = one
                 Q6 = zero
                 prefactor_A = zero
+
                 # for use when actually determining force contributions:
                 if(FORCES):
                     # Read in the summed values
@@ -248,7 +250,8 @@ class Steinhardt_Q6(Interaction):
                             inv_sin_theta = one/EPS
                             phi, cos_phi, sin_phi = zero, one, zero # phi_def, cos_phi_def, sin_phi_def
                         else:
-                            phi = numba.float32(math.atan2(my_dr[1], my_dr[0]))
+                            #phi = numba.float32(math.atan2(my_dr[1], my_dr[0]))
+                            phi = math.atan2(my_dr[1], my_dr[0])
                             cos_phi = my_dr[0] / dist_xy
                             sin_phi = my_dr[1] / dist_xy
 
@@ -258,27 +261,26 @@ class Steinhardt_Q6(Interaction):
                         sin_theta_m = one # will be multiplied by sin_theta at the end of the m-loop
                         sin_theta_m_minus_1 = one # will be multiplied by sin_theta at the end of the m-loop for m> 0 (so it will be incorrect for m=0, but it won't be used in that case)
 
-                        exp_switch = numba.float32(math.exp( (dist-switch_cutoff)/switch_width))
+                        exp_switch = math.exp( (dist-switch_cutoff)/switch_width)
                         switch_factor = one/(one + exp_switch)
                         # the following expression should be safe against the exp factor getting huge
                         switch_deriv = - one/( (exp_switch + two + one/exp_switch) * switch_width)
                     
-                        my_switch_factor_sum += switch_factor;
+                        my_switch_factor_sum += switch_factor
                         P6_m, P6_m_over_sin_theta = zero, zero
 
-                        #cos_m_phi, sin_m_phi = one, one
 
                         for m in range(7):
 
                             # phi part of Ylm
-                            #cos_m_phi, sin_m_phi = math.cos(m*phi), math.sin(m*phi)
-                            cos_sin_m_phi = complex(numba.float32(math.cos(m*phi)), numba.float32(math.sin(m*phi)))
+                            m_phi = numba.float32(m*phi)
+                            cos_sin_m_phi = complex(math.cos(m_phi), math.sin(m_phi))
 
                             # initialize the first two l values for the recurrence, namely l=m and l=m+1
                             P_current_minus_2 = Amm[m]# * sin_theta_m;
                             # Would like to include this here: * switch_factor;
 
-                            P_current_minus_1 = numba.float32(math.sqrt((four*(m+1)*(m+1) - one)/(two*m+one)) * cos_theta * P_current_minus_2)
+                            P_current_minus_1 = math.sqrt( numba.float32(4*(m+1)*(m+1) - 1)/numba.float32(2*m+1)   ) * cos_theta * P_current_minus_2
                             P6_deriv_sin1 = zero # the suffix sin1 indicates that this includes the factor 1/sin(theta)  (only one power of the sine)
 
                             # some of the needed values are already available before the loop:
@@ -288,7 +290,7 @@ class Steinhardt_Q6(Interaction):
                                     P6_m = P_current_minus_1 * sin_theta_m
                                     P6_m_over_sin_theta = P_current_minus_1 * sin_theta_m_minus_1
                                      # sqrt(13) comes from same formula as above with l=6,, m=5
-                                    P6_deriv_sin1 = -( six* cos_theta*P_current_minus_1 - math.sqrt(thirteen)*P_current_minus_2) * sin_theta_m_minus_1#sin_theta_m * inv_sin_theta
+                                    P6_deriv_sin1 = -( six* cos_theta*P_current_minus_1 - root_thirteen*P_current_minus_2) * sin_theta_m_minus_1#sin_theta_m * inv_sin_theta
                                 else:
                                     #my_Y6[5] += complex64(switch_factor * P_current_minus_1 * sin_theta_m * cos_m_phi, switch_factor * P_current_minus_1 * sin_theta_m * cos_m_phi)
                                     my_Y6[5] += switch_factor * P_current_minus_1 * sin_theta_m * cos_sin_m_phi
@@ -305,20 +307,19 @@ class Steinhardt_Q6(Interaction):
 
                             # recurrence starts from l=m+2
                             for l in range(m+2, 7):
-                                a_lm = numba.float32(math.sqrt( float(4*l*l-1)/float(l*l-m*m) ))
-                                b_lm = -numba.float32(math.sqrt( float(2*l+1)/float(2*l-3) * float((l-1)*(l-1) - m*m) / float(l*l-m*m) ))
+                                a_lm = numba.float32(math.sqrt( numba.float32(4*l*l-1)/numba.float32(l*l-m*m) ))
+                                b_lm = -numba.float32(math.sqrt( numba.float32(2*l+1)/numba.float32(2*l-3) * numba.float32((l-1)*(l-1) - m*m) / numba.float32(l*l-m*m) ))
                                 P_current = a_lm * cos_theta * P_current_minus_1 + b_lm * P_current_minus_2
-
 
                                 if l == 6: # m must be at most 4, but m=5,6 already taken care of CAN WE MOVE THIS OUT OF THE LOOP BEAUSE l=6 AT THE END??
                                     if(FORCES):
                                         P6_m = P_current * sin_theta_m
                                         P6_m_over_sin_theta = P_current * sin_theta_m_minus_1 # incorrect, but needed, for m=0
                                         if m>0:
-                                            P6_deriv_sin1 = -(six*cos_theta * P_current - math.sqrt((thirteen/eleven) * (6+m)*(6-m)) * P_current_minus_1) * sin_theta_m_minus_1
+                                            P6_deriv_sin1 = -(six*cos_theta * P_current - math.sqrt(ratio_13_11 * numba.float32((6+m)*(6-m))) * P_current_minus_1) * sin_theta_m_minus_1
                                         else:
                                             # for m=0 we have dP_l(x)/dx are just polynomials in x=cos(theta) whose product with sin(theta) must vanish as theta->0. The expression in brackets gives always (I checked explicitly up to l=4) a factor sin^2(theta),ie it vanishes fast enough that dividing by sin theta doesn't change it. ALTERNATIVE: Use the end-point friendly recursion for derivatives of Legendre polynomials (m=0), then we don't need inv_sin_theta
-                                            P6_deriv_sin1 = -(6*cos_theta * P_current - math.sqrt((thirteen/eleven) * 6*6) * P_current_minus_1) * inv_sin_theta
+                                            P6_deriv_sin1 = -(six*cos_theta * P_current - math.sqrt(ratio_13_11 * numba.float32(6*6)) * P_current_minus_1) * inv_sin_theta
 
                                     else:
                                         my_Y6[m] +=  switch_factor * P_current * sin_theta_m *  cos_sin_m_phi
@@ -334,9 +335,9 @@ class Steinhardt_Q6(Interaction):
 
                             if(FORCES):
                                 q6_m = sigma_f_Y6[m] / sigma_f
-                                double_counting_factor = 2
+                                double_counting_factor = two
                                 if m > 0:
-                                    double_counting_factor = 4
+                                    double_counting_factor = four
                                 k1 = double_counting_factor*switch_deriv/(sigma_f*sigma_f*dist)
                                 D1 = k1*(-sigma_f_Y6[m] + (sigma_f * P6_m) * cos_sin_m_phi)
                                 s = prefactor_A * (q6_m.real * D1.real + q6_m.imag * D1.imag)
@@ -352,10 +353,9 @@ class Steinhardt_Q6(Interaction):
                                 my_f[2] += s * dist_xy
 
                                 if(m>0):
-                                    k4 = double_counting_factor * switch_factor * P6_m_over_sin_theta * m/(sigma_f*dist );
+                                    k4 = double_counting_factor * switch_factor * P6_m_over_sin_theta * numba.float32(m)/(sigma_f*dist );
                                     D_m3 = complex(k4 * cos_sin_m_phi.imag, -k4 * cos_sin_m_phi.real) #  Term 3, involving derivatives of exp (i m phi)
                                     s = prefactor_A * (q6_m.real * D_m3.real + q6_m.imag * D_m3.imag)
-
                                     my_f[0] += s*sin_phi
                                     my_f[1] += -s*cos_phi
 
@@ -364,37 +364,11 @@ class Steinhardt_Q6(Interaction):
                                     cuda.atomic.add(vectors[f_id], (global_id, k), my_f[k])
 
 
-
                             sin_theta_m *= abs_sin_theta
                             if m > 0:
                                 sin_theta_m_minus_1 *= abs_sin_theta
                         # End loop over m
 
-
-                        #for k in range(D):
-                        #    my_f[k] = my_f[k] - my_dr[k] # XXXXX                      # Force
-        
-                        #if compute_w:
-                        #    my_cscalars[w_id] += 0. # XXXXXX       # Virial
-
-
-                        #half = numba.float32(0.5)
-
-                        #for k in range(D):
-                        #    my_f[k] = my_f[k] - my_dr[k] #                # Force
-                        #    if compute_w:
-                        #        my_cscalars[w_id] += 0.#       # Virial
-                    
-                        #if compute_u:
-                        #    my_cscalars[u_id] += half                            # Potential energy
-
-                    # end if (within cutoff)
-                # Now add this thread's contribution to the global force array (and stresses)
-
-
-                # (... and scalars)
-                #for k in range(num_cscalars):
-                #    cuda.atomic.add(cscalars, (global_id, k), my_cscalars[k])
 
             # Outside the loop over neighbors for my particle handled by this thread, now each thread must add to the global sums
             if not FORCES:
