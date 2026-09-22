@@ -38,7 +38,7 @@ def __calccorr__(dacf, jacf, dk, dmk, jk, jmk, nwaves, lvec):
 
 
 
-class CalculatorHydrodynamicCorrelations_general:
+class CalculatorHydrodynamicCorrelations:
     """
         Calculates the tranverse current autocorrelation function (jacf) and 
         the longitudinal density autocorrelation function (dacf). 
