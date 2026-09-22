@@ -5,7 +5,7 @@ import math
 import cmath
 
 @jit(nopython=True) 
-def __store__(dk, dmk, jk, jmk, sampletype, mass, pos, vel, ptypes, npart, index, nwaves, lbox):
+def __store__(dk, dmk, jk, jmk, sampletypes, mass, pos, vel, ptypes, npart, index, nwaves, lbox):
 
     I = complex(0.0, 1.0)
 
@@ -16,7 +16,7 @@ def __store__(dk, dmk, jk, jmk, sampletype, mass, pos, vel, ptypes, npart, index
         kwave = 2.0*math.pi*(k+1)/lbox
 
         for n in range(npart):
-            if ptypes[n] == sampletype or sampletype == -1:
+            if ptypes[n] in sampletypes:
                 kfac = cmath.exp(I*kwave*pos[n])
                 mkfac = cmath.exp(-I*kwave*pos[n])
 
@@ -38,7 +38,7 @@ def __calccorr__(dacf, jacf, dk, dmk, jk, jmk, nwaves, lvec):
 
 
 
-class CalculatorHydrodynamicCorrelations:
+class CalculatorHydrodynamicCorrelations_general:
     """
         Calculates the tranverse current autocorrelation function (jacf) and 
         the longitudinal density autocorrelation function (dacf). 
@@ -48,7 +48,7 @@ class CalculatorHydrodynamicCorrelations:
         Initialization variables
         - configuration: Instance of the configuration class
         - dtsample: Time between sampling (= integrator time step * steps_per_timeblock)
-        - ptype: The particle type for which the correlations are calculated (default 0)   
+        - ptype:Array of the particle(s) type for which the correlations are calculated (default 0)   
         - nwaves: Number of wavevectors (default 10)
         - lvec: Length of the time vector - sample time span then dtsample*lvec (defulat 100) 
         - verbose: Write a bit to screen (default False)
@@ -57,9 +57,9 @@ class CalculatorHydrodynamicCorrelations:
             With the method read() data is written to files and returned to user 
     """
 
-    def __init__(self, configuration, dtsample, ptype=0, nwaves=10, lvec=100, verbose=False):
+    def __init__(self, configuration, dtsample, ptypes=[0], nwaves=10, lvec=100, verbose=False):
         self.conf = configuration
-        self.ptype = ptype
+        self.ptypes = ptypes
         self.nwaves = nwaves
         self.lvec = lvec
         self.dt = dtsample
@@ -91,7 +91,7 @@ class CalculatorHydrodynamicCorrelations:
 
     def update(self):
    
-         __store__(self.dk, self.dmk, self.jk, self.jmk, self.ptype,
+         __store__(self.dk, self.dmk, self.jk, self.jmk, self.ptypes,
                    self.conf['m'][:], self.conf['r'][:,0], self.conf['v'][:,1],
                    self.conf.ptype[:], self.conf.N, self.index, self.nwaves, self.lbox)
 
