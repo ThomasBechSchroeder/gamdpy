@@ -22,20 +22,26 @@ class ParticleSwapper(RuntimeAction):
     """
 
     dtype = numba.float32 
+    
 
-
-    def __init__(self, steps_between_swaps: int, swap_attempts: int, allowed_swap_types, pair_potential, swap_temperature, seed) -> None:
+    def __init__(self, steps_between_swaps: int, swap_attempts: int, allowed_swap_types, pair_potential, swap_temperature, seed, swap_divider=1) -> None:
         if type(steps_between_swaps) != int or steps_between_swaps < 0:
             raise ValueError(f'steps_between_swaps ({steps_between_swaps}) should be non-negative integer.')
         self.steps_between_swap = steps_between_swaps
 
         if type(swap_attempts) != int or swap_attempts < 0:
             raise ValueError(f'swaps attempts per swap session({swap_attempts}) should be non-negative integer.')
+
+        print(swap_divider, type(swap_divider))
+        if not isinstance(swap_divider, int) or swap_divider <= 0:
+            raise ValueError(f'swap divider({swap_divider}) should be non-negative integer.')
+        
         self.swap_attempts = swap_attempts
         self.allowed_swap_types = allowed_swap_types
         self.pair_potential = pair_potential
         self.swap_temperature = swap_temperature
         self.seed = seed
+        self.swap_divider = swap_divider
 
     def reset_success_counter(self):
         """
@@ -45,7 +51,11 @@ class ParticleSwapper(RuntimeAction):
 
 
     def setup(self, simulation, num_timeblocks: int, steps_per_timeblock: int, output, verbose=False) -> None:
-        pass
+
+        pb = simulation.compute_plan['pb']
+        if pb % self.swap_divider != 0:
+            raise ValueError(f'swap divider ({self.swap_divider}) should be integer divisor of pb ({pb}).')
+
 
     def get_params(self, configuration: Configuration, compute_plan: dict) -> tuple:
         self.configuration = configuration
@@ -99,6 +109,8 @@ class ParticleSwapper(RuntimeAction):
         pairpotential_function = numba.njit(pair_pot.pairpotential_function) 
         dist_sq_function = numba.njit(configuration.simbox.get_dist_sq_function())
 
+        swap_divider = self.swap_divider
+
         @cuda.jit(device=True) 
         def energy_change_for_particle(particle_index, new_type, old_type, swap_index, 
                                        positions, ptype, sim_box, 
@@ -117,8 +129,18 @@ class ParticleSwapper(RuntimeAction):
             delta = dtype(0.0) 
             my_r = positions[particle_index] 
             my_global_id, my_t = cuda.grid(2)
+
+            my_global_id, my_t = cuda.grid(2)
+            my_local_id = cuda.threadIdx.x
+            my_t = my_t * swap_divider + my_local_id%swap_divider
+
+            my_global_id = my_global_id // swap_divider
+            my_local_id = my_local_id // swap_divider
+
+            thread_id = my_global_id
+
  
-            for n in range(my_t, num_neighbours, tp): 
+            for n in range(my_t, num_neighbours, tp*swap_divider): 
                 neighbour_index = neighbour_list[particle_index, n] 
                 if neighbour_index == swap_index: 
                     continue 
@@ -172,9 +194,17 @@ class ParticleSwapper(RuntimeAction):
             swap attempts has been performed.
             """
             
+           
+
             grid = cuda.cg.this_grid() 
             my_global_id, my_t = cuda.grid(2)
             my_local_id = cuda.threadIdx.x
+            my_t = my_t * swap_divider + my_local_id%swap_divider
+
+            my_global_id = my_global_id // swap_divider
+            my_local_id = my_local_id // swap_divider
+            
+
             thread_id = my_global_id
 
             s_i = cuda.shared.array(pb, dtype=np.int32)
@@ -193,7 +223,7 @@ class ParticleSwapper(RuntimeAction):
             while attempts_counter[0] < number_of_swap_attempts:
 
                 # Determine the number of swap attempts to perform in this round, as min(needed, possible). 
-                attempts_this_round = min(number_of_swap_attempts - attempts_counter[0], number_of_parallel_attempts)
+                attempts_this_round = min(number_of_swap_attempts - attempts_counter[0], number_of_parallel_attempts//swap_divider)
                 if thread_id == 0 and my_t == 0:
                     first_success_idx[0] = attempts_this_round
                 grid.sync() 

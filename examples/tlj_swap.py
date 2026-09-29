@@ -39,13 +39,19 @@ filename = f'Data/TLJ_Rho{rho:.3f}_T{temperature:.3f}_swap.h5'
 
 integrator = gp.integrators.NVT(temperature=temperature, tau=0.2, dt=dt)
 
-# Setup particle swapper to perform particle Swap Monte-Carlo every 10'th MD step, with 2*N swap attempts per MC turn
-swap_types = [[False, False, True], 
+# Set up ParticleSwapper to performe particle swap Monte-Carlo during simulation for accelerated equilibration
+steps_between_swaps = 10 # 10 MD steps are performed between each session of particle swaps
+swap_attempts = 2*configuration.N # Each swap session consists of 2N swap attempts
+swap_divider = max(int(round(configuration.N / 1000)), 1)  # Recomended general purpose value
+                                                    # For high swap acceptance rates: Try higher value
+                                                    # For very small swap acceptance rates: Try lower value
+swap_types = [[False, False, True],  # Control which particle type are attempted to be swapped 
               [False, False, True], 
               [True,  True,  False]]
-
-swapper = gp.ParticleSwapper(steps_between_swaps=10, swap_attempts=2*configuration.N, allowed_swap_types=swap_types, 
-                             pair_potential=pair_pot, swap_temperature=temperature, seed=42)
+print(f'ParticleSwapper: {steps_between_swaps=:d}, {swap_attempts=:d}, {swap_divider=}')
+swapper = gp.ParticleSwapper(steps_between_swaps=steps_between_swaps, swap_attempts=swap_attempts, 
+                             allowed_swap_types=swap_types, pair_potential=pair_pot, swap_temperature=temperature, 
+                             swap_divider=swap_divider, seed=42)
 
 #Setup runtime actions, i.e. actions performed during simulation of timeblocks
 runtime_actions = [swapper,
